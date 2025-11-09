@@ -2004,10 +2004,1261 @@ console.log('📋 Loaded saved data:', data)
 
 ---
 
+---
+
+## Taxes
+
+### Overview
+
+**Feature Type**: Input + Output (two-page pattern) with auto-loading from other features
+**localStorage Key**: `taxes`
+**File**: `src/features/taxes/Taxes.jsx`
+**Calculation**: `src/features/taxes/Taxes.calc.js`
+**Related Feature**: Tax Bracket Manager (separate administrative tool)
+
+**Auto-Loading Behavior**:
+- Filing type automatically loaded from Personal Details (`profile.filingStatus`)
+- Total income automatically calculated from Income feature (`income.incomeStreams`)
+- Excludes 401k contributions from income calculation
+- User can adjust values or add additional income sources
+
+### Data Structure
+
+```javascript
+{
+  filingType: 'single',              // string (mapped from profile)
+  state: 'california',               // string (state/province ID)
+  incomes: [                         // array of income sources
+    {
+      id: 'salary-income',           // string (unique ID)
+      description: 'Total Annual Income (excl. 401k)',  // string
+      amount: 150000,                // number
+      incomeType: 'salary'           // string: 'salary' or 'investment'
+    }
+    // ... additional incomes can be added
+  ]
+}
+```
+
+### Fields
+
+---
+
+#### Filing Type
+
+**Purpose**: Tax filing status for calculating correct tax brackets
+
+**Field Type**: Dropdown (select)
+
+**Options**:
+- `single` - Single
+- `married` - Married Filing Jointly
+- `separate` - Married Filing Separately
+- `head` - Head of Household
+
+**Default Value**: Auto-mapped from Personal Details
+
+**Mapping from Profile**:
+```javascript
+const mapFilingStatus = (status) => {
+  const mapping = {
+    'Single': 'single',
+    'Married Filing Jointly': 'married',
+    'Married Filing Separately': 'separate',
+    'Head of Household': 'head'
+  }
+  return mapping[status] || 'single'
+}
+```
+
+**Required**: Yes (always has value)
+
+**Validation**: None (dropdown ensures valid value)
+
+**Used In**:
+- Tax bracket selection for both state and federal
+- FICA threshold calculations
+- Fallback filing type resolution (if jurisdiction has it disabled)
+
+**Code Pattern**:
+```jsx
+<select
+  value={data.filingType}
+  onChange={(e) => handleFilingTypeChange(e.target.value)}
+  className="w-full px-3 py-2 border rounded-md"
+>
+  <option value="single">Single</option>
+  <option value="married">Married Filing Jointly</option>
+  <option value="separate">Married Filing Separately</option>
+  <option value="head">Head of Household</option>
+</select>
+```
+
+**Storage**: Saved to `localStorage.taxes.filingType`
+
+---
+
+#### State
+
+**Purpose**: Determines which state/provincial tax brackets to apply
+
+**Field Type**: Dropdown (select)
+
+**Options**: Currently only `california`, but expandable via Tax Bracket Manager
+
+**Default Value**: `'california'`
+
+**Required**: Yes
+
+**Validation**: None (dropdown ensures valid value)
+
+**Used In**:
+- State tax bracket selection
+- State-specific filing type fallback resolution
+
+**Code Pattern**:
+```jsx
+<select
+  value={data.state}
+  onChange={(e) => handleStateChange(e.target.value)}
+  className="w-full px-3 py-2 border rounded-md"
+>
+  <option value="california">California</option>
+</select>
+```
+
+**Storage**: Saved to `localStorage.taxes.state`
+
+---
+
+#### Income Sources (Array)
+
+**Purpose**: Track all sources of taxable income with their types
+
+**Field Type**: Dynamic array of income objects
+
+**Default Value**: Auto-populated from Income feature with total salary (excluding 401k)
+
+**Auto-Loading Logic**:
+```javascript
+// On component mount
+const incomeData = storage.load('income') || { incomeStreams: [] }
+
+// Calculate total salary (excluding 401k)
+const totalSalary = incomeData.incomeStreams.reduce((sum, stream) => {
+  const annualIncome = Number(stream.annualIncome) || 0
+  return sum + annualIncome
+}, 0)
+
+// Auto-populate
+setData(prev => ({
+  ...prev,
+  incomes: totalSalary > 0 ? [{
+    id: 'salary-income',
+    description: 'Total Annual Income (excl. 401k)',
+    amount: totalSalary,
+    incomeType: 'salary'
+  }] : []
+}))
+```
+
+**User Actions**:
+- Can add additional income sources (investments, side income, etc.)
+- Can edit amounts and types
+- Can remove income sources
+
+**Required**: At least one income source (validation)
+
+**Validation**: Handled per income source (see Income Source fields below)
+
+**Storage**: Saved to `localStorage.taxes.incomes`
+
+---
+
+### Income Source Fields
+
+Each income source in the `incomes` array has the following fields:
+
+---
+
+#### Income Source: ID
+
+**Purpose**: Unique identifier for each income entry
+
+**Field Type**: Auto-generated string
+
+**Pattern**: `income-${Date.now()}` or custom (e.g., `'salary-income'` for auto-loaded)
+
+**Example**: `'income-1730912345678'`
+
+**Used In**: Tracking and removing specific income sources
+
+---
+
+#### Income Source: Description
+
+**Purpose**: Label for the income source
+
+**Field Type**: Text input
+
+**Default Value**: Auto-filled as `'Total Annual Income (excl. 401k)'` for main income, empty for additional
+
+**Required**: No (optional, for user clarity)
+
+**Validation**: None
+
+**Placeholder**: `'Description (e.g., W-2 Salary, Dividends)'`
+
+**Code Pattern**:
+```jsx
+<input
+  type="text"
+  value={income.description}
+  onChange={(e) => handleIncomeChange(income.id, 'description', e.target.value)}
+  placeholder="Description (e.g., W-2 Salary, Dividends)"
+  className="w-full px-3 py-2 border rounded-md"
+/>
+```
+
+---
+
+#### Income Source: Amount
+
+**Purpose**: Dollar amount of income from this source
+
+**Field Type**: Number input with dollar ($) prefix
+
+**Default Value**: Auto-filled from Income feature for primary, `''` for additional
+
+**Required**: Yes
+
+**Validation Rules**:
+```javascript
+if (income.amount === '' || income.amount < 0) {
+  errors[`${index}-amount`] = 'Amount must be a positive number'
+}
+```
+
+**Used In**: Tax calculations for this specific income source
+
+**Display Format**: `$150,000`
+
+**Code Pattern**:
+```jsx
+<div className="relative">
+  <span className="absolute left-3 top-2 text-gray-500">$</span>
+  <input
+    type="number"
+    value={income.amount}
+    onChange={(e) => handleIncomeChange(income.id, 'amount',
+      e.target.value ? Number(e.target.value) : '')}
+    placeholder="100000"
+    className={`w-full pl-8 pr-3 py-2 border rounded-md ${
+      errors[`${index}-amount`] ? 'border-red-500' : 'border-gray-300'
+    }`}
+  />
+</div>
+```
+
+---
+
+#### Income Source: Income Type
+
+**Purpose**: Determines which tax brackets to use (ordinary income vs capital gains)
+
+**Field Type**: Dropdown (select)
+
+**Options**:
+- `salary` - Ordinary income (W-2, 1099, etc.) - uses standard tax brackets
+- `investment` - Investment income (capital gains, dividends) - uses capital gains brackets
+
+**Default Value**: `'salary'` (auto-loaded income is salary type)
+
+**Required**: Yes
+
+**Validation Rules**:
+```javascript
+if (!income.incomeType) {
+  errors[`${index}-incomeType`] = 'Income type is required'
+}
+```
+
+**Used In**:
+- Selecting federal tax brackets (capital gains vs ordinary income)
+- Selecting state tax brackets (some states tax them differently)
+- FICA calculations (only salary has FICA)
+
+**Code Pattern**:
+```jsx
+<select
+  value={income.incomeType}
+  onChange={(e) => handleIncomeChange(income.id, 'incomeType', e.target.value)}
+  className="w-full px-3 py-2 border rounded-md"
+>
+  <option value="salary">Salary</option>
+  <option value="investment">Investment Income</option>
+</select>
+```
+
+**Storage**: Saved to `localStorage.taxes.incomes[].incomeType`
+
+---
+
+### Tax Calculations
+
+**Function**: `calculateTaxes(income, incomeType, filingType, state, country)`
+
+**Called For**: Each income source individually
+
+**Returns**: Tax calculation object with breakdown
+
+---
+
+#### Tax Calculation Flow
+
+1. **Load Custom Brackets**: Check `localStorage.taxLadders` for custom brackets
+2. **Resolve Filing Type**: Check if requested filing type is disabled, use fallback if needed
+3. **Get State Brackets**: Load appropriate state tax brackets (salary vs investment)
+4. **Get Federal Brackets**: Load appropriate federal tax brackets (ordinary vs capital gains)
+5. **Calculate State Tax**: Apply progressive brackets to income
+6. **Calculate Federal Tax**: Apply progressive brackets to income
+7. **Calculate FICA**: If salary income, calculate FICA taxes
+8. **Aggregate**: Sum all tax components
+
+**Filing Type Fallback Logic**:
+```javascript
+// Check if filing type is disabled for this jurisdiction
+if (filingTypeData && !filingTypeData.enabled) {
+  const fallbackFilingType = filingTypeData.useInstead || 'single'
+  actualFilingType = fallbackFilingType
+  // Use fallback brackets instead
+}
+```
+
+---
+
+#### Tax Calculation Output Structure
+
+**Per Income Source**:
+```javascript
+{
+  income: 150000,                    // Original income amount
+  incomeType: 'salary',              // 'salary' or 'investment'
+  filingType: 'married',             // User-requested filing type
+  actualStateFilingType: 'single',   // Filing type actually used for state (after fallback)
+  actualFederalFilingType: 'married',// Filing type actually used for federal
+  state: 'california',
+  country: 'usa',
+
+  stateTax: 12500,                   // Total state tax
+  stateTaxBreakdown: [               // Bracket-by-bracket breakdown
+    {
+      min: 0,
+      max: 21500,
+      rate: 0.01,
+      taxableAmount: 21500,
+      taxAmount: 215
+    },
+    // ... more brackets
+  ],
+
+  federalTax: 25000,                 // Total federal tax
+  federalTaxBreakdown: [             // Bracket-by-bracket breakdown
+    // ... same structure as state
+  ],
+
+  fica: {                            // FICA breakdown (salary only)
+    socialSecurity: 9300,            // 6.2% up to wage base
+    medicare: 2175,                  // 1.45% unlimited
+    additionalMedicare: 0,           // 0.9% over threshold
+    total: 11475
+  },
+
+  totalTax: 48975,                   // Sum of state + federal + FICA
+  effectiveRate: 0.3265              // totalTax / income
+}
+```
+
+**Aggregated Totals**:
+```javascript
+{
+  individual: [/* array of per-income calculations */],
+  totals: {
+    totalIncome: 150000,
+    totalStateTax: 12500,
+    totalFederalTax: 25000,
+    totalFICA: 11475,
+    totalTax: 48975,
+    effectiveRate: 0.3265
+  }
+}
+```
+
+---
+
+### Output Display Components
+
+---
+
+#### Tax Summary Cards
+
+**Shows**: Totals across all income sources
+
+**Cards**:
+1. Total Income
+2. State Tax
+3. Federal Tax
+4. FICA Tax
+5. Total Tax Liability
+6. Effective Tax Rate
+
+**Code Pattern**:
+```jsx
+<div className="bg-white rounded-lg shadow-sm border p-6">
+  <h3 className="text-lg font-semibold mb-2">Total Tax Liability</h3>
+  <p className="text-3xl font-bold text-red-600">
+    ${calculations.totals.totalTax.toLocaleString()}
+  </p>
+</div>
+```
+
+---
+
+#### Income-by-Income Breakdown
+
+**Shows**: Tax details for each income source
+
+**For Each Income**:
+- Description and amount
+- Income type label
+- State tax breakdown table
+- Federal tax breakdown table
+- FICA breakdown table (if salary)
+
+---
+
+#### Tax Breakdown Tables
+
+**State Tax Breakdown**:
+- Shows filing type used (including fallback if applicable)
+- Table with columns: Rate, Bracket Range, Taxable Amount, Tax
+- Note if capital gains taxed as ordinary income
+
+**Federal Tax Breakdown**:
+- Shows filing type used
+- Same table structure as state
+- Note if capital gains rates applied
+
+**FICA Breakdown** (Salary Only):
+- Social Security: 6.2% up to $168,600 wage base
+- Medicare: 1.45% unlimited
+- Additional Medicare: 0.9% over threshold (based on filing type)
+- Note about employer match
+
+**Code Pattern**:
+```jsx
+<table className="w-full text-sm">
+  <thead>
+    <tr className="border-b">
+      <th>Rate</th>
+      <th>Bracket Range</th>
+      <th>Taxable Amount</th>
+      <th>Tax</th>
+    </tr>
+  </thead>
+  <tbody>
+    {calc.stateTaxBreakdown.map((bracket, idx) => (
+      <tr key={idx} className="border-b">
+        <td>{(bracket.rate * 100).toFixed(1)}%</td>
+        <td>${bracket.min.toLocaleString()} - ${bracket.max === Infinity ? '∞' : bracket.max.toLocaleString()}</td>
+        <td>${bracket.taxableAmount.toLocaleString()}</td>
+        <td className="font-semibold">${bracket.taxAmount.toLocaleString()}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+```
+
+---
+
+### Dynamic UI Features
+
+---
+
+#### Add Income Source
+
+**Button**: "+ Add Income"
+
+**Code Pattern**:
+```javascript
+const addIncome = () => {
+  const newIncome = {
+    id: `income-${Date.now()}`,
+    description: '',
+    amount: '',
+    incomeType: 'salary'
+  }
+
+  setData(prev => ({
+    ...prev,
+    incomes: [...prev.incomes, newIncome]
+  }))
+}
+```
+
+---
+
+#### Remove Income Source
+
+**Button**: "Remove" (per income, shown inline)
+
+**Code Pattern**:
+```javascript
+const removeIncome = (incomeId) => {
+  setData(prev => ({
+    ...prev,
+    incomes: prev.incomes.filter(i => i.id !== incomeId)
+  }))
+}
+```
+
+---
+
+#### Manage Tax Brackets Button
+
+**Location**: Output view header
+
+**Action**: Navigates to `/tax-brackets` route
+
+**Purpose**: Access administrative Tax Bracket Manager
+
+**Code Pattern**:
+```jsx
+<button
+  onClick={() => navigate('/tax-brackets')}
+  className="px-4 py-2 border rounded-md"
+>
+  Manage Tax Brackets
+</button>
+```
+
+---
+
+## Tax Bracket Manager
+
+### Overview
+
+**Feature Type**: Administrative tool (separate from main tax calculation flow)
+**localStorage Key**: `taxLadders`
+**File**: `src/features/taxes/TaxBracketManager.jsx`
+**Route**: `/tax-brackets`
+**Purpose**: Configure custom tax brackets for multiple jurisdictions and income types
+
+**Key Distinction**: This is NOT part of the main user flow. It's an administrative interface for configuring tax rules that the Taxes feature uses.
+
+### Data Structure
+
+```javascript
+{
+  states: {                          // State/provincial jurisdictions
+    california: {
+      id: 'california',
+      name: 'California',
+      salaryTax: {                   // Ordinary income tax brackets
+        filingTypes: {
+          single: {
+            enabled: true,
+            useInstead: 'single',    // Fallback if disabled
+            brackets: [
+              { rate: 1.0, min: 0, max: 10800 },
+              { rate: 2.0, min: 10800, max: 25500 },
+              // ... more brackets
+            ]
+          },
+          married: { /* same structure */ },
+          separate: {
+            enabled: false,          // Disabled filing type
+            useInstead: 'single',    // Falls back to single
+            brackets: [/* ... */]
+          },
+          head: { /* same structure */ }
+        }
+      },
+      investmentTax: {               // Capital gains/investment tax brackets
+        filingTypes: {
+          // ... same structure as salaryTax
+        }
+      }
+    }
+    // ... more states can be added dynamically
+  },
+
+  countries: {                       // Country/federal jurisdictions
+    usa: {
+      id: 'usa',
+      name: 'United States',
+      salaryTax: {                   // Federal ordinary income
+        filingTypes: {
+          single: { /* ... */ },
+          married: { /* ... */ },
+          separate: { /* ... */ },
+          head: { /* ... */ }
+        }
+      },
+      investmentTax: {               // Federal capital gains
+        filingTypes: {
+          // ... same structure
+        }
+      }
+    }
+    // ... more countries can be added dynamically
+  }
+}
+```
+
+### Key Architectural Decisions
+
+---
+
+#### Hierarchical Structure
+
+**Top Level**: `states` vs `countries`
+- Separates state/provincial tax rules from federal/country rules
+- Allows independent configuration
+- UI has two top-level tabs
+
+**Jurisdiction Level**: Individual state or country
+- Each has unique ID and display name
+- Can be added/removed dynamically
+- Examples: `california`, `new-york`, `usa`, `canada`
+
+**Income Type Level**: `salaryTax` vs `investmentTax`
+- Salary: Ordinary income (W-2, wages, etc.)
+- Investment: Capital gains, dividends, etc.
+- Allows different bracket structures for different income types
+- Some jurisdictions tax them the same, others differently
+
+**Filing Type Level**: `single`, `married`, `separate`, `head`
+- All four always present (even if disabled)
+- Each has enable/disable toggle
+- Each has fallback specification
+
+---
+
+#### Bracket Rate Storage Format
+
+**Storage Format**: Rates stored as percentages (1.0 to 37.0)
+- User-friendly for editing
+- Example: `{ rate: 12.3, min: 721300, max: Infinity }`
+
+**Calculation Format**: Rates converted to decimals (0.01 to 0.37)
+- Used in actual tax calculations
+- Converted via: `rate / 100`
+- Example: `{ rate: 0.123, min: 721300, max: Infinity }`
+
+**Conversion Function**:
+```javascript
+const convertBrackets = (brackets) => {
+  return brackets.map((b, idx, arr) => ({
+    rate: b.rate / 100,              // 12.3 → 0.123
+    min: b.min,
+    max: b.max,
+    stepTax: idx === 0 ? 0 : calculateStepTax(arr, idx)
+  }))
+}
+```
+
+**Step Tax Calculation**:
+```javascript
+const calculateStepTax = (brackets, index) => {
+  let stepTax = 0
+  for (let i = 0; i < index; i++) {
+    const bracket = brackets[i]
+    const range = bracket.max - bracket.min
+    stepTax += range * (bracket.rate / 100)
+  }
+  return stepTax
+}
+```
+
+**Purpose of Step Tax**: Pre-calculated cumulative tax from all previous brackets
+- Speeds up progressive tax calculation
+- Example: For 3rd bracket, stepTax = tax from bracket 1 + tax from bracket 2
+
+---
+
+### UI Components
+
+---
+
+#### Top-Level Tabs
+
+**Tabs**: "States / Provinces" and "Countries / Federal"
+
+**State Management**:
+```javascript
+const [topLevelTab, setTopLevelTab] = useState('states')  // 'states' or 'countries'
+```
+
+**Purpose**: Separate state-level configuration from federal-level
+
+**Code Pattern**:
+```jsx
+<div className="flex gap-4 mb-6 border-b-2">
+  <button
+    onClick={() => setTopLevelTab('states')}
+    className={topLevelTab === 'states' ? 'active' : 'inactive'}
+  >
+    States / Provinces
+  </button>
+  <button
+    onClick={() => setTopLevelTab('countries')}
+    className={topLevelTab === 'countries' ? 'active' : 'inactive'}
+  >
+    Countries / Federal
+  </button>
+</div>
+```
+
+---
+
+#### Jurisdiction Sidebar
+
+**Location**: Left side (1/4 width on desktop)
+
+**Shows**: List of all jurisdictions in current tab (states or countries)
+
+**Features**:
+- Click to select jurisdiction for editing
+- "+ Add" button to create new jurisdiction
+- "✕" button on hover to remove jurisdiction
+- Highlights selected jurisdiction
+
+**Add Jurisdiction Dialog**:
+```jsx
+<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+  <div className="bg-white rounded-lg p-6 w-96">
+    <h3>Add {topLevelTab === 'states' ? 'State' : 'Country'}</h3>
+    <input
+      type="text"
+      value={newJurisdictionName}
+      onChange={(e) => setNewJurisdictionName(e.target.value)}
+      placeholder="Enter name"
+    />
+    <button onClick={addJurisdiction}>Add</button>
+    <button onClick={() => setShowAddDialog(false)}>Cancel</button>
+  </div>
+</div>
+```
+
+**Add Logic**:
+```javascript
+const addJurisdiction = () => {
+  const id = newJurisdictionName.toLowerCase().replace(/\s+/g, '-')
+
+  const newJurisdiction = {
+    id,
+    name: newJurisdictionName,
+    salaryTax: {
+      filingTypes: {
+        single: { enabled: false, useInstead: 'single', brackets: [{ rate: 0.0, min: 0, max: Infinity }] },
+        married: { enabled: false, useInstead: 'married', brackets: [{ rate: 0.0, min: 0, max: Infinity }] },
+        separate: { enabled: false, useInstead: 'single', brackets: [{ rate: 0.0, min: 0, max: Infinity }] },
+        head: { enabled: false, useInstead: 'head', brackets: [{ rate: 0.0, min: 0, max: Infinity }] }
+      }
+    },
+    investmentTax: {
+      // ... same structure
+    }
+  }
+
+  // Add to appropriate top-level category
+  updated[topLevelTab][id] = newJurisdiction
+  saveLadders(updated)
+}
+```
+
+**Remove Logic**:
+```javascript
+const removeJurisdiction = (id) => {
+  if (!confirm(`Are you sure?`)) return
+
+  const updated = JSON.parse(JSON.stringify(ladders))
+  delete updated[topLevelTab][id]
+  saveLadders(updated)
+
+  if (selectedJurisdiction === id) {
+    setSelectedJurisdiction(null)
+  }
+}
+```
+
+---
+
+#### Income Type Sections
+
+**Location**: Main content area (3/4 width on desktop)
+
+**Shows**: Two sections per jurisdiction
+1. Salary Income Tax
+2. Investment Income Tax
+
+**Each Section Contains**:
+- Filing type tabs (Single, Married, Separate, Head)
+- Enable/disable toggle for current filing type
+- Fallback dropdown (when disabled)
+- Bracket editing table (when enabled)
+- Add/Remove bracket buttons
+
+---
+
+#### Filing Type Tabs
+
+**Tabs**: Single, Married, Separate, Head
+
+**Always Show All Four**: Even if some are disabled
+
+**State Management**:
+```javascript
+const [selectedFilingType, setSelectedFilingType] = useState('single')
+```
+
+**Code Pattern**:
+```jsx
+<div className="flex gap-2 mb-6 border-b">
+  {['single', 'married', 'separate', 'head'].map((filingType) => (
+    <button
+      key={filingType}
+      onClick={() => setSelectedFilingType(filingType)}
+      className={selectedFilingType === filingType ? 'active' : 'inactive'}
+    >
+      {filingType === 'single' ? 'Single' : /* ... format name */}
+    </button>
+  ))}
+</div>
+```
+
+---
+
+#### Enable/Disable Toggle
+
+**Purpose**: Turn filing types on or off for a jurisdiction
+
+**Shows**: Checkbox with label
+
+**When Disabled**:
+- Bracket table is grayed out and non-interactive
+- Fallback dropdown appears
+- Explanatory message shows which filing type will be used instead
+
+**Code Pattern**:
+```jsx
+<label className="flex items-center gap-2 cursor-pointer">
+  <input
+    type="checkbox"
+    checked={isEnabled}
+    onChange={() => toggleFilingType(incomeType, selectedFilingType)}
+  />
+  <span>Enable {selectedFilingType} filing type</span>
+</label>
+
+{!isEnabled && (
+  <div className="ml-6">
+    <label>Use instead:</label>
+    <select
+      value={filingTypeData.useInstead}
+      onChange={(e) => updateUseInstead(incomeType, selectedFilingType, e.target.value)}
+    >
+      <option value="single">Single</option>
+      <option value="married">Married</option>
+      <option value="separate">Separate</option>
+      <option value="head">Head</option>
+    </select>
+    <span>(When user selects {selectedFilingType}, use this filing type instead)</span>
+  </div>
+)}
+```
+
+**Toggle Function**:
+```javascript
+const toggleFilingType = (incomeType, filingType) => {
+  const updated = JSON.parse(JSON.stringify(ladders))
+  const jurisdiction = updated[topLevelTab][selectedJurisdiction]
+  jurisdiction[incomeType].filingTypes[filingType].enabled =
+    !jurisdiction[incomeType].filingTypes[filingType].enabled
+  saveLadders(updated)
+}
+```
+
+---
+
+#### Fallback Selection (Use Instead)
+
+**Purpose**: Specify which filing type to use when requested filing type is disabled
+
+**Shows**: Dropdown with all four filing types
+
+**Only Visible**: When filing type is disabled
+
+**Default Values**:
+- single → single
+- married → married
+- separate → single (common: CA doesn't have MFS)
+- head → head
+
+**Update Function**:
+```javascript
+const updateUseInstead = (incomeType, filingType, useInsteadValue) => {
+  const updated = JSON.parse(JSON.stringify(ladders))
+  const jurisdiction = updated[topLevelTab][selectedJurisdiction]
+  jurisdiction[incomeType].filingTypes[filingType].useInstead = useInsteadValue
+  saveLadders(updated)
+}
+```
+
+**Example Use Case**:
+- User filing as "Separate" in California
+- California has "Separate" disabled, useInstead: "Single"
+- Tax calculation automatically uses "Single" brackets
+- Result shows: `actualStateFilingType: 'single'` but `filingType: 'separate'`
+
+---
+
+#### Bracket Editing Table
+
+**Columns**:
+1. Rate (%) - Editable number input
+2. Min Income - Editable currency input
+3. Max Income - Editable currency input or "∞ (No limit)"
+4. Actions - Remove button
+
+**Editable When**: Filing type is enabled
+
+**Disabled When**: Filing type is disabled (grayed out, pointer-events: none)
+
+**Code Pattern**:
+```jsx
+<table className="w-full">
+  <thead>
+    <tr className="border-b">
+      <th>Rate (%)</th>
+      <th>Min Income</th>
+      <th>Max Income</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {brackets.map((bracket, index) => (
+      <tr key={index}>
+        <td>
+          <input
+            type="number"
+            step="0.1"
+            value={bracket.rate}
+            onChange={(e) => updateBracket(incomeType, selectedFilingType, index, 'rate', e.target.value)}
+            disabled={!isEnabled}
+          />
+        </td>
+        <td>
+          <div className="relative">
+            <span className="absolute left-2 top-1">$</span>
+            <input
+              type="number"
+              value={bracket.min}
+              onChange={(e) => updateBracket(incomeType, selectedFilingType, index, 'min', e.target.value)}
+              disabled={!isEnabled}
+            />
+          </div>
+        </td>
+        <td>
+          {bracket.max === Infinity ? (
+            <span>∞ (No limit)</span>
+          ) : (
+            <div className="relative">
+              <span className="absolute left-2 top-1">$</span>
+              <input
+                type="number"
+                value={bracket.max}
+                onChange={(e) => updateBracket(incomeType, selectedFilingType, index, 'max', e.target.value)}
+                disabled={!isEnabled}
+              />
+            </div>
+          )}
+        </td>
+        <td>
+          {brackets.length > 1 && (
+            <button
+              onClick={() => removeBracket(incomeType, selectedFilingType, index)}
+              disabled={!isEnabled}
+            >
+              Remove
+            </button>
+          )}
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+```
+
+**Update Function**:
+```javascript
+const updateBracket = (incomeType, filingType, bracketIndex, field, value) => {
+  const updated = JSON.parse(JSON.stringify(ladders))
+  const bracket = updated[topLevelTab][selectedJurisdiction][incomeType]
+    .filingTypes[filingType].brackets[bracketIndex]
+
+  if (field === 'rate') {
+    bracket.rate = parseFloat(value) || 0
+  } else if (field === 'min') {
+    bracket.min = parseInt(value) || 0
+  } else if (field === 'max') {
+    bracket.max = value === 'Infinity' || value === '' ? Infinity : parseInt(value) || 0
+  }
+
+  saveLadders(updated)
+}
+```
+
+---
+
+#### Add Bracket
+
+**Button**: "+ Add Bracket" (shown below table when filing type enabled)
+
+**Logic**:
+```javascript
+const addBracket = (incomeType, filingType) => {
+  const updated = JSON.parse(JSON.stringify(ladders))
+  const brackets = updated[topLevelTab][selectedJurisdiction][incomeType]
+    .filingTypes[filingType].brackets
+  const lastBracket = brackets[brackets.length - 1]
+
+  // New bracket starts where last one ended
+  brackets.push({
+    rate: 0,
+    min: lastBracket.max === Infinity ? 0 : lastBracket.max,
+    max: Infinity
+  })
+
+  saveLadders(updated)
+}
+```
+
+---
+
+#### Remove Bracket
+
+**Button**: "Remove" (in Actions column of each row)
+
+**Constraint**: Cannot remove if only one bracket remains
+
+**Logic**:
+```javascript
+const removeBracket = (incomeType, filingType, bracketIndex) => {
+  const updated = JSON.parse(JSON.stringify(ladders))
+  updated[topLevelTab][selectedJurisdiction][incomeType]
+    .filingTypes[filingType].brackets.splice(bracketIndex, 1)
+  saveLadders(updated)
+}
+```
+
+---
+
+#### Reset to Defaults
+
+**Button**: "Reset to Defaults" (top-right of page)
+
+**Confirms**: Shows browser confirm dialog
+
+**Logic**:
+```javascript
+const resetToDefaults = () => {
+  if (confirm('Reset all tax brackets to defaults? This cannot be undone.')) {
+    saveLadders(DEFAULT_TAX_LADDERS)
+    setSelectedJurisdiction(null)
+  }
+}
+```
+
+---
+
+### Integration with Tax Calculations
+
+**How Custom Brackets Are Used**:
+
+1. **Load Custom Ladders**: `calculateTaxes()` calls `loadTaxBrackets()` from storage
+2. **Check Jurisdiction**: Looks up state/country in custom ladders
+3. **Check Income Type**: Selects salaryTax or investmentTax
+4. **Check Filing Type Status**: Determines if enabled or disabled
+5. **Resolve Fallback**: If disabled, uses `useInstead` to find alternate filing type
+6. **Load Brackets**: Gets bracket array for resolved filing type
+7. **Convert Format**: Converts storage format (%) to calculation format (decimal)
+8. **Calculate Step Taxes**: Pre-calculates cumulative taxes for progressive calculation
+9. **Apply to Income**: Uses resolved brackets in `calculateBracketTax()`
+
+**Code Flow**:
+```javascript
+// In calculateTaxes()
+const customLadders = loadTaxBrackets()
+
+if (customLadders && customLadders.states && customLadders.states[state]) {
+  const stateData = customLadders.states[state]
+  const taxType = incomeType === 'salary' ? 'salaryTax' : 'investmentTax'
+  let filingTypeData = stateData[taxType]?.filingTypes[filingType]
+
+  // Check if filing type is disabled
+  if (filingTypeData && !filingTypeData.enabled) {
+    const fallbackFilingType = filingTypeData.useInstead || 'single'
+    actualStateFilingType = fallbackFilingType
+    filingTypeData = stateData[taxType]?.filingTypes[fallbackFilingType]
+  }
+
+  // Convert and use brackets
+  if (filingTypeData && filingTypeData.brackets) {
+    stateBrackets = convertBrackets(filingTypeData.brackets)
+  }
+}
+```
+
+---
+
+### Default Tax Brackets
+
+**Included By Default**:
+
+**States**:
+- California (with all filing types for salary and investment)
+
+**Countries**:
+- USA (with all filing types for salary and investment)
+
+**California Defaults**:
+- Salary Tax: 9 brackets from 1% to 12.3%
+- Investment Tax: Same as salary (CA taxes capital gains as ordinary income)
+- Separate: Disabled by default, falls back to Single
+
+**USA Defaults**:
+- Salary Tax: 7 brackets from 10% to 37%
+- Investment Tax: 3 brackets (0%, 15%, 20%) for long-term capital gains
+- All filing types enabled
+
+---
+
+### Key Algorithms
+
+---
+
+#### Progressive Tax Calculation
+
+**Function**: `calculateBracketTax(income, brackets)`
+
+**Returns**: `{ total: number, breakdown: array }`
+
+**Logic**:
+```javascript
+function calculateBracketTax(income, brackets) {
+  if (income <= 0) return { total: 0, breakdown: [] }
+
+  let tax = 0
+  const breakdown = []
+
+  for (const bracket of brackets) {
+    if (income <= bracket.min) break
+
+    // How much income falls in this bracket?
+    const taxableInBracket = Math.min(income, bracket.max) - bracket.min
+
+    if (taxableInBracket > 0) {
+      const taxInBracket = taxableInBracket * bracket.rate
+      tax = bracket.stepTax + taxInBracket
+
+      breakdown.push({
+        min: bracket.min,
+        max: bracket.max,
+        rate: bracket.rate,
+        taxableAmount: taxableInBracket,
+        taxAmount: taxInBracket
+      })
+    }
+
+    if (income <= bracket.max) break
+  }
+
+  return {
+    total: Math.round(tax),
+    breakdown
+  }
+}
+```
+
+**Example**:
+- Income: $100,000
+- Bracket 1: 10% on $0-$11,900 = $1,190 tax
+- Bracket 2: 12% on $11,900-$48,500 = $4,392 tax
+- Bracket 3: 22% on $48,500-$100,000 = $11,330 tax
+- Total: $16,912 tax (16.9% effective rate)
+
+---
+
+#### FICA Tax Calculation
+
+**Function**: `calculateFICATax(salary, filingType)`
+
+**Components**:
+1. **Social Security**: 6.2% up to $168,600 wage base (2025)
+2. **Medicare**: 1.45% unlimited
+3. **Additional Medicare**: 0.9% over threshold (varies by filing type)
+
+**Thresholds** (2025):
+- Single: $200,000
+- Married: $250,000
+- Separate: $125,000
+- Head: $200,000
+
+**Code**:
+```javascript
+function calculateFICATax(salary, filingType) {
+  // Social Security (capped)
+  const socialSecurity = Math.round(
+    Math.min(salary, 168600) * 0.062
+  )
+
+  // Medicare (no cap)
+  const medicare = Math.round(salary * 0.0145)
+
+  // Additional Medicare (over threshold)
+  const threshold = {
+    single: 200000,
+    married: 250000,
+    separate: 125000,
+    head: 200000
+  }[filingType] || 200000
+
+  const additionalMedicare = salary > threshold
+    ? Math.round((salary - threshold) * 0.009)
+    : 0
+
+  return {
+    socialSecurity,
+    medicare,
+    additionalMedicare,
+    total: socialSecurity + medicare + additionalMedicare
+  }
+}
+```
+
+**Example** (Single filer, $150,000 salary):
+- Social Security: $150,000 × 6.2% = $9,300
+- Medicare: $150,000 × 1.45% = $2,175
+- Additional Medicare: $0 (under $200K threshold)
+- Total FICA: $11,475
+
+---
+
 ## Next Features (Coming Soon)
 
 - Expenses
-- Taxes
 - Investments & Debt
 - Gap Calculations
 - Scenarios
@@ -2017,4 +3268,4 @@ Each will follow the same patterns documented above with feature-specific field 
 ---
 
 **Last Updated**: 2025-11-09
-**Version**: 1.0
+**Version**: 2.0
