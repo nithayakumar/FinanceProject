@@ -476,19 +476,19 @@ realReturn = nominalReturn - inflationRate
     // ... 1,199 more rows
   ],
   summary: {
-    // Current year totals
+    // Current year totals (all streams combined)
     currentYearCompNominal: 199000,
     currentYearCompPV: 199000,
 
-    // Year 10 projals
+    // Year 10 projections (all streams combined)
     year10CompNominal: 260000,
     year10CompPV: 190000,
 
-    // Lifetime earnings (to retirement)
+    // Lifetime earnings (to retirement, all streams combined)
     lifetimeEarningsNominal: 8500000,
     lifetimeEarningsPV: 6200000,
 
-    // Component breakdowns
+    // Component breakdowns (all streams combined)
     totalSalaryNominal: 5000000,
     totalSalaryPV: 3700000,
     totalEquityNominal: 2000000,
@@ -499,7 +499,7 @@ realReturn = nominalReturn - inflationRate
     // Average growth
     averageAnnualGrowth: 3.2,
 
-    // Milestones
+    // Milestones (from all streams)
     milestones: [
       {
         year: 5,
@@ -507,6 +507,27 @@ realReturn = nominalReturn - inflationRate
         compNominal: 215000,
         compPV: 180000
       }
+    ],
+
+    // Per-stream summaries (NEW: for tabs feature)
+    perStreamSummaries: [
+      {
+        streamId: 'stream-1234567890',
+        streamName: 'Primary Job',
+        currentYearCompNominal: 199000,
+        currentYearCompPV: 199000,
+        year10CompNominal: 260000,
+        year10CompPV: 190000,
+        lifetimeEarningsNominal: 8500000,
+        lifetimeEarningsPV: 6200000,
+        totalSalaryNominal: 5000000,
+        totalSalaryPV: 3700000,
+        totalEquityNominal: 2000000,
+        totalEquityPV: 1500000,
+        total401kNominal: 1500000,
+        total401kPV: 1000000
+      }
+      // ... one object per income stream
     ]
   }
 }
@@ -651,14 +672,18 @@ if (stream.company401k === '' || stream.company401k < 0) {
 }
 ```
 
-**Future Enhancement Note**: Will eventually track against annual 401k contribution limits and grow proportionally with limit increases
+**⚠️ FUTURE ENHANCEMENT NOTE**: 401k contribution limits and automatic limit growth will be implemented in a future update. Currently, 401k contributions grow at the same rate as the income stream's growth rate. In the future:
+- Annual 401k contribution limits will be tracked (e.g., $23,000 for 2024)
+- Limits will grow annually based on IRS adjustments
+- Employer contributions will be capped at these limits
+- Catch-up contributions (age 50+) will be supported
 
 **Used In**:
 - Pre-tax retirement contribution tracking
 - Total comp calculations
 - Lifetime 401k contribution totals
 
-**Calculations**: Same growth and jump logic as Annual Income
+**Calculations**: Same growth and jump logic as Annual Income (currently no limit enforcement)
 
 **Display Format**: `$9,000`
 
@@ -1322,6 +1347,84 @@ const handleJumpChange = (streamId, jumpId, field, value) => {
 ---
 
 ### Output Page Patterns
+
+---
+
+#### Per-Stream Tabs
+
+**Purpose**: Allow users to view income summaries for each income stream individually or combined
+
+**Feature Type**: Tabbed interface with state management
+
+**State Required**:
+```javascript
+const [activeTab, setActiveTab] = useState('all')  // 'all' or streamId
+```
+
+**Tab Selection Logic**:
+```javascript
+// Determine which summary to show based on active tab
+const currentSummary = activeTab === 'all'
+  ? summary
+  : summary.perStreamSummaries?.find(s => s.streamId === activeTab) || summary
+```
+
+**Tabs UI Pattern**:
+```jsx
+{/* Tabs */}
+<div className="flex gap-2 mb-6 border-b border-gray-200">
+  <button
+    onClick={() => setActiveTab('all')}
+    className={`px-4 py-2 font-medium transition border-b-2 ${
+      activeTab === 'all'
+        ? 'border-blue-600 text-blue-600'
+        : 'border-transparent text-gray-600 hover:text-gray-900'
+    }`}
+  >
+    All Streams
+  </button>
+  {data.incomeStreams.map(stream => (
+    <button
+      key={stream.id}
+      onClick={() => setActiveTab(stream.id)}
+      className={`px-4 py-2 font-medium transition border-b-2 ${
+        activeTab === stream.id
+          ? 'border-blue-600 text-blue-600'
+          : 'border-transparent text-gray-600 hover:text-gray-900'
+      }`}
+    >
+      {stream.name}
+    </button>
+  ))}
+</div>
+```
+
+**Milestone Filtering by Tab**:
+```javascript
+// Filter milestones based on active tab
+const filteredMilestones = activeTab === 'all'
+  ? summary.milestones
+  : summary.milestones?.filter(m => {
+      const stream = data.incomeStreams.find(s => s.id === activeTab)
+      return m.label.includes(stream?.name || '')
+    })
+```
+
+**Dynamic Grid Layout**:
+```jsx
+{/* Show 4 columns for "All Streams" tab, 3 for individual streams */}
+<div className={`grid grid-cols-1 md:grid-cols-2 ${
+  activeTab === 'all' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+} gap-4 mb-6`}>
+  {/* Summary cards using currentSummary */}
+</div>
+```
+
+**Per-Stream Summary Calculation**:
+- Implemented in `calculatePerStreamSummaries()` in `Income.calc.js`
+- Recalculates each stream's income separately with its own growth, jumps, and active dates
+- Returns array of summary objects (one per stream)
+- Each summary has same structure as overall summary
 
 ---
 
