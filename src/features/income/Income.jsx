@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../../shared/storage'
 import { validateIncome, calculateIncomeProjections } from './Income.calc'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 function Income() {
   const navigate = useNavigate()
@@ -479,6 +480,54 @@ function Income() {
             value={`${summary.averageAnnualGrowth.toFixed(1)}%`}
           />
         )}
+      </div>
+
+      {/* Income Projection Chart */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Income Projection (Present Value)</h2>
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={projections.chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="year"
+              label={{ value: 'Year', position: 'insideBottom', offset: -5 }}
+            />
+            <YAxis
+              label={{ value: 'Annual Income (PV)', angle: -90, position: 'insideLeft' }}
+              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+            />
+            <Tooltip
+              formatter={(value) => `$${value.toLocaleString()}`}
+              labelFormatter={(label) => `Year ${label}`}
+            />
+            <Legend />
+            {activeTab === 'all' ? (
+              // Show all streams as stacks
+              data.incomeStreams.map((stream, index) => {
+                const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                return (
+                  <Bar
+                    key={stream.id}
+                    dataKey={stream.name}
+                    stackId="a"
+                    fill={colors[index % colors.length]}
+                  />
+                )
+              })
+            ) : (
+              // Show only the selected stream
+              (() => {
+                const selectedStream = data.incomeStreams.find(s => s.id === activeTab)
+                return selectedStream ? (
+                  <Bar
+                    dataKey={selectedStream.name}
+                    fill="#3b82f6"
+                  />
+                ) : null
+              })()
+            )}
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       {/* Component Breakdown */}

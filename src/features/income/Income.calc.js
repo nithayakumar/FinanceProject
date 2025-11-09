@@ -182,10 +182,85 @@ export function calculateIncomeProjections(data, profile) {
   console.log('Summary calculated:', summary)
   console.groupEnd()
 
+  // Prepare chart data (annual aggregation by stream)
+  const chartData = prepareChartData(projections, data.incomeStreams, yearsToRetirement, inflationRate)
+
   return {
     projections,
-    summary
+    summary,
+    chartData
   }
+}
+
+/**
+ * Prepare chart data for stacked column chart
+ * Aggregates monthly data by year and separates by income stream
+ */
+function prepareChartData(projections, incomeStreams, yearsToRetirement, inflationRate) {
+  const chartData = []
+
+  // Aggregate by year (up to retirement)
+  for (let year = 1; year <= yearsToRetirement; year++) {
+    const yearData = {
+      year,
+      total: 0
+    }
+
+    // Get all months for this year
+    const yearMonths = projections.filter(p => p.year === year)
+
+    // Calculate annual PV total for each stream
+    incomeStreams.forEach(stream => {
+      let streamAnnualPV = 0
+
+      yearMonths.forEach(monthProj => {
+        // Check if this stream was active this month
+        if (monthProj.activeStreams.includes(stream.id)) {
+          // We need to recalculate this stream's contribution
+          // We can use the ratio of streams from the total
+          const totalPV = monthProj.totalCompPV
+
+          // For now, we'll calculate the stream's PV by recalculating
+          // This is a simplified approach - we could optimize later
+          const yearsOfGrowth = year - 1
+          const growthMultiplier = Math.pow(1 + stream.growthRate / 100, yearsOfGrowth)
+
+          // Get jump multiplier (we need to track this per stream)
+          // For simplicity, we'll recalculate jumps
+          let jumpMultiplier = 1.0
+          if (stream.jumps && stream.jumps.length > 0) {
+            stream.jumps
+              .filter(j => j.year && j.jumpPercent && j.year <= year)
+              .forEach(j => {
+                jumpMultiplier *= (1 + j.jumpPercent / 100)
+              })
+          }
+
+          const annualSalary = stream.annualIncome * growthMultiplier * jumpMultiplier
+          const annualEquity = stream.equity * growthMultiplier * jumpMultiplier
+          const annual401k = stream.company401k * growthMultiplier * jumpMultiplier
+          const annualTotal = annualSalary + annualEquity + annual401k
+          const monthlyTotal = annualTotal / 12
+
+          // Apply inflation discount
+          const yearsFromNow = year - 1
+          const discountFactor = Math.pow(1 + inflationRate / 100, yearsFromNow)
+          const monthlyPV = monthlyTotal / discountFactor
+
+          streamAnnualPV += monthlyPV
+        }
+      })
+
+      // Store this stream's annual PV
+      yearData[stream.name] = Math.round(streamAnnualPV)
+      yearData.total += streamAnnualPV
+    })
+
+    yearData.total = Math.round(yearData.total)
+    chartData.push(yearData)
+  }
+
+  return chartData
 }
 
 /**
