@@ -30,6 +30,7 @@ function Income() {
   })
 
   const [projections, setProjections] = useState(null)
+  const [activeTab, setActiveTab] = useState('all')
 
   // Load saved data on mount
   useEffect(() => {
@@ -405,6 +406,11 @@ function Income() {
 
   const { summary } = projections
 
+  // Determine which summary to show based on active tab
+  const currentSummary = activeTab === 'all'
+    ? summary
+    : summary.perStreamSummaries?.find(s => s.streamId === activeTab) || summary
+
   return (
     <div className="max-w-6xl mx-auto p-8">
       <div className="flex justify-between items-center mb-8">
@@ -420,30 +426,59 @@ function Income() {
         </button>
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('all')}
+          className={`px-4 py-2 font-medium transition border-b-2 ${
+            activeTab === 'all'
+              ? 'border-blue-600 text-blue-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          All Streams
+        </button>
+        {data.incomeStreams.map(stream => (
+          <button
+            key={stream.id}
+            onClick={() => setActiveTab(stream.id)}
+            className={`px-4 py-2 font-medium transition border-b-2 ${
+              activeTab === stream.id
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            {stream.name}
+          </button>
+        ))}
+      </div>
+
       {/* Primary Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${activeTab === 'all' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4 mb-6`}>
         <SummaryCard
           title="Current Year Total Comp"
-          value={`$${summary.currentYearCompNominal.toLocaleString()}`}
-          subtitle={`PV: $${summary.currentYearCompPV.toLocaleString()}`}
+          value={`$${currentSummary.currentYearCompNominal.toLocaleString()}`}
+          subtitle={`PV: $${currentSummary.currentYearCompPV.toLocaleString()}`}
           highlight
         />
         <SummaryCard
           title="Year 10 Projected Comp"
-          value={`$${summary.year10CompNominal.toLocaleString()}`}
-          subtitle={`PV: $${summary.year10CompPV.toLocaleString()}`}
+          value={`$${currentSummary.year10CompNominal.toLocaleString()}`}
+          subtitle={`PV: $${currentSummary.year10CompPV.toLocaleString()}`}
         />
         <SummaryCard
           title="Lifetime Earnings"
           subtext={`${yearsToRetirement} years to retirement`}
-          value={`$${(summary.lifetimeEarningsNominal / 1000000).toFixed(2)}M`}
-          subtitle={`PV: $${(summary.lifetimeEarningsPV / 1000000).toFixed(2)}M`}
+          value={`$${(currentSummary.lifetimeEarningsNominal / 1000000).toFixed(2)}M`}
+          subtitle={`PV: $${(currentSummary.lifetimeEarningsPV / 1000000).toFixed(2)}M`}
           highlight
         />
-        <SummaryCard
-          title="Average Annual Growth"
-          value={`${summary.averageAnnualGrowth.toFixed(1)}%`}
-        />
+        {activeTab === 'all' && (
+          <SummaryCard
+            title="Average Annual Growth"
+            value={`${summary.averageAnnualGrowth.toFixed(1)}%`}
+          />
+        )}
       </div>
 
       {/* Component Breakdown */}
@@ -451,40 +486,50 @@ function Income() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <ComponentCard
           title="Salary"
-          nominal={summary.totalSalaryNominal}
-          pv={summary.totalSalaryPV}
+          nominal={currentSummary.totalSalaryNominal}
+          pv={currentSummary.totalSalaryPV}
         />
         <ComponentCard
           title="Equity (RSU)"
-          nominal={summary.totalEquityNominal}
-          pv={summary.totalEquityPV}
+          nominal={currentSummary.totalEquityNominal}
+          pv={currentSummary.totalEquityPV}
         />
         <ComponentCard
           title="401k Contributions"
-          nominal={summary.total401kNominal}
-          pv={summary.total401kPV}
+          nominal={currentSummary.total401kNominal}
+          pv={currentSummary.total401kPV}
         />
       </div>
 
       {/* Key Milestones */}
-      {summary.milestones && summary.milestones.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Key Milestones</h2>
-          <div className="space-y-2">
-            {summary.milestones.map((milestone, index) => (
-              <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
-                <span className="font-medium text-gray-700">{milestone.label}</span>
-                <span className="text-gray-900">
-                  ${milestone.compNominal.toLocaleString()}/year
-                  <span className="text-gray-500 text-sm ml-2">
-                    (PV: ${milestone.compPV.toLocaleString()})
+      {(() => {
+        // Filter milestones based on active tab
+        const filteredMilestones = activeTab === 'all'
+          ? summary.milestones
+          : summary.milestones?.filter(m => {
+              const stream = data.incomeStreams.find(s => s.id === activeTab)
+              return m.label.includes(stream?.name || '')
+            })
+
+        return filteredMilestones && filteredMilestones.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">Key Milestones</h2>
+            <div className="space-y-2">
+              {filteredMilestones.map((milestone, index) => (
+                <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                  <span className="font-medium text-gray-700">{milestone.label}</span>
+                  <span className="text-gray-900">
+                    ${milestone.compNominal.toLocaleString()}/year
+                    <span className="text-gray-500 text-sm ml-2">
+                      (PV: ${milestone.compPV.toLocaleString()})
+                    </span>
                   </span>
-                </span>
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       <button
         onClick={handleNextFeature}

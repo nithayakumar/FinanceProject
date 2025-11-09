@@ -177,7 +177,7 @@ export function calculateIncomeProjections(data, profile) {
   console.log(`Generated ${projections.length} monthly projections`)
 
   // Calculate summary statistics
-  const summary = calculateSummary(projections, yearsToRetirement, data.incomeStreams)
+  const summary = calculateSummary(projections, yearsToRetirement, data.incomeStreams, inflationRate)
 
   console.log('Summary calculated:', summary)
   console.groupEnd()
@@ -191,7 +191,7 @@ export function calculateIncomeProjections(data, profile) {
 /**
  * Calculate summary statistics from projections
  */
-function calculateSummary(projections, yearsToRetirement, incomeStreams) {
+function calculateSummary(projections, yearsToRetirement, incomeStreams, inflationRate) {
   // Current year (Year 1)
   const year1Months = projections.filter(p => p.year === 1)
   const currentYearCompNominal = year1Months.reduce((sum, p) => sum + p.totalCompNominal, 0)
@@ -257,6 +257,14 @@ function calculateSummary(projections, yearsToRetirement, incomeStreams) {
   // Sort milestones by year
   milestones.sort((a, b) => a.year - b.year)
 
+  // Calculate per-stream summaries
+  const perStreamSummaries = calculatePerStreamSummaries(
+    projections,
+    incomeStreams,
+    yearsToRetirement,
+    inflationRate
+  )
+
   return {
     currentYearCompNominal: Math.round(currentYearCompNominal),
     currentYearCompPV: Math.round(currentYearCompPV),
@@ -278,6 +286,110 @@ function calculateSummary(projections, yearsToRetirement, incomeStreams) {
 
     averageAnnualGrowth,
 
-    milestones
+    milestones,
+
+    perStreamSummaries
   }
+}
+
+/**
+ * Calculate summary statistics for each income stream individually
+ */
+function calculatePerStreamSummaries(projections, incomeStreams, yearsToRetirement, inflationRate) {
+  const retirementMonthIndex = yearsToRetirement * 12 - 1
+  const lifetimeMonths = projections.filter(p => p.monthIndex <= retirementMonthIndex)
+
+  return incomeStreams.map(stream => {
+    // Calculate this stream's values for each projection
+    // We need to recalculate because projections only store totals
+    let currentYearCompNominal = 0
+    let currentYearCompPV = 0
+    let year10CompNominal = 0
+    let year10CompPV = 0
+    let lifetimeEarningsNominal = 0
+    let lifetimeEarningsPV = 0
+    let totalSalaryNominal = 0
+    let totalSalaryPV = 0
+    let totalEquityNominal = 0
+    let totalEquityPV = 0
+    let total401kNominal = 0
+    let total401kPV = 0
+
+    // Track cumulative jump multipliers for this stream
+    let jumpMultiplier = 1.0
+
+    lifetimeMonths.forEach(proj => {
+      const { year, month } = proj
+
+      // Check if stream is active this month
+      if (!proj.activeStreams.includes(stream.id)) return
+
+      // Apply jumps in January
+      if (month === 1 && stream.jumps && stream.jumps.length > 0) {
+        const jumpThisYear = stream.jumps.find(j => j.year === year)
+        if (jumpThisYear && jumpThisYear.jumpPercent) {
+          jumpMultiplier *= 1 + (jumpThisYear.jumpPercent / 100)
+        }
+      }
+
+      // Calculate values for this stream
+      const yearsOfGrowth = year - 1
+      const growthMultiplier = Math.pow(1 + stream.growthRate / 100, yearsOfGrowth)
+
+      const annualSalary = stream.annualIncome * growthMultiplier * jumpMultiplier
+      const annualEquity = stream.equity * growthMultiplier * jumpMultiplier
+      const annual401k = stream.company401k * growthMultiplier * jumpMultiplier
+
+      const monthlySalary = annualSalary / 12
+      const monthlyEquity = annualEquity / 12
+      const monthly401k = annual401k / 12
+      const monthlyTotal = monthlySalary + monthlyEquity + monthly401k
+
+      // Apply inflation discount
+      const yearsFromNow = year - 1
+      const discountFactor = Math.pow(1 + inflationRate / 100, yearsFromNow)
+
+      const salaryPV = monthlySalary / discountFactor
+      const equityPV = monthlyEquity / discountFactor
+      const comp401kPV = monthly401k / discountFactor
+      const totalPV = monthlyTotal / discountFactor
+
+      // Accumulate for different time periods
+      if (year === 1) {
+        currentYearCompNominal += monthlyTotal
+        currentYearCompPV += totalPV
+      }
+
+      if (year === 10) {
+        year10CompNominal += monthlyTotal
+        year10CompPV += totalPV
+      }
+
+      lifetimeEarningsNominal += monthlyTotal
+      lifetimeEarningsPV += totalPV
+      totalSalaryNominal += monthlySalary
+      totalSalaryPV += salaryPV
+      totalEquityNominal += monthlyEquity
+      totalEquityPV += equityPV
+      total401kNominal += monthly401k
+      total401kPV += comp401kPV
+    })
+
+    return {
+      streamId: stream.id,
+      streamName: stream.name,
+      currentYearCompNominal: Math.round(currentYearCompNominal),
+      currentYearCompPV: Math.round(currentYearCompPV),
+      year10CompNominal: Math.round(year10CompNominal),
+      year10CompPV: Math.round(year10CompPV),
+      lifetimeEarningsNominal: Math.round(lifetimeEarningsNominal),
+      lifetimeEarningsPV: Math.round(lifetimeEarningsPV),
+      totalSalaryNominal: Math.round(totalSalaryNominal),
+      totalSalaryPV: Math.round(totalSalaryPV),
+      totalEquityNominal: Math.round(totalEquityNominal),
+      totalEquityPV: Math.round(totalEquityPV),
+      total401kNominal: Math.round(total401kNominal),
+      total401kPV: Math.round(total401kPV)
+    }
+  })
 }
