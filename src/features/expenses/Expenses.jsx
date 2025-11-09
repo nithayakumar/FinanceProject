@@ -92,7 +92,8 @@ function Expenses() {
     const newJump = {
       id: `jump-${Date.now()}`,
       year: '',
-      jumpPercent: '',
+      changeType: 'percent', // 'percent' or 'dollar'
+      changeValue: '',
       description: ''
     }
 
@@ -192,133 +193,167 @@ function Expenses() {
 
   // Input View
   if (view === 'input') {
+    // Get all expense changes across all categories
+    const allExpenseChanges = data.expenseCategories.flatMap(category =>
+      category.jumps.map(jump => ({ ...jump, categoryId: category.id, categoryName: category.category }))
+    )
+
     return (
       <div className="max-w-4xl mx-auto p-8">
         <h1 className="text-3xl font-bold mb-2">Expenses</h1>
         <p className="text-gray-600 mb-8">Track your expected expenses by category</p>
 
         <div className="space-y-6">
-          {/* Expense Categories */}
+          {/* Expense Categories - Table Format */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4">Expense Categories</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Set annual amounts and growth rates for each category
-            </p>
+            <h2 className="text-xl font-semibold mb-4">Annual Expenses by Category</h2>
 
-            <div className="space-y-6">
-              {data.expenseCategories.map((category) => (
-                <div key={category.id} className="border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-lg font-medium mb-4">{category.category}</h3>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Annual Amount */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Annual Amount
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-2 text-gray-500">$</span>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Category</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Annual Amount</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Growth Rate (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.expenseCategories.map((category, index) => (
+                    <tr key={category.id} className={index !== data.expenseCategories.length - 1 ? 'border-b border-gray-100' : ''}>
+                      <td className="py-3 px-4 font-medium text-gray-900">{category.category}</td>
+                      <td className="py-3 px-4">
+                        <div className="relative max-w-xs">
+                          <span className="absolute left-3 top-2 text-gray-500">$</span>
+                          <input
+                            type="number"
+                            value={category.annualAmount}
+                            onChange={(e) => handleCategoryChange(category.id, 'annualAmount', e.target.value ? Number(e.target.value) : '')}
+                            placeholder="0"
+                            className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                              errors[`${category.id}-annualAmount`] ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                          />
+                        </div>
+                        {errors[`${category.id}-annualAmount`] && (
+                          <p className="mt-1 text-xs text-red-600">{errors[`${category.id}-annualAmount`]}</p>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
                         <input
                           type="number"
-                          value={category.annualAmount}
-                          onChange={(e) => handleCategoryChange(category.id, 'annualAmount', e.target.value ? Number(e.target.value) : '')}
-                          placeholder="0"
-                          className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            errors[`${category.id}-annualAmount`] ? 'border-red-500' : 'border-gray-300'
+                          step="0.1"
+                          value={category.growthRate}
+                          onChange={(e) => handleCategoryChange(category.id, 'growthRate', e.target.value ? Number(e.target.value) : '')}
+                          placeholder="2.7"
+                          className={`max-w-xs w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            errors[`${category.id}-growthRate`] ? 'border-red-500' : 'border-gray-300'
                           }`}
                         />
-                      </div>
-                      {errors[`${category.id}-annualAmount`] && (
-                        <p className="mt-1 text-sm text-red-600">{errors[`${category.id}-annualAmount`]}</p>
-                      )}
-                    </div>
+                        {errors[`${category.id}-growthRate`] && (
+                          <p className="mt-1 text-xs text-red-600">{errors[`${category.id}-growthRate`]}</p>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-                    {/* Growth Rate */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Annual Growth Rate (%)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={category.growthRate}
-                        onChange={(e) => handleCategoryChange(category.id, 'growthRate', e.target.value ? Number(e.target.value) : '')}
-                        placeholder="2.7"
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors[`${category.id}-growthRate`] ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      />
-                      {errors[`${category.id}-growthRate`] && (
-                        <p className="mt-1 text-sm text-red-600">{errors[`${category.id}-growthRate`]}</p>
-                      )}
-                    </div>
-                  </div>
+          {/* Expense Changes Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className="text-xl font-semibold">Expense Changes</h2>
+                <p className="text-sm text-gray-600">Add one-time increases or decreases to specific categories</p>
+              </div>
+            </div>
 
-                  {/* Jumps/Drops for this category */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="text-sm font-semibold text-gray-700">Expense Changes (Increases/Decreases)</h4>
-                      <button
-                        onClick={() => addJump(category.id)}
-                        className="text-sm text-blue-600 hover:text-blue-700"
-                      >
-                        + Add Change
-                      </button>
-                    </div>
+            {/* Add Change Button with Category Selection */}
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm font-medium text-gray-700 mb-2">Add a new expense change:</p>
+              <div className="flex flex-wrap gap-2">
+                {data.expenseCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => addJump(category.id)}
+                    className="text-sm px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-500 transition"
+                  >
+                    {category.category}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                    {category.jumps && category.jumps.length > 0 ? (
-                      <div className="space-y-3">
-                        {category.jumps.map((jump) => (
-                          <div key={jump.id} className="bg-gray-50 rounded p-3">
-                            <div className="flex justify-between items-start mb-2">
+            {allExpenseChanges.length > 0 ? (
+              <div className="space-y-3">
+                {allExpenseChanges.map((change) => (
+                  <div key={change.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1">
+                        <div className="font-medium text-sm text-gray-500 mb-2">{change.categoryName}</div>
+                        <input
+                          type="text"
+                          value={change.description}
+                          onChange={(e) => handleJumpChange(change.categoryId, change.id, 'description', e.target.value)}
+                          className="w-full text-base font-medium border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 mb-2"
+                          placeholder="Description (e.g., Move to cheaper area)"
+                        />
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Year</label>
+                            <input
+                              type="number"
+                              value={change.year}
+                              onChange={(e) => handleJumpChange(change.categoryId, change.id, 'year', e.target.value ? Number(e.target.value) : '')}
+                              placeholder="5"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Type</label>
+                            <select
+                              value={change.changeType || 'percent'}
+                              onChange={(e) => handleJumpChange(change.categoryId, change.id, 'changeType', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="percent">%</option>
+                              <option value="dollar">$</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">
+                              {change.changeType === 'dollar' ? 'Amount ($)' : 'Change (%)'}
+                            </label>
+                            <div className="relative">
+                              {change.changeType === 'dollar' && (
+                                <span className="absolute left-3 top-2 text-gray-500">$</span>
+                              )}
                               <input
-                                type="text"
-                                value={jump.description}
-                                onChange={(e) => handleJumpChange(category.id, jump.id, 'description', e.target.value)}
-                                className="text-sm font-medium bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
-                                placeholder="e.g., Move to cheaper area"
+                                type="number"
+                                step={change.changeType === 'dollar' ? '1' : '0.1'}
+                                value={change.changeValue !== undefined ? change.changeValue : (change.jumpPercent || '')}
+                                onChange={(e) => handleJumpChange(change.categoryId, change.id, 'changeValue', e.target.value ? Number(e.target.value) : '')}
+                                placeholder={change.changeType === 'dollar' ? '5000' : '-20'}
+                                className={`w-full ${change.changeType === 'dollar' ? 'pl-8' : 'pl-3'} pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                               />
-                              <button
-                                onClick={() => removeJump(category.id, jump.id)}
-                                className="text-red-600 hover:text-red-700 text-xs"
-                              >
-                                Remove
-                              </button>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-xs text-gray-600 mb-1">Year</label>
-                                <input
-                                  type="number"
-                                  value={jump.year}
-                                  onChange={(e) => handleJumpChange(category.id, jump.id, 'year', e.target.value ? Number(e.target.value) : '')}
-                                  placeholder="5"
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-gray-600 mb-1">Change % (+ or -)</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  value={jump.jumpPercent}
-                                  onChange={(e) => handleJumpChange(category.id, jump.id, 'jumpPercent', e.target.value ? Number(e.target.value) : '')}
-                                  placeholder="-20"
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                              </div>
                             </div>
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    ) : (
-                      <p className="text-xs text-gray-500 italic">No changes added yet</p>
-                    )}
+                      <button
+                        onClick={() => removeJump(change.categoryId, change.id)}
+                        className="text-red-600 hover:text-red-700 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 italic">No expense changes added yet. Click a category button above to add one.</p>
+            )}
           </div>
 
           {/* One-Time Expenses */}
@@ -487,6 +522,13 @@ function Expenses() {
                 />
               )
             })}
+            {/* One-time expenses bar */}
+            <Bar
+              key="One-Time"
+              dataKey="One-Time"
+              stackId="a"
+              fill="#1f2937"
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -505,16 +547,17 @@ function Expenses() {
       </div>
 
       {/* One-Time Expenses Summary */}
-      {summary.oneTimeTotal > 0 && (
+      {summary.oneTimeTotalNominal > 0 && (
         <div className="bg-blue-50 rounded-lg border border-blue-200 p-6 mb-6">
           <h2 className="text-xl font-semibold mb-2">One-Time Expenses Total</h2>
+          <p className="text-xs text-gray-600 mb-3">Amounts entered in today's dollars</p>
           <div className="flex justify-between items-center">
-            <span className="text-gray-700">Total Amount:</span>
-            <span className="text-2xl font-bold text-blue-600">${summary.oneTimeTotal.toLocaleString()}</span>
+            <span className="text-gray-700">Today's Dollars:</span>
+            <span className="text-2xl font-bold text-blue-600">${summary.oneTimeTotalPV.toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center mt-2">
-            <span className="text-gray-700">Present Value:</span>
-            <span className="text-lg font-semibold text-blue-600">${summary.oneTimeTotalPV.toLocaleString()}</span>
+            <span className="text-gray-700">Nominal (inflated):</span>
+            <span className="text-lg font-semibold text-gray-600">${summary.oneTimeTotalNominal.toLocaleString()}</span>
           </div>
         </div>
       )}

@@ -31,6 +31,10 @@ export function validateExpenses(data, yearsToRetirement) {
         if (jump.year && jump.year > yearsToRetirement) {
           errors[`${category.id}-jump-${jump.id}-year`] = `Jump year cannot exceed retirement year (${yearsToRetirement})`
         }
+        // Validate changeValue exists
+        if (jump.changeValue === '' || jump.changeValue === undefined) {
+          errors[`${category.id}-jump-${jump.id}-changeValue`] = 'Change value is required'
+        }
       })
     }
   })
@@ -76,10 +80,12 @@ export function calculateExpenseProjections(data, profile) {
   // Generate monthly projections (1,200 months = 100 years)
   const projections = []
 
-  // Track cumulative jump multipliers for each category
+  // Track cumulative changes for each category (multipliers for %, additions for $)
   const categoryMultipliers = {}
+  const categoryDollarAdditions = {}
   data.expenseCategories.forEach(category => {
     categoryMultipliers[category.id] = 1.0
+    categoryDollarAdditions[category.id] = 0
   })
 
   // Generate 1,200 monthly rows
@@ -88,14 +94,20 @@ export function calculateExpenseProjections(data, profile) {
     const month = (monthIndex % 12) + 1
     const absoluteYear = currentYear + year - 1
 
-    // Check if any categories have jumps this year (apply in January)
+    // Check if any categories have changes this year (apply in January)
     if (month === 1) {
       data.expenseCategories.forEach(category => {
         if (category.jumps && category.jumps.length > 0) {
-          const jumpThisYear = category.jumps.find(j => j.year === year)
-          if (jumpThisYear && jumpThisYear.jumpPercent !== undefined && jumpThisYear.jumpPercent !== '') {
-            const jumpMultiplier = 1 + (jumpThisYear.jumpPercent / 100)
-            categoryMultipliers[category.id] *= jumpMultiplier
+          const changeThisYear = category.jumps.find(j => j.year === year)
+          if (changeThisYear && changeThisYear.changeValue !== undefined && changeThisYear.changeValue !== '') {
+            if (changeThisYear.changeType === 'dollar') {
+              // Dollar-based change: add to annual amount
+              categoryDollarAdditions[category.id] += changeThisYear.changeValue
+            } else {
+              // Percentage-based change: multiply
+              const jumpMultiplier = 1 + (changeThisYear.changeValue / 100)
+              categoryMultipliers[category.id] *= jumpMultiplier
+            }
           }
         }
       })
@@ -106,12 +118,14 @@ export function calculateExpenseProjections(data, profile) {
     const categoryBreakdown = {}
 
     data.expenseCategories.forEach(category => {
-      // Calculate annual values with growth and jumps
+      // Calculate annual values with growth and changes
       const yearsOfGrowth = year - 1
       const growthMultiplier = Math.pow(1 + category.growthRate / 100, yearsOfGrowth)
       const jumpMultiplier = categoryMultipliers[category.id]
+      const dollarAddition = categoryDollarAdditions[category.id]
 
-      const annualExpense = category.annualAmount * growthMultiplier * jumpMultiplier
+      // Apply growth and percentage changes to base amount, then add dollar changes
+      const annualExpense = (category.annualAmount * growthMultiplier * jumpMultiplier) + dollarAddition
       const monthlyExpense = annualExpense / 12
 
       categoryBreakdown[category.category] = monthlyExpense
@@ -120,10 +134,17 @@ export function calculateExpenseProjections(data, profile) {
 
     // Add one-time expenses for this month
     let oneTimeNominal = 0
+    let oneTimeTodayDollars = 0
     data.oneTimeExpenses.forEach(expense => {
       // One-time expenses occur in January of their specified year
+      // Amounts are entered in today's dollars, so inflate to nominal
       if (expense.year === year && month === 1) {
-        oneTimeNominal += expense.amount / 12  // Spread over the year for monthly view
+        oneTimeTodayDollars += expense.amount / 12  // Spread over the year for monthly view
+
+        // Inflate to nominal dollars for this year
+        const yearsOfInflation = year - 1
+        const inflationMultiplier = Math.pow(1 + inflationRate / 100, yearsOfInflation)
+        oneTimeNominal += (expense.amount * inflationMultiplier) / 12
       }
     })
 
@@ -134,8 +155,9 @@ export function calculateExpenseProjections(data, profile) {
     const discountFactor = Math.pow(1 + inflationRate / 100, yearsFromNow)
 
     const totalRecurringPV = totalRecurringNominal / discountFactor
-    const oneTimePV = oneTimeNominal / discountFactor
-    const totalExpensesPV = totalExpensesNominal / discountFactor
+    // One-time expenses are entered in today's dollars, so PV = entered amount (no discount needed)
+    const oneTimePV = oneTimeTodayDollars
+    const totalExpensesPV = totalRecurringPV + oneTimePV
 
     // Also discount category breakdown
     const categoryBreakdownPV = {}
@@ -170,7 +192,7 @@ export function calculateExpenseProjections(data, profile) {
   const summary = calculateSummary(projections, yearsToRetirement, data, inflationRate)
 
   // Prepare chart data
-  const chartData = prepareChartData(projections, data.expenseCategories, yearsToRetirement, inflationRate)
+  const chartData = prepareChartData(projections, data.expenseCategories, yearsToRetirement, inflationRate, data.oneTimeExpenses)
 
   console.log('Summary calculated:', summary)
   console.groupEnd()
@@ -229,20 +251,23 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
     categoryTotalsPV[cat] = Math.round(categoryTotalsPV[cat])
   })
 
-  // One-time expenses total
-  const oneTimeTotal = data.oneTimeExpenses
+  // One-time expenses total (in today's dollars as entered)
+  const oneTimeTotalTodayDollars = data.oneTimeExpenses
     .filter(e => e.year && e.year <= yearsToRetirement)
     .reduce((sum, e) => sum + (e.amount || 0), 0)
 
-  // Calculate PV for one-time expenses
-  let oneTimeTotalPV = 0
+  // Calculate nominal total for one-time expenses (inflated to future years)
+  let oneTimeTotalNominal = 0
   data.oneTimeExpenses.forEach(expense => {
     if (expense.year && expense.year <= yearsToRetirement && expense.amount) {
-      const yearsFromNow = expense.year - 1
-      const discountFactor = Math.pow(1 + inflationRate / 100, yearsFromNow)
-      oneTimeTotalPV += expense.amount / discountFactor
+      const yearsOfInflation = expense.year - 1
+      const inflationMultiplier = Math.pow(1 + inflationRate / 100, yearsOfInflation)
+      oneTimeTotalNominal += expense.amount * inflationMultiplier
     }
   })
+
+  // PV for one-time expenses = entered amounts (already in today's dollars)
+  const oneTimeTotalPV = oneTimeTotalTodayDollars
 
   // Key milestones (where jumps/drops occur)
   const milestones = []
@@ -297,7 +322,7 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
     categoryTotals,
     categoryTotalsPV,
 
-    oneTimeTotal: Math.round(oneTimeTotal),
+    oneTimeTotalNominal: Math.round(oneTimeTotalNominal),
     oneTimeTotalPV: Math.round(oneTimeTotalPV),
 
     milestones
@@ -307,7 +332,7 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
 /**
  * Prepare chart data for stacked column chart
  */
-function prepareChartData(projections, expenseCategories, yearsToRetirement, inflationRate) {
+function prepareChartData(projections, expenseCategories, yearsToRetirement, inflationRate, oneTimeExpenses) {
   const chartData = []
 
   // Aggregate by year (up to retirement)
@@ -333,6 +358,17 @@ function prepareChartData(projections, expenseCategories, yearsToRetirement, inf
       yearData[category.category] = Math.round(categoryAnnualPV)
       yearData.total += categoryAnnualPV
     })
+
+    // Add one-time expenses for this year (in today's dollars = PV)
+    let oneTimeForYear = 0
+    oneTimeExpenses.forEach(expense => {
+      if (expense.year === year && expense.amount) {
+        oneTimeForYear += expense.amount
+      }
+    })
+
+    yearData['One-Time'] = Math.round(oneTimeForYear)
+    yearData.total += oneTimeForYear
 
     yearData.total = Math.round(yearData.total)
     chartData.push(yearData)
