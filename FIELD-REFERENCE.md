@@ -427,18 +427,18 @@ realReturn = nominalReturn - inflationRate
       company401k: 9000,             // number (dollar amount, not %)
       equity: 40000,                 // number (RSU value)
       growthRate: 3,                 // number (percentage)
-      endWorkYear: 30                // number (relative year)
+      endWorkYear: 30,               // number (relative year)
+      jumps: [                       // array of jumps for this stream
+        {
+          id: 'jump-1234567890',     // string (unique ID)
+          year: 5,                   // number (relative year)
+          jumpPercent: 7,            // number (percentage increase)
+          description: 'Promotion'   // string
+        }
+        // ... multiple jumps allowed per stream
+      ]
     }
     // ... up to 3 streams
-  ],
-  incomeJumps: [
-    {
-      id: 'jump-1234567890',         // string (unique ID)
-      year: 5,                       // number (relative year)
-      jumpPercent: 7,                // number (percentage increase)
-      description: 'Promotion'       // string
-    }
-    // ... multiple jumps allowed
   ]
 }
 ```
@@ -471,8 +471,6 @@ realReturn = nominalReturn - inflationRate
 
       // Metadata
       appliedGrowthRate: 3.0,
-      hasJump: false,
-      jumpPercent: 0,
       activeStreams: ['stream-1234567890']
     }
     // ... 1,199 more rows
@@ -504,7 +502,8 @@ realReturn = nominalReturn - inflationRate
     // Milestones
     milestones: [
       {
-        label: 'Year 5: Promotion (+7%)',
+        year: 5,
+        label: 'Year 5: Primary Job - Promotion (+7%)',
         compNominal: 215000,
         compPV: 180000
       }
@@ -817,13 +816,15 @@ if (year <= stream.endWorkYear) {
 
 ---
 
-### Fields - Income Jumps
+### Fields - Income Jumps (Per Stream)
+
+Income jumps are defined within each income stream, allowing different streams to have different promotion/raise events.
 
 ---
 
 #### Income Jump: ID
 
-**Purpose**: Unique identifier for each income jump
+**Purpose**: Unique identifier for each income jump within a stream
 
 **Field Type**: Auto-generated string
 
@@ -888,13 +889,13 @@ if (jumpThisYear && month === 1) {  // Apply jump in January
 />
 ```
 
-**Storage**: Saved to `localStorage.income.incomeJumps[].year`
+**Storage**: Saved to `localStorage.income.incomeStreams[].jumps[].year`
 
 ---
 
 #### Income Jump: Jump Percent (%)
 
-**Purpose**: Percentage increase applied to all active income streams
+**Purpose**: Percentage increase applied to this specific income stream
 
 **Field Type**: Number input (decimal allowed)
 
@@ -906,20 +907,21 @@ if (jumpThisYear && month === 1) {  // Apply jump in January
 
 **Validation**: None for jumps (they're optional events)
 
-**Important**: This is a PERMANENT increase, not one-time. Future years grow from the new higher base.
+**Important**: This is a PERMANENT increase, not one-time. Future years grow from the new higher base. Jumps only affect their specific income stream.
 
 **Used In**:
-- Permanent salary adjustments (promotions, job changes, etc.)
+- Permanent salary adjustments for specific streams (promotions, job changes, etc.)
 - Milestone summaries
 
 **Calculations**:
 ```javascript
-// Jump is applied permanently
+// Jump is applied permanently to its specific stream only
 const jumpMultiplier = 1 + (jumpPercent / 100)
 streamMultipliers[streamId] *= jumpMultiplier
 
-// Example: 7% jump in Year 5
-// All income from Year 5 onwards is 7% higher
+// Example: 7% jump in Year 5 for Primary Job
+// Primary Job income from Year 5 onwards is 7% higher
+// Other income streams are NOT affected
 // Future growth compounds on this new higher base
 ```
 
@@ -942,7 +944,7 @@ streamMultipliers[streamId] *= jumpMultiplier
 />
 ```
 
-**Storage**: Saved to `localStorage.income.incomeJumps[].jumpPercent`
+**Storage**: Saved to `localStorage.income.incomeStreams[].jumps[].jumpPercent`
 
 ---
 
@@ -959,10 +961,10 @@ streamMultipliers[streamId] *= jumpMultiplier
 **Validation**: None
 
 **Used In**:
-- Milestone labels in output summaries
+- Milestone labels in output summaries (combined with stream name)
 - Making projections more readable
 
-**Display Format**: Shows in milestones as `"Year 5: Promotion (+7%)"`
+**Display Format**: Shows in milestones as `"Year 5: Primary Job - Promotion (+7%)"`
 
 **Code Pattern**:
 ```jsx
@@ -975,7 +977,7 @@ streamMultipliers[streamId] *= jumpMultiplier
 />
 ```
 
-**Storage**: Saved to `localStorage.income.incomeJumps[].description`
+**Storage**: Saved to `localStorage.income.incomeStreams[].jumps[].description`
 
 ---
 
@@ -1157,7 +1159,8 @@ const addIncomeStream = () => {
     company401k: 0,
     equity: 0,
     growthRate: 0,
-    endWorkYear: yearsToRetirement
+    endWorkYear: yearsToRetirement,
+    jumps: []
   }
 
   setData(prev => ({
@@ -1222,13 +1225,13 @@ const removeStream = (streamId) => {
 
 ---
 
-#### Add Income Jump
+#### Add Income Jump (Per Stream)
 
-**Max Jumps**: Unlimited
+**Max Jumps**: Unlimited per stream
 
 **Code Pattern**:
 ```javascript
-const addIncomeJump = () => {
+const addIncomeJump = (streamId) => {
   const newJump = {
     id: `jump-${Date.now()}`,
     year: '',
@@ -1238,23 +1241,31 @@ const addIncomeJump = () => {
 
   setData(prev => ({
     ...prev,
-    incomeJumps: [...prev.incomeJumps, newJump]
+    incomeStreams: prev.incomeStreams.map(stream =>
+      stream.id === streamId
+        ? { ...stream, jumps: [...stream.jumps, newJump] }
+        : stream
+    )
   }))
 }
 ```
 
 ---
 
-#### Remove Income Jump
+#### Remove Income Jump (Per Stream)
 
 **Min Jumps**: 0 (jumps are optional)
 
 **Code Pattern**:
 ```javascript
-const removeJump = (jumpId) => {
+const removeIncomeJump = (streamId, jumpId) => {
   setData(prev => ({
     ...prev,
-    incomeJumps: prev.incomeJumps.filter(j => j.id !== jumpId)
+    incomeStreams: prev.incomeStreams.map(stream =>
+      stream.id === streamId
+        ? { ...stream, jumps: stream.jumps.filter(j => j.id !== jumpId) }
+        : stream
+    )
   }))
 }
 ```
@@ -1285,17 +1296,24 @@ const updateStream = (streamId, field, value) => {
 
 ---
 
-#### Update Jump Field
+#### Update Jump Field (Per Stream)
 
 **Code Pattern**:
 ```javascript
-const updateJump = (jumpId, field, value) => {
+const handleJumpChange = (streamId, jumpId, field, value) => {
   setData(prev => ({
     ...prev,
-    incomeJumps: prev.incomeJumps.map(jump =>
-      jump.id === jumpId
-        ? { ...jump, [field]: value }
-        : jump
+    incomeStreams: prev.incomeStreams.map(stream =>
+      stream.id === streamId
+        ? {
+            ...stream,
+            jumps: stream.jumps.map(jump =>
+              jump.id === jumpId
+                ? { ...jump, [field]: value }
+                : jump
+            )
+          }
+        : stream
     )
   }))
 }
@@ -1382,10 +1400,10 @@ function SummaryCard({ title, nominalValue, presentValue, highlight }) {
 1. Loop through 1,200 months (0-1199)
 2. For each month:
    - Calculate relative year and month
-   - Check for income jumps (apply in January)
+   - Check for income jumps per stream (apply in January)
    - For each active stream:
      - Apply years of growth compounding
-     - Apply cumulative jump multipliers
+     - Apply cumulative jump multipliers (specific to that stream)
      - Calculate monthly values (annual / 12)
    - Sum all active streams
    - Calculate present values using inflation discount
@@ -1397,9 +1415,15 @@ for (let monthIndex = 0; monthIndex < 1200; monthIndex++) {
   const year = Math.floor(monthIndex / 12) + 1
   const month = (monthIndex % 12) + 1
 
-  // Check for jumps in January
-  if (month === 1 && hasJump) {
-    updateAllStreamMultipliers(jumpPercent)
+  // Check for jumps in January (per stream)
+  if (month === 1) {
+    data.incomeStreams.forEach(stream => {
+      const jumpThisYear = stream.jumps.find(j => j.year === year)
+      if (jumpThisYear && jumpThisYear.jumpPercent) {
+        const jumpMultiplier = 1 + (jumpThisYear.jumpPercent / 100)
+        streamMultipliers[stream.id] *= jumpMultiplier
+      }
+    })
   }
 
   // Calculate income from all active streams
@@ -1439,13 +1463,13 @@ const growthMultiplier = Math.pow(1 + stream.growthRate / 100, yearsOfGrowth)
 
 ---
 
-#### Jump Application
+#### Jump Application (Per Stream)
 
 **Logic**:
 - Jumps are permanent multipliers
-- Applied cumulatively to all future income
+- Applied cumulatively to future income for THEIR SPECIFIC stream only
 - Applied in January of the jump year
-- Affect all active income streams
+- Only affect their own income stream (not other streams)
 
 **Code**:
 ```javascript
@@ -1455,20 +1479,24 @@ data.incomeStreams.forEach(stream => {
   streamMultipliers[stream.id] = 1.0
 })
 
-// When a jump occurs
-if (jumpThisYear && month === 1) {
-  const jumpMultiplier = 1 + (jumpPercent / 100)
-  Object.keys(streamMultipliers).forEach(streamId => {
-    streamMultipliers[streamId] *= jumpMultiplier
+// When a jump occurs for a specific stream
+if (month === 1) {
+  data.incomeStreams.forEach(stream => {
+    const jumpThisYear = stream.jumps.find(j => j.year === year)
+    if (jumpThisYear && jumpThisYear.jumpPercent) {
+      const jumpMultiplier = 1 + (jumpThisYear.jumpPercent / 100)
+      streamMultipliers[stream.id] *= jumpMultiplier
+    }
   })
 }
 ```
 
 **Example**:
-- Base salary Year 4: $160,000
-- Jump in Year 5: +7%
-- New base Year 5: $160,000 × 1.07 = $171,200
-- All future years grow from $171,200 (not $160,000)
+- Primary Job base salary Year 4: $160,000
+- Primary Job jump in Year 5: +7%
+- Primary Job new base Year 5: $160,000 × 1.07 = $171,200
+- All future years of Primary Job grow from $171,200 (not $160,000)
+- Side Business income is NOT affected by this jump
 
 ---
 

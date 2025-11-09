@@ -23,10 +23,10 @@ function Income() {
         company401k: '',
         equity: '',
         growthRate: '',
-        endWorkYear: yearsToRetirement
+        endWorkYear: yearsToRetirement,
+        jumps: []
       }
-    ],
-    incomeJumps: []
+    ]
   })
 
   const [projections, setProjections] = useState(null)
@@ -56,13 +56,20 @@ function Income() {
     }
   }
 
-  const handleJumpChange = (jumpId, field, value) => {
+  const handleJumpChange = (streamId, jumpId, field, value) => {
     setData(prev => ({
       ...prev,
-      incomeJumps: prev.incomeJumps.map(jump =>
-        jump.id === jumpId
-          ? { ...jump, [field]: value }
-          : jump
+      incomeStreams: prev.incomeStreams.map(stream =>
+        stream.id === streamId
+          ? {
+              ...stream,
+              jumps: stream.jumps.map(jump =>
+                jump.id === jumpId
+                  ? { ...jump, [field]: value }
+                  : jump
+              )
+            }
+          : stream
       )
     }))
   }
@@ -77,7 +84,8 @@ function Income() {
       company401k: '',
       equity: '',
       growthRate: '',
-      endWorkYear: yearsToRetirement
+      endWorkYear: yearsToRetirement,
+      jumps: []
     }
 
     setData(prev => ({
@@ -95,7 +103,7 @@ function Income() {
     }))
   }
 
-  const addIncomeJump = () => {
+  const addIncomeJump = (streamId) => {
     const newJump = {
       id: `jump-${Date.now()}`,
       year: '',
@@ -105,14 +113,22 @@ function Income() {
 
     setData(prev => ({
       ...prev,
-      incomeJumps: [...prev.incomeJumps, newJump]
+      incomeStreams: prev.incomeStreams.map(stream =>
+        stream.id === streamId
+          ? { ...stream, jumps: [...stream.jumps, newJump] }
+          : stream
+      )
     }))
   }
 
-  const removeIncomeJump = (jumpId) => {
+  const removeIncomeJump = (streamId, jumpId) => {
     setData(prev => ({
       ...prev,
-      incomeJumps: prev.incomeJumps.filter(j => j.id !== jumpId)
+      incomeStreams: prev.incomeStreams.map(stream =>
+        stream.id === streamId
+          ? { ...stream, jumps: stream.jumps.filter(j => j.id !== jumpId) }
+          : stream
+      )
     }))
   }
 
@@ -293,6 +309,69 @@ function Income() {
                       )}
                     </div>
                   </div>
+
+                  {/* Income Jumps for this stream */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="text-sm font-semibold text-gray-700">Income Jumps (Promotions/Raises)</h3>
+                      <button
+                        onClick={() => addIncomeJump(stream.id)}
+                        className="text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        + Add Jump
+                      </button>
+                    </div>
+
+                    {stream.jumps && stream.jumps.length > 0 ? (
+                      <div className="space-y-3">
+                        {stream.jumps.map((jump) => (
+                          <div key={jump.id} className="bg-gray-50 rounded p-3">
+                            <div className="flex justify-between items-start mb-2">
+                              <input
+                                type="text"
+                                value={jump.description}
+                                onChange={(e) => handleJumpChange(stream.id, jump.id, 'description', e.target.value)}
+                                className="text-sm font-medium bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
+                                placeholder="e.g., Promotion to Senior"
+                              />
+                              <button
+                                onClick={() => removeIncomeJump(stream.id, jump.id)}
+                                className="text-red-600 hover:text-red-700 text-xs"
+                              >
+                                Remove
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs text-gray-600 mb-1">Year</label>
+                                <input
+                                  type="number"
+                                  value={jump.year}
+                                  onChange={(e) => handleJumpChange(stream.id, jump.id, 'year', e.target.value ? Number(e.target.value) : '')}
+                                  placeholder="5"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-600 mb-1">Jump %</label>
+                                <input
+                                  type="number"
+                                  step="0.1"
+                                  value={jump.jumpPercent}
+                                  onChange={(e) => handleJumpChange(stream.id, jump.id, 'jumpPercent', e.target.value ? Number(e.target.value) : '')}
+                                  placeholder="7"
+                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500 italic">No jumps added yet</p>
+                    )}
+                  </div>
                 </div>
               ))}
 
@@ -304,76 +383,6 @@ function Income() {
                   + Add Income Stream
                 </button>
               )}
-            </div>
-          </div>
-
-          {/* Income Jumps */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4">Income Jumps</h2>
-            <p className="text-sm text-gray-600 mb-4">Add expected promotions or raises (permanent increases)</p>
-
-            <div className="space-y-4">
-              {data.incomeJumps.length === 0 ? (
-                <p className="text-gray-500 text-sm italic">No income jumps added yet</p>
-              ) : (
-                data.incomeJumps.map((jump) => (
-                  <div key={jump.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-4">
-                      <input
-                        type="text"
-                        value={jump.description}
-                        onChange={(e) => handleJumpChange(jump.id, 'description', e.target.value)}
-                        className="font-medium border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2"
-                        placeholder="e.g., Promotion to Senior"
-                      />
-                      <button
-                        onClick={() => removeIncomeJump(jump.id)}
-                        className="text-red-600 hover:text-red-700 text-sm"
-                      >
-                        Remove
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Year */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Year (relative)
-                        </label>
-                        <input
-                          type="number"
-                          value={jump.year}
-                          onChange={(e) => handleJumpChange(jump.id, 'year', e.target.value ? Number(e.target.value) : '')}
-                          placeholder="5"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      {/* Jump Percent */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Jump Percent (%)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={jump.jumpPercent}
-                          onChange={(e) => handleJumpChange(jump.id, 'jumpPercent', e.target.value ? Number(e.target.value) : '')}
-                          placeholder="7"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-
-              <button
-                onClick={addIncomeJump}
-                className="w-full py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-600 transition"
-              >
-                + Add Income Jump
-              </button>
             </div>
           </div>
 

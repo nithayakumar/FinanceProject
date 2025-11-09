@@ -71,9 +71,6 @@ export function calculateIncomeProjections(data, profile) {
   // Generate monthly projections (1,200 months = 100 years)
   const projections = []
 
-  // Sort jumps by year for efficient processing
-  const sortedJumps = [...data.incomeJumps].sort((a, b) => a.year - b.year)
-
   // Track cumulative jump multipliers for each stream
   const streamMultipliers = {}
   data.incomeStreams.forEach(stream => {
@@ -86,18 +83,16 @@ export function calculateIncomeProjections(data, profile) {
     const month = (monthIndex % 12) + 1
     const absoluteYear = currentYear + year - 1
 
-    // Check if any jumps occur this year
-    let hasJump = false
-    let jumpPercent = 0
-
-    const jumpThisYear = sortedJumps.find(j => j.year === year)
-    if (jumpThisYear && month === 1) {  // Apply jump in January
-      hasJump = true
-      jumpPercent = jumpThisYear.jumpPercent
-      // Update all active stream multipliers
-      const jumpMultiplier = 1 + (jumpPercent / 100)
-      Object.keys(streamMultipliers).forEach(streamId => {
-        streamMultipliers[streamId] *= jumpMultiplier
+    // Check if any streams have jumps this year (apply in January)
+    if (month === 1) {
+      data.incomeStreams.forEach(stream => {
+        if (stream.jumps && stream.jumps.length > 0) {
+          const jumpThisYear = stream.jumps.find(j => j.year === year)
+          if (jumpThisYear && jumpThisYear.jumpPercent) {
+            const jumpMultiplier = 1 + (jumpThisYear.jumpPercent / 100)
+            streamMultipliers[stream.id] *= jumpMultiplier
+          }
+        }
       })
     }
 
@@ -174,8 +169,6 @@ export function calculateIncomeProjections(data, profile) {
 
       // Metadata
       appliedGrowthRate,
-      hasJump: hasJump && month === 1,
-      jumpPercent: hasJump && month === 1 ? jumpPercent : 0,
       activeStreams: [...activeStreams]
     })
   }
@@ -183,7 +176,7 @@ export function calculateIncomeProjections(data, profile) {
   console.log(`Generated ${projections.length} monthly projections`)
 
   // Calculate summary statistics
-  const summary = calculateSummary(projections, yearsToRetirement, data.incomeJumps)
+  const summary = calculateSummary(projections, yearsToRetirement, data.incomeStreams)
 
   console.log('Summary calculated:', summary)
   console.groupEnd()
@@ -197,7 +190,7 @@ export function calculateIncomeProjections(data, profile) {
 /**
  * Calculate summary statistics from projections
  */
-function calculateSummary(projections, yearsToRetirement, incomeJumps) {
+function calculateSummary(projections, yearsToRetirement, incomeStreams) {
   // Current year (Year 1)
   const year1Months = projections.filter(p => p.year === 1)
   const currentYearCompNominal = year1Months.reduce((sum, p) => sum + p.totalCompNominal, 0)
@@ -237,24 +230,31 @@ function calculateSummary(projections, yearsToRetirement, incomeJumps) {
     ? growthRates.reduce((sum, r) => sum + r, 0) / growthRates.length
     : 0
 
-  // Key milestones (where jumps occur)
-  const milestones = incomeJumps
-    .filter(jump => jump.year && jump.jumpPercent)
-    .map(jump => {
-      const jumpYearFirstMonth = projections.find(p => p.year === jump.year && p.month === 1)
-      if (!jumpYearFirstMonth) return null
+  // Key milestones (where jumps occur in any stream)
+  const milestones = []
+  incomeStreams.forEach(stream => {
+    if (stream.jumps && stream.jumps.length > 0) {
+      stream.jumps
+        .filter(jump => jump.year && jump.jumpPercent)
+        .forEach(jump => {
+          const jumpYearMonths = projections.filter(p => p.year === jump.year)
+          if (jumpYearMonths.length > 0) {
+            const compNominal = jumpYearMonths.reduce((sum, p) => sum + p.totalCompNominal, 0)
+            const compPV = jumpYearMonths.reduce((sum, p) => sum + p.totalCompPV, 0)
 
-      const jumpYearMonths = projections.filter(p => p.year === jump.year)
-      const compNominal = jumpYearMonths.reduce((sum, p) => sum + p.totalCompNominal, 0)
-      const compPV = jumpYearMonths.reduce((sum, p) => sum + p.totalCompPV, 0)
+            milestones.push({
+              year: jump.year,
+              label: `Year ${jump.year}: ${stream.name} - ${jump.description || 'Income Jump'} (+${jump.jumpPercent}%)`,
+              compNominal: Math.round(compNominal),
+              compPV: Math.round(compPV)
+            })
+          }
+        })
+    }
+  })
 
-      return {
-        label: `Year ${jump.year}: ${jump.description || 'Income Jump'} (+${jump.jumpPercent}%)`,
-        compNominal: Math.round(compNominal),
-        compPV: Math.round(compPV)
-      }
-    })
-    .filter(m => m !== null)
+  // Sort milestones by year
+  milestones.sort((a, b) => a.year - b.year)
 
   return {
     currentYearCompNominal: Math.round(currentYearCompNominal),
