@@ -59,7 +59,7 @@ export function validateIncome(data, yearsToRetirement) {
 export function calculateIncomeProjections(data, profile) {
   console.group('📊 Calculating Income Projections')
 
-  const inflationRate = profile.inflationRate || 2.7
+  const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
   const yearsToRetirement = profile.retirementAge && profile.age
     ? profile.retirementAge - profile.age
     : 30
