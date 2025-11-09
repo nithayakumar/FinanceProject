@@ -91,104 +91,107 @@ Collected based on the decision being analyzed:
 
 ### Design Principles
 - **Feature-based organization**: Code separated by features, not layers
-- **Small, flexible modules**: Maintainable folders/files
-- **Frontend/Backend separation**: Clear API boundaries
+- **Small, flexible modules**: Maintainable folders/files (max 200 lines)
+- **Pure calculations**: Business logic separated from UI components
 - **Iterative development**: Each feature should be independently demoable
+- **Simple data flow**: No API layer, direct function calls, localStorage only
+- **AI-friendly**: Small files that fit in context windows, clear structure
 
 ### Recommended Stack
 
 #### Frontend
-- React or Next.js (for easy component management)
-- Tailwind CSS (rapid styling)
-- Chart library (Chart.js or Recharts for visualizations)
-- Form management (React Hook Form)
+- **Vite + React** (fast, simple, no server/client confusion)
+- **Tailwind CSS** (rapid styling)
+- **Recharts** (chart library for visualizations)
+- **React Router** (explicit routing)
 
-#### Backend
-- Node.js + Express (or Next.js API routes)
-- RESTful API design
-- Feature-based route organization
-
-#### Database
-- SQLite or PostgreSQL (start simple, can scale)
-- Prisma ORM (type-safe, easy migrations)
+#### Data Storage
+- **localStorage** (no database setup needed)
+- **JSON files** (portable scenarios, easy export/import)
+- **No backend** (direct function calls, no API layer)
 
 #### State Management
-- React Context or Zustand (lightweight)
+- **React useState/useEffect** (simple, built-in)
+- **No external state library needed** (single-user app)
+
+#### Why This Stack?
+- ✅ **Fast to start**: `npm create vite` and code immediately
+- ✅ **No setup friction**: No database, no backend server
+- ✅ **Easy debugging**: localStorage visible in DevTools
+- ✅ **Beginner-friendly**: Simple React patterns, no magic
+- ✅ **AI-friendly**: Clear data flow, small files
+- ✅ **Portable**: Export/import scenarios as JSON
 
 ### Project Structure
 
+**Philosophy**: Small files (100-200 lines), feature-based organization, no backend complexity.
+
 ```
 FinanceProject/
-├── frontend/
-│   ├── src/
-│   │   ├── features/
-│   │   │   ├── personal-details/
-│   │   │   │   ├── PersonalDetailsInput.jsx
-│   │   │   │   ├── PersonalDetailsOutput.jsx
-│   │   │   │   ├── components/
-│   │   │   │   └── utils/
-│   │   │   ├── income/
-│   │   │   │   ├── IncomeInput.jsx
-│   │   │   │   ├── IncomeOutput.jsx
-│   │   │   │   ├── components/
-│   │   │   │   └── calculations.js
-│   │   │   ├── expenses/
-│   │   │   │   ├── ExpensesInput.jsx
-│   │   │   │   ├── ExpensesOutput.jsx
-│   │   │   │   └── components/
-│   │   │   ├── taxes/
-│   │   │   │   ├── TaxesOutput.jsx
-│   │   │   │   └── components/
-│   │   │   ├── investments-debt/
-│   │   │   │   ├── InvestmentsDebtInput.jsx
-│   │   │   │   ├── InvestmentsDebtOutput.jsx
-│   │   │   │   └── components/
-│   │   │   ├── gap-calculations/
-│   │   │   │   ├── GapCalculationsOutput.jsx
-│   │   │   │   └── components/
-│   │   │   ├── scenarios/
-│   │   │   │   ├── ScenarioManagement.jsx
-│   │   │   │   ├── ScenarioComparison.jsx
-│   │   │   │   └── components/
-│   │   │   └── life-milestones/
-│   │   ├── shared/
-│   │   │   ├── components/
-│   │   │   ├── utils/
-│   │   │   └── api/
-│   │   ├── App.jsx
-│   │   └── index.jsx
-│   └── package.json
-├── backend/
-│   ├── src/
-│   │   ├── features/
-│   │   │   ├── personal-details/
-│   │   │   │   ├── routes.js
-│   │   │   │   ├── service.js
-│   │   │   │   └── model.js
-│   │   │   ├── income/
-│   │   │   │   ├── routes.js
-│   │   │   │   ├── service.js
-│   │   │   │   ├── calculations.js
-│   │   │   │   └── model.js
-│   │   │   ├── expenses/
-│   │   │   ├── taxes/
-│   │   │   │   ├── calculations.js
-│   │   │   │   ├── taxBrackets.js
-│   │   │   │   └── service.js
-│   │   │   ├── investments-debt/
-│   │   │   ├── gap-calculations/
-│   │   │   ├── scenarios/
-│   │   │   └── life-milestones/
-│   │   ├── shared/
-│   │   │   ├── db/
-│   │   │   │   ├── schema.prisma
-│   │   │   │   └── client.js
-│   │   │   └── utils/
-│   │   └── server.js
-│   └── package.json
+├── src/
+│   ├── features/
+│   │   ├── personal-details/
+│   │   │   ├── PersonalDetails.jsx          # Input + Output (~150 lines)
+│   │   │   └── PersonalDetails.calc.js      # Pure calculations (~40 lines)
+│   │   ├── income/
+│   │   │   ├── Income.jsx                   # Input + Output (~180 lines)
+│   │   │   └── Income.calc.js               # Pure calculations (~50 lines)
+│   │   ├── expenses/
+│   │   │   ├── Expenses.jsx                 # Input + Output (~200 lines)
+│   │   │   └── Expenses.calc.js             # Pure calculations (~60 lines)
+│   │   ├── taxes/
+│   │   │   ├── Taxes.jsx                    # Output only (~150 lines)
+│   │   │   ├── Taxes.calc.js                # Tax calculations (~80 lines)
+│   │   │   └── data/
+│   │   │       ├── federal.json             # Federal tax brackets
+│   │   │       ├── california.json          # CA state tax data
+│   │   │       ├── texas.json               # TX state tax data
+│   │   │       └── index.js                 # Tax data loader (~30 lines)
+│   │   ├── investments-debt/
+│   │   │   ├── InvestmentsDebt.jsx          # Input + Output (~200 lines)
+│   │   │   └── InvestmentsDebt.calc.js      # Net worth calcs (~70 lines)
+│   │   ├── gap/
+│   │   │   ├── Gap.jsx                      # Output only (~180 lines)
+│   │   │   └── Gap.calc.js                  # Integration layer (~100 lines)
+│   │   └── scenarios/
+│   │       ├── ScenarioList.jsx             # List + create (~150 lines)
+│   │       ├── ScenarioCompare.jsx          # Comparison view (~200 lines)
+│   │       └── Scenario.calc.js             # Scenario engine (~120 lines)
+│   ├── shared/
+│   │   ├── components/                      # Reusable UI (each <50 lines)
+│   │   │   ├── Button.jsx
+│   │   │   ├── Card.jsx
+│   │   │   ├── Input.jsx
+│   │   │   ├── Chart.jsx
+│   │   │   └── Navigation.jsx
+│   │   ├── storage.js                       # localStorage wrapper (~80 lines)
+│   │   └── utils.js                         # Helper functions (~60 lines)
+│   ├── App.jsx                              # Routes + navigation (~100 lines)
+│   ├── main.jsx                             # Entry point (~20 lines)
+│   └── index.css                            # Tailwind imports
+├── data/                                    # Portable scenario files
+│   ├── scenarios/
+│   │   ├── example-california.json
+│   │   └── example-texas.json
+│   └── README.md                            # Scenario format docs
+├── package.json
+├── vite.config.js
+├── tailwind.config.js
 ├── PLANNING.md
 └── README.md
 ```
+
+**File Size Guidelines**:
+- ✅ **Components**: 100-200 lines max (Input + Output in one file)
+- ✅ **Calculation files**: 30-100 lines (pure functions, no UI)
+- ✅ **Shared components**: <50 lines each (single purpose)
+- ✅ **Data files (JSON)**: Any size (easy for AI to read)
+
+**Why This Structure Works**:
+- **Small context windows**: Each file fits in AI's context
+- **Easy debugging**: Clear file boundaries, no magic
+- **Portable features**: Copy a feature folder = copy the feature
+- **No backend**: Everything in one place, simple data flow
 
 ## Data Architecture
 
@@ -201,29 +204,34 @@ The data model must support three critical requirements:
 
 ### Data Model Structure
 
-```
-UserProfile (Base/Baseline)
-├── PersonalDetails
-├── BaseScenario (the "current state" or "baseline")
-│   ├── Income
-│   ├── Expenses
-│   ├── Taxes
-│   ├── Investments & Debt
-│   └── CalculatedResults (derived from above)
-└── LifeMilestones[] (timeline events)
+**Storage**: localStorage + JSON files (no database)
 
-Scenario (Variations for comparison)
-├── scenarioId
-├── name (e.g., "California Tech Job", "Texas Remote Job")
-├── baseProfileId (reference)
-├── overrides (fields that differ from base)
-│   ├── Income
-│   ├── Expenses
-│   ├── Taxes
-│   └── Investments & Debt
-├── lifeMilestoneOverrides[] (scenario-specific events)
-└── CalculatedResults (derived)
 ```
+localStorage keys:
+├── 'profile'              # Personal details
+├── 'income'               # Income data
+├── 'expenses'             # Expense data
+├── 'investments-debt'     # Investments & debt data
+└── 'scenarios'            # Array of scenario objects
+
+Each scenario is a JSON object:
+{
+  id: "scenario-1",
+  name: "Texas Remote Job",
+  overrides: {
+    personalDetails: { state: "TX", location: "Austin" },
+    income: { salary: 145000 },
+    expenses: { housing: 1800 }
+  }
+}
+```
+
+**Data Flow**:
+1. User inputs data → Saved to localStorage
+2. Navigate to output page → Load from localStorage → Calculate → Display
+3. Create scenario → Store overrides only → Calculate merged data
+4. Export → Download all localStorage as JSON file
+5. Import → Load JSON file → Populate localStorage
 
 ### Calculation Pipeline (Iterative Dependencies)
 
@@ -383,32 +391,72 @@ projection = [
 ]
 ```
 
-### Database Schema Considerations
+### Storage Implementation
 
-**Tables/Collections**:
-1. `user_profile` - Personal details, base financial info
-2. `scenarios` - Scenario instances with overrides
-3. `life_milestones` - Timeline events
-4. `scenario_milestones` - Links milestones to scenarios
-5. `calculated_results` - Cached calculation outputs (optional, for performance)
+**localStorage Structure**:
 
-**Key Relationships**:
-- One profile can have many scenarios
-- One scenario can have many life milestones
-- Calculations are derived, not stored (except for caching)
+```javascript
+// shared/storage.js - Simple wrapper
+export const storage = {
+  save(key, data) {
+    localStorage.setItem(key, JSON.stringify(data))
+    console.log(`✅ Saved ${key}:`, data)
+  },
+
+  load(key) {
+    const data = localStorage.getItem(key)
+    return data ? JSON.parse(data) : null
+  },
+
+  exportAll() {
+    return {
+      profile: this.load('profile'),
+      income: this.load('income'),
+      expenses: this.load('expenses'),
+      investmentsDebt: this.load('investments-debt'),
+      scenarios: this.load('scenarios') || []
+    }
+  },
+
+  importAll(data) {
+    Object.entries(data).forEach(([key, value]) => {
+      if (value) this.save(key, value)
+    })
+  }
+}
+```
+
+**Benefits**:
+- ✅ No database setup or migrations
+- ✅ Visible in Chrome DevTools (Application > Local Storage)
+- ✅ Easy export/import via JSON files
+- ✅ Portable scenarios
+- ✅ Simple debugging with console.log
 
 ## Implementation Phases (Feature-Based)
 
 ### Phase 0: Setup & Foundation
 - [x] Create repository
 - [x] Define project requirements and data architecture
-- [ ] Choose and document final tech stack
-- [ ] Set up frontend project
-- [ ] Set up backend project
-- [ ] Create database schema
-- [ ] Build basic UI shell with navigation
+- [x] Choose and document final tech stack (Vite + React + localStorage)
+- [ ] Initialize Vite project
+- [ ] Install dependencies (React Router, Tailwind, Recharts)
+- [ ] Configure Tailwind CSS
+- [ ] Create storage.js utility
+- [ ] Build App.jsx with routes
+- [ ] Create Navigation component
+- [ ] Build basic UI shell (layout, navigation)
 
-**Demo Goal**: Empty application with navigation ready
+**Setup Commands**:
+```bash
+npm create vite@latest . -- --template react
+npm install react-router-dom recharts
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+npm run dev
+```
+
+**Demo Goal**: Empty application with navigation working, routes defined, storage utility ready
 
 ---
 
@@ -423,15 +471,27 @@ projection = [
 - Number of dependents
 
 **Tasks**:
-- [ ] Design personal details input page UI
-- [ ] Design personal details output page UI (summary view)
-- [ ] Create personal details data model
-- [ ] Build API endpoints (POST /profile, GET /profile, PUT /profile)
-- [ ] Implement form validation
-- [ ] Store in database
-- [ ] Implement navigation with auto-save
+- [ ] Create PersonalDetails.jsx component
+  - [ ] Build input view (form with fields)
+  - [ ] Build output view (summary display)
+  - [ ] Add view state toggle (input ↔ output)
+- [ ] Create PersonalDetails.calc.js (validation logic)
+- [ ] Implement form validation (age > 0, state required, etc.)
+- [ ] Save to localStorage on "Continue" click
+- [ ] Load from localStorage on component mount
+- [ ] Add navigation to next feature (Income)
 
-**Demo Goal**: User can enter personal details on input page, navigate to output page (auto-saves), and see summary
+**Code Structure**:
+```javascript
+// PersonalDetails.jsx (~150 lines)
+- useState for form data
+- useState for view ('input' or 'output')
+- useEffect to load saved data
+- handleSave → storage.save('profile', data)
+- Toggle between input/output views
+```
+
+**Demo Goal**: User can enter personal details, click Continue (auto-saves to localStorage), see summary, click Edit to go back
 
 ---
 
@@ -453,15 +513,32 @@ projection = [
 - Show income breakdown
 
 **Tasks**:
-- [ ] Design income input form with multiple sources
-- [ ] Create income data model (support multiple income types)
-- [ ] Build income calculation service
-- [ ] Create API endpoints (POST /income/input, GET /income/output, POST /income/calculate)
-- [ ] Build income input page UI
-- [ ] Build income output page UI with calculations
-- [ ] Visualize income breakdown (gross → taxable)
+- [ ] Create Income.jsx component
+  - [ ] Build input view (salary, bonus, equity, pre-tax contributions)
+  - [ ] Build output view (calculated breakdown + chart)
+  - [ ] Add view state toggle
+- [ ] Create Income.calc.js
+  - [ ] calculateIncome() function (~40 lines)
+  - [ ] Returns: gross, preTaxTotal, taxable, breakdown
+- [ ] Implement real-time validation (positive numbers)
+- [ ] Save to localStorage on "Continue"
+- [ ] Calculate results when switching to output view
+- [ ] Add simple bar chart (Recharts) for income breakdown
+- [ ] Add navigation to Expenses
 
-**Demo Goal**: User can input various income sources, navigate to output page, and see how pre-tax contributions affect taxable income
+**Code Structure**:
+```javascript
+// Income.calc.js (~50 lines)
+export function calculateIncome(data) {
+  const gross = data.salary + data.bonus + data.equity
+  const preTaxTotal = data.contribution401k + data.contributionHSA
+  const taxable = gross - preTaxTotal
+
+  return { gross, preTaxTotal, taxable, breakdown: {...} }
+}
+```
+
+**Demo Goal**: User inputs income sources, clicks Continue, sees calculated breakdown showing how pre-tax contributions reduce taxable income (with chart)
 
 ---
 
@@ -481,15 +558,38 @@ projection = [
 - Essential vs discretionary
 
 **Tasks**:
-- [ ] Design expense input page with categories
-- [ ] Design expense output page with visualizations
-- [ ] Create expense data model
-- [ ] Build expense calculation service
-- [ ] Create API endpoints (POST /expenses/input, GET /expenses/output)
-- [ ] Implement expense summary visualization
-- [ ] Add budget vs actual tracking (optional)
+- [ ] Create Expenses.jsx component
+  - [ ] Build input view (categorized expense form)
+  - [ ] Build output view (breakdown + pie chart)
+  - [ ] Add view state toggle
+- [ ] Create Expenses.calc.js
+  - [ ] calculateExpenses() function (~60 lines)
+  - [ ] Category totals, monthly/annual calculations
+- [ ] Implement expense categories (housing, food, transport, etc.)
+- [ ] Save to localStorage on "Continue"
+- [ ] Add pie chart for expense breakdown by category
+- [ ] Show essential vs discretionary split
+- [ ] Add navigation to Taxes
 
-**Demo Goal**: User can input all expenses on input page, navigate to output page, and see monthly/annual breakdown by category
+**Code Structure**:
+```javascript
+// Expenses.calc.js (~60 lines)
+export function calculateExpenses(data) {
+  const categories = {
+    housing: data.housing,
+    food: data.food,
+    transportation: data.transportation,
+    // ...
+  }
+
+  const monthlyTotal = Object.values(categories).reduce((a, b) => a + b, 0)
+  const annualTotal = monthlyTotal * 12
+
+  return { categories, monthlyTotal, annualTotal }
+}
+```
+
+**Demo Goal**: User inputs expenses by category, clicks Continue, sees monthly/annual breakdown with pie chart showing spending distribution
 
 ---
 
@@ -507,17 +607,43 @@ projection = [
 - Effective vs marginal tax rates
 
 **Tasks**:
-- [ ] Research and document tax calculation rules (2025 tax brackets)
-- [ ] Create tax calculation engine (federal)
-- [ ] Add state tax calculations (start with CA, TX, NY, WA, FL)
-- [ ] Build FICA calculator
-- [ ] Create tax summary API endpoint (GET /taxes/output)
-- [ ] Build tax output page UI
-- [ ] Visualize tax breakdown (pie chart, waterfall chart)
-- [ ] Show effective vs marginal tax rate
-- [ ] Handle standard vs itemized deductions
+- [ ] Create tax data files (JSON)
+  - [ ] data/federal.json (2025 brackets + deductions)
+  - [ ] data/california.json
+  - [ ] data/texas.json (no state income tax)
+  - [ ] data/index.js (loader utility)
+- [ ] Create Taxes.jsx component (output only, no input)
+- [ ] Create Taxes.calc.js
+  - [ ] calculateFederalTax() (~40 lines)
+  - [ ] calculateStateTax() (~30 lines)
+  - [ ] calculateFICA() (~20 lines)
+  - [ ] calculateTaxes() (main function, ~30 lines)
+- [ ] Load profile + income from localStorage
+- [ ] Calculate taxes on component mount
+- [ ] Build tax breakdown UI (federal, state, FICA, total)
+- [ ] Add pie chart showing tax distribution
+- [ ] Show effective vs marginal rate
+- [ ] Add navigation to Investments & Debt
 
-**Demo Goal**: User navigates to Taxes page and sees complete tax breakdown calculated from their income, location, and filing status
+**Code Structure**:
+```javascript
+// Taxes.calc.js (~80 lines total)
+export function calculateTaxes(taxableIncome, state, filingStatus) {
+  const federal = calculateFederalTax(taxableIncome, filingStatus)
+  const stateTax = calculateStateTax(taxableIncome, state, filingStatus)
+  const fica = calculateFICA(taxableIncome)
+
+  return {
+    federal,
+    state: stateTax,
+    fica,
+    total: federal + stateTax + fica,
+    effectiveRate: (federal + stateTax + fica) / taxableIncome
+  }
+}
+```
+
+**Demo Goal**: User navigates to Taxes page, sees complete tax breakdown (federal, state, FICA) calculated from saved income and profile data, with pie chart
 
 ---
 
@@ -542,17 +668,46 @@ projection = [
 - Interest paid over time
 
 **Tasks**:
-- [ ] Design investment & debt input page
-- [ ] Design investment & debt output page
-- [ ] Create data models for accounts and debts
-- [ ] Build net worth calculation service
-- [ ] Build debt payoff calculator
-- [ ] Create investment projection calculator (simple)
-- [ ] Build API endpoints (POST /investments-debt/input, GET /investments-debt/output)
-- [ ] Visualize net worth over time
-- [ ] Show debt payoff timeline
+- [ ] Create InvestmentsDebt.jsx component
+  - [ ] Build input view (accounts + debts form)
+  - [ ] Build output view (net worth + debt timeline)
+  - [ ] Add view state toggle
+- [ ] Create InvestmentsDebt.calc.js
+  - [ ] calculateNetWorth() (~30 lines)
+  - [ ] calculateDebtPayoff() (~40 lines)
+- [ ] Support multiple debt entries (array)
+- [ ] Save to localStorage on "Continue"
+- [ ] Show net worth calculation (assets - liabilities)
+- [ ] Add debt payoff timeline visualization
+- [ ] Add navigation to Gap Calculations
 
-**Demo Goal**: User can input all accounts/debts on input page, navigate to output page, and see net worth and debt payoff timeline
+**Code Structure**:
+```javascript
+// InvestmentsDebt.calc.js (~70 lines)
+export function calculateNetWorth(data) {
+  const totalAssets = data.retirement401k + data.retirementIRA +
+                      data.brokerage + data.savings
+
+  const totalDebt = data.debts.reduce((sum, debt) => sum + debt.principal, 0)
+
+  return {
+    totalAssets,
+    totalDebt,
+    netWorth: totalAssets - totalDebt
+  }
+}
+
+export function calculateDebtPayoff(debts) {
+  // Calculate payoff timeline for each debt
+  return debts.map(debt => ({
+    name: debt.name,
+    monthsToPayoff: calculateMonths(debt),
+    totalInterest: calculateInterest(debt)
+  }))
+}
+```
+
+**Demo Goal**: User inputs investment accounts and debts, clicks Continue, sees net worth and debt payoff timeline for each debt
 
 ---
 
@@ -569,16 +724,59 @@ projection = [
 - Financial health indicators
 
 **Tasks**:
-- [ ] Build gap calculation service (integrates all previous features)
-- [ ] Create comprehensive financial summary
-- [ ] Create API endpoint (GET /gap-calculations/output)
-- [ ] Build gap calculations output page (dashboard)
-- [ ] Build cash flow visualization (income vs expenses waterfall)
-- [ ] Show savings rate and trajectory
-- [ ] Create financial health dashboard
-- [ ] Add month-by-month projection (12 months)
+- [ ] Create Gap.jsx component (output only)
+- [ ] Create Gap.calc.js (integration layer)
+  - [ ] calculateGap() - integrates all features (~100 lines)
+  - [ ] Loads profile, income, expenses, taxes from localStorage
+  - [ ] Calls all calculation functions
+  - [ ] Returns comprehensive summary
+- [ ] Build financial dashboard UI
+  - [ ] Income summary card
+  - [ ] Tax summary card
+  - [ ] Expense summary card
+  - [ ] Savings/gap card (highlight)
+- [ ] Add waterfall chart (income → taxes → expenses → savings)
+- [ ] Calculate and show key metrics:
+  - [ ] Monthly cash flow
+  - [ ] Annual savings
+  - [ ] Savings rate (%)
+  - [ ] Emergency fund runway (months)
+- [ ] Add navigation to Scenarios
 
-**Demo Goal**: User navigates to Gap Calculations page and sees complete financial picture - where money comes from, where it goes, and how much is saved
+**Code Structure**:
+```javascript
+// Gap.calc.js (~100 lines)
+import { calculateIncome } from '../income/Income.calc'
+import { calculateTaxes } from '../taxes/Taxes.calc'
+import { calculateExpenses } from '../expenses/Expenses.calc'
+import { calculateNetWorth } from '../investments-debt/InvestmentsDebt.calc'
+
+export function calculateGap(allData) {
+  const income = calculateIncome(allData.income)
+  const taxes = calculateTaxes(income.taxable, allData.profile.state, allData.profile.filingStatus)
+  const expenses = calculateExpenses(allData.expenses)
+  const netWorth = calculateNetWorth(allData.investmentsDebt)
+
+  const netIncome = income.gross - taxes.total
+  const annualSavings = netIncome - expenses.annualTotal
+  const monthlySavings = annualSavings / 12
+  const savingsRate = (annualSavings / income.gross) * 100
+
+  return {
+    income,
+    taxes,
+    expenses,
+    netWorth,
+    netIncome,
+    annualSavings,
+    monthlySavings,
+    savingsRate,
+    runway: netWorth.totalAssets / expenses.monthlyTotal
+  }
+}
+```
+
+**Demo Goal**: User navigates to Gap Calculations, sees complete financial dashboard with waterfall chart showing money flow, savings rate, and financial health metrics
 
 ---
 
@@ -605,17 +803,56 @@ projection = [
 - **Scenario Comparison Page**: Side-by-side comparison of 2+ scenarios with visualizations
 
 **Tasks**:
-- [ ] Design scenario management page (list + create/edit)
-- [ ] Design scenario comparison page
-- [ ] Implement scenario data model with overrides
-- [ ] Build scenario calculation engine (reuses all previous calculators)
-- [ ] Create scenario APIs (POST /scenarios, GET /scenarios, PUT /scenarios/:id, GET /scenarios/compare)
-- [ ] Build comparison view UI (side-by-side table or cards)
-- [ ] Highlight key differences (color coding)
-- [ ] Add "winner" recommendation logic (optional)
-- [ ] Allow saving multiple scenarios
+- [ ] Create ScenarioList.jsx component
+  - [ ] List all saved scenarios
+  - [ ] "Create New Scenario" button
+  - [ ] Edit/delete existing scenarios
+  - [ ] Scenario form (name + overrides)
+- [ ] Create ScenarioCompare.jsx component
+  - [ ] Select 2+ scenarios to compare
+  - [ ] Side-by-side comparison table
+  - [ ] Highlight differences (color coding)
+- [ ] Create Scenario.calc.js
+  - [ ] mergeScenario() - merge base + overrides (~30 lines)
+  - [ ] calculateScenario() - reuse Gap.calc.js (~40 lines)
+  - [ ] compareScenarios() - diff analysis (~50 lines)
+- [ ] Save scenarios array to localStorage
+- [ ] Export/import scenario JSON files
+- [ ] Add "Clone Current Profile" feature (creates scenario from current data)
 
-**Demo Goal**: User can create 2+ scenarios (e.g., CA vs TX), navigate to comparison page, and see side-by-side financial breakdown highlighting differences
+**Code Structure**:
+```javascript
+// Scenario.calc.js (~120 lines)
+import { calculateGap } from '../gap/Gap.calc'
+
+export function calculateScenario(scenario, baseData) {
+  // Merge base data with scenario overrides
+  const merged = {
+    profile: { ...baseData.profile, ...scenario.overrides.profile },
+    income: { ...baseData.income, ...scenario.overrides.income },
+    expenses: { ...baseData.expenses, ...scenario.overrides.expenses },
+    investmentsDebt: { ...baseData.investmentsDebt, ...scenario.overrides.investmentsDebt }
+  }
+
+  // Reuse gap calculation (which calls all other calcs)
+  return calculateGap(merged)
+}
+
+export function compareScenarios(scenarios, baseData) {
+  const results = scenarios.map(s => ({
+    name: s.name,
+    results: calculateScenario(s, baseData)
+  }))
+
+  // Calculate differences
+  return {
+    scenarios: results,
+    differences: calculateDifferences(results)
+  }
+}
+```
+
+**Demo Goal**: User creates 2 scenarios (e.g., "CA Job" vs "TX Job"), navigates to comparison page, sees side-by-side breakdown with highlighted differences (savings, taxes, net income)
 
 **Example Scenarios**:
 1. **State Comparison**: Current CA job vs equivalent TX job
@@ -676,13 +913,18 @@ Every feature (except output-only features) follows the same pattern:
 
 ### Architecture Decisions
 - **No authentication**: Simplifies MVP, single-user focus
+- **No backend/database**: localStorage only, faster development, easier debugging
 - **Feature-based structure**: Better scalability and maintainability
-- **Frontend/Backend separation**: Allows independent development and potential future mobile app
+- **Small files**: Max 200 lines per file for AI context windows
+- **Pure calculation functions**: Separated from UI, easily testable and portable
+- **JSON data files**: Tax brackets and reference data in JSON, not code
+- **Direct function calls**: No API layer, simpler data flow
 
 ### Data Strategy
-- Start with single-user local data
-- Design schema to support multi-user in future
-- Keep financial calculations in backend for consistency
+- **localStorage as database**: Single-user local data, visible in DevTools
+- **JSON export/import**: Scenarios are portable files
+- **Calculations on-demand**: Triggered by user navigation, not real-time
+- **Pure functions**: All calculations are pure functions that can be copied between features
 
 ### UI/UX Strategy
 - Tiered data collection reduces cognitive load
@@ -843,5 +1085,158 @@ Scenarios (Input/Output combined)
 - Clear error messages (avoid technical jargon)
 - Provide retry options or next steps
 
+## Debugging on Easy Mode
+
+### Console Logging Strategy
+
+Add extensive logging to all calculation functions:
+
+```javascript
+// Example: Income.calc.js
+export function calculateIncome(data) {
+  console.group('💰 Income Calculation')
+  console.log('Input data:', data)
+
+  const gross = data.salary + data.bonus + data.equity
+  console.log('Gross income:', gross)
+
+  const preTaxTotal = data.contribution401k + data.contributionHSA
+  console.log('Pre-tax deductions:', preTaxTotal)
+
+  const taxable = gross - preTaxTotal
+  console.log('Taxable income:', taxable)
+
+  console.groupEnd()
+
+  return { gross, preTaxTotal, taxable }
+}
+```
+
+### DevTools Inspection
+
+**View localStorage**:
+1. Open Chrome DevTools (F12)
+2. Go to Application tab
+3. Click Local Storage → your domain
+4. See all saved data in real-time
+
+**Inspect data anytime**:
+```javascript
+// In browser console:
+JSON.parse(localStorage.getItem('income'))
+JSON.parse(localStorage.getItem('profile'))
+```
+
+### Export Debug Data
+
+Add a debug button to export all data:
+
+```javascript
+// In App.jsx or Navigation
+function handleDebugExport() {
+  const allData = {
+    profile: storage.load('profile'),
+    income: storage.load('income'),
+    expenses: storage.load('expenses'),
+    investmentsDebt: storage.load('investments-debt'),
+    scenarios: storage.load('scenarios')
+  }
+
+  console.log('📊 All App Data:', allData)
+
+  // Download as JSON
+  const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `finance-debug-${Date.now()}.json`
+  a.click()
+}
+```
+
+### AI-Friendly Error Messages
+
+Write errors that tell you exactly what to check:
+
+```javascript
+function calculateTaxes(taxableIncome, state, filingStatus) {
+  if (!taxableIncome || taxableIncome <= 0) {
+    throw new Error(`
+      ❌ Tax Calculation Error: Invalid income
+      - taxableIncome: ${taxableIncome}
+      - Check that Income feature saved data correctly
+      - Run: JSON.parse(localStorage.getItem('income'))
+    `)
+  }
+
+  if (!TAX_DATA[state]) {
+    throw new Error(`
+      ❌ Tax Calculation Error: Unknown state
+      - Received: "${state}"
+      - Available: ${Object.keys(TAX_DATA).join(', ')}
+      - Check profile.state value
+      - Run: JSON.parse(localStorage.getItem('profile'))
+    `)
+  }
+
+  // ... rest of calculation
+}
+```
+
+### Debugging Checklist
+
+When something isn't working:
+
+1. **Check console logs** - Look for calculation groups
+2. **Inspect localStorage** - Verify data was saved
+3. **Check component state** - Add `console.log(data)` in component
+4. **Verify calculation function** - Copy input data, test function in console
+5. **Export debug data** - Download JSON to share with AI or review
+6. **Check navigation flow** - Ensure save happens before navigation
+
+### Testing Calculations
+
+Test any calculation function directly in console:
+
+```javascript
+// Import the function (in browser console, if module is loaded)
+// Or copy the function and test directly
+
+const testData = {
+  salary: 150000,
+  bonus: 15000,
+  contribution401k: 22500,
+  contributionHSA: 3850
+}
+
+// Copy/paste calculateIncome function
+// Then run:
+calculateIncome(testData)
+// See output with all console.logs
+```
+
+### Common Issues & Solutions
+
+**Issue**: Data not saving
+- **Check**: Is storage.save() being called?
+- **Debug**: Add `console.log('Saving:', data)` before storage.save()
+- **Verify**: Check localStorage in DevTools
+
+**Issue**: Calculations return NaN
+- **Check**: Are all input values numbers?
+- **Debug**: Log each value before calculation
+- **Fix**: Use `Number(value)` or `parseInt(value, 10)`
+
+**Issue**: Component not updating
+- **Check**: Is state being set correctly?
+- **Debug**: Add `console.log('State updated:', newState)` after setState
+- **Verify**: Check React DevTools
+
+**Issue**: Wrong data in calculations
+- **Check**: Is the right data being loaded from localStorage?
+- **Debug**: Log data immediately after loading
+- **Verify**: Check localStorage has correct data
+
 ---
 *Created: 2025-11-09*
+*Updated: 2025-11-09 - Simplified architecture (Vite + React + localStorage)*
