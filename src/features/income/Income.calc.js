@@ -127,8 +127,9 @@ export function calculateIncomeProjections(data, profile) {
     // Calculate total comp
     const totalCompNominal = salaryNominal + equityNominal + company401kNominal
 
-    // Calculate present values (discounted by inflation)
-    const yearsFromNow = (monthIndex / 12)
+    // Calculate present values (discounted by inflation at start of each year)
+    // Year 1 = 0 years from now, Year 2 = 1 year from now, etc.
+    const yearsFromNow = year - 1
     const discountFactor = Math.pow(1 + inflationRate / 100, yearsFromNow)
 
     const salaryPV = salaryNominal / discountFactor
