@@ -1,5 +1,7 @@
 # Finance Project
 
+> **⚠️ DOCUMENTATION UPDATE**: This README contains general project information. For detailed module documentation, see the new comprehensive references in [`/docs/modules/`](./docs/modules/README.md).
+
 A React application to help users make smart, data-backed financial decisions through scenario analysis and comparison tools.
 
 ## Tech Stack
@@ -90,6 +92,30 @@ Data is stored in localStorage with these keys:
 - `investments-debt` - Assets & debts
 - `scenarios` - Array of scenarios
 
-## Next Steps
+## Documentation
 
-See [PLANNING.md](./PLANNING.md) for detailed architecture, data models, and implementation phases.
+### Module References (NEW!)
+
+Comprehensive documentation for each module is now available:
+
+**Start here**: [`/docs/modules/README.md`](./docs/modules/README.md)
+
+Individual module references:
+- [Personal Details](./docs/modules/personal-details.md) - Profile settings, retirement planning
+- [Income](./docs/modules/income.md) - Income streams, growth rates, equity
+- [Expenses](./docs/modules/expenses.md) - Categories, one-time expenses, inflation
+- [Taxes](./docs/modules/taxes.md) - Federal, state, FICA with bracket inflation
+- [Investments & Debt](./docs/modules/investments-debt.md) - 401(k), portfolio allocation
+- [Gap/Net Worth](./docs/modules/gap-networth.md) - Cash flow and wealth projections
+
+Each module reference includes:
+- Field definitions with validation rules
+- Calculation formulas with worked examples
+- Data flow and dependencies
+- Implementation notes
+- Common use cases
+
+### Other Documentation
+
+- [PLANNING.md](./PLANNING.md) - Architecture, data models, implementation phases
+- [FIELD-REFERENCE.md](./FIELD-REFERENCE.md) - ⚠️ **DEPRECATED** - See module references above

@@ -1,20 +1,220 @@
 # Field Reference Guide
 
+> # ⚠️ DEPRECATED - DO NOT USE
+>
+> **This document is outdated and no longer maintained.**
+>
+> **→ Use the new module references instead**: [`/docs/modules/README.md`](./docs/modules/README.md)
+>
+> The new documentation includes:
+> - Up-to-date field definitions with examples
+> - Calculation formulas with worked examples
+> - Recent implementation details (tax bracket inflation, precision fixes)
+> - Data flow and dependencies
+> - Common use cases
+>
+> Individual module references:
+> - [Personal Details](./docs/modules/personal-details.md)
+> - [Income](./docs/modules/income.md)
+> - [Expenses](./docs/modules/expenses.md)
+> - [Taxes](./docs/modules/taxes.md)
+> - [Investments & Debt](./docs/modules/investments-debt.md)
+> - [Gap/Net Worth](./docs/modules/gap-networth.md)
+
+---
+
+## ⬇️ OLD CONTENT BELOW (Preserved for reference only)
+
 **Purpose**: Detailed technical blueprint for every field in every feature. Use this to rebuild features 10x faster.
 
-**Last Updated**: 2025-11-09
+**Last Updated**: 2025-11-10 (DEPRECATED - See above for new docs)
 
 ---
 
 ## Table of Contents
 
-1. [Personal Details](#personal-details)
-2. [Income](#income)
-3. [Expenses](#expenses-coming-soon)
-4. [Taxes](#taxes-coming-soon)
-5. [Investments & Debt](#investments--debt-coming-soon)
-6. [Gap Calculations](#gap-calculations-coming-soon)
-7. [Scenarios](#scenarios-coming-soon)
+1. [Data Persistence (localStorage)](#data-persistence-localstorage)
+2. [Personal Details](#personal-details)
+3. [Income](#income)
+4. [Expenses](#expenses-coming-soon)
+5. [Taxes](#taxes-coming-soon)
+6. [Investments & Debt](#investments--debt-coming-soon)
+7. [Gap Calculations](#gap-calculations-coming-soon)
+8. [Scenarios](#scenarios-coming-soon)
+
+---
+
+## Data Persistence (localStorage)
+
+### Overview
+
+**All app data is stored in the browser's localStorage** as JSON strings. This allows data to persist between sessions without requiring a backend server.
+
+**Storage Utility**: `src/shared/storage.js`
+
+### localStorage Keys
+
+The app uses the following localStorage keys:
+
+| Key | Feature | When Saved | Required For Dashboard |
+|-----|---------|------------|----------------------|
+| `profile` | Personal Details | On "Continue" button | ✅ Yes |
+| `income` | Income | On "Calculate Projections" button | ✅ Yes |
+| `expenses` | Expenses | On "Calculate Projections" button | ✅ Yes |
+| `investmentsDebt` | Investments & Debt | On "Continue" button | ✅ Yes |
+| `taxes` | Taxes | Auto-calculated on load | ❌ No |
+| `taxLadders` | Tax Bracket Manager | On "Save Changes" button | ❌ No |
+
+### Dashboard Requirements
+
+The Dashboard requires specific fields to be present:
+
+**1. Profile (`localStorage.profile`)**
+- ✅ `currentAge` - Must be set
+- ✅ `yearsToRetirement` - Must be set
+- ❌ Other fields optional but recommended
+
+**2. Income (`localStorage.income`)**
+- ✅ `incomeStreams` - Array with at least 1 stream
+- ✅ Each stream must have `annualIncome` set
+
+**3. Expenses (`localStorage.expenses`)**
+- ✅ `categories` - Array with at least 1 category
+- ✅ Each category must have `baseAmount` set
+
+**4. Investments (`localStorage.investmentsDebt`)**
+- ✅ `currentCash` - Must be defined (can be 0)
+- ✅ `targetCash` - Must be defined (can be 0)
+- ❌ Investments array optional
+- ❌ 401k optional
+
+### Checking Dashboard Readiness
+
+**Method 1: Browser DevTools**
+1. Open browser DevTools (F12)
+2. Go to "Application" or "Storage" tab
+3. Expand "Local Storage" → `http://localhost:5173`
+4. Check for keys: `profile`, `income`, `expenses`, `investmentsDebt`
+
+**Method 2: Console**
+```javascript
+// Check what's stored
+console.log('Profile:', localStorage.getItem('profile'))
+console.log('Income:', localStorage.getItem('income'))
+console.log('Expenses:', localStorage.getItem('expenses'))
+console.log('Investments:', localStorage.getItem('investmentsDebt'))
+
+// Or use the storage utility
+import { storage } from './shared/storage'
+console.log(storage.exportAll())
+```
+
+**Method 3: Dashboard Console Logs**
+- Navigate to `/dashboard`
+- Open browser console (F12 → Console)
+- Look for "📊 Loading Dashboard Data" group
+- Check which sections show as missing
+
+### Data Structure Examples
+
+**Profile** (`localStorage.profile`):
+```javascript
+{
+  currentAge: 35,
+  retirementAge: 65,
+  yearsToRetirement: 30,  // Calculated: retirementAge - currentAge
+  filingStatus: 'Single',
+  location: 'California',
+  inflationRate: 2.7
+}
+```
+
+**Income** (`localStorage.income`):
+```javascript
+{
+  incomeStreams: [
+    {
+      id: 'stream-1',
+      name: 'Primary Job',
+      annualIncome: 150000,
+      individual401k: 23000,
+      companyContribution: 5000,
+      equity: 50000,
+      growthRate: 3,
+      endWorkYear: 30,
+      jumps: [
+        { id: 'jump-1', year: 5, jumpPercent: 7 }
+      ]
+    }
+  ]
+}
+```
+
+**Expenses** (`localStorage.expenses`):
+```javascript
+{
+  categories: [
+    {
+      id: 'cat-1',
+      name: 'Housing',
+      baseAmount: 3000,
+      inflationRate: 3.5,
+      startYear: 1,
+      endYear: 30,
+      jumps: [
+        { id: 'jump-1', year: 5, jumpPercent: 20 }
+      ]
+    }
+  ]
+}
+```
+
+**Investments** (`localStorage.investmentsDebt`):
+```javascript
+{
+  currentCash: 40000,
+  targetCash: 60000,
+  retirement401k: {
+    currentValue: 150000,
+    growthRate: 8,
+    companyContribution: 5000  // Auto-loaded from income
+  },
+  investments: [
+    {
+      id: 'inv-1',
+      name: 'Investment 1',
+      currentValue: 50000,
+      growthRate: 7,
+      portfolioPercent: 33.33
+    }
+  ]
+}
+```
+
+### Troubleshooting
+
+**Dashboard shows "Not Ready" but I completed all sections:**
+
+1. **Check Browser Console** (F12 → Console)
+   - Look for error messages
+   - Check which sections are marked as missing
+
+2. **Verify Each Section Was Saved**
+   - Personal Details: Click "Continue" button (not just filling fields)
+   - Income: Click "Calculate Income Projections →" button
+   - Expenses: Click "Calculate Expense Projections →" button
+   - Investments: Click "Continue" button
+
+3. **Check localStorage Keys**
+   - Verify all 4 keys exist and contain data
+   - Use browser DevTools → Application → Local Storage
+
+4. **Clear and Re-enter Data**
+   ```javascript
+   // In browser console
+   localStorage.clear()
+   // Then re-enter all data through the UI
+   ```
 
 ---
 
@@ -3256,16 +3456,187 @@ function calculateFICATax(salary, filingType) {
 
 ---
 
-## Next Features (Coming Soon)
+## 🎯 Dashboard
 
-- Expenses
-- Investments & Debt
-- Gap Calculations
-- Scenarios
+**Route**: `/dashboard`
 
-Each will follow the same patterns documented above with feature-specific field logic.
+**Purpose**: Comprehensive financial overview with 4 tabs showing net worth growth, income projections, expense projections, and retirement readiness.
+
+### Tab 1: Net Worth
+
+**Data Source**: `calculateGapProjections()` from Gap.calc.js
+
+**Components**:
+1. **Summary Cards**:
+   - Current Net Worth (Year 1)
+   - Retirement Net Worth (Final Year)
+   - Net Worth Growth ($ and %)
+   - Lifetime Invested (Total contributions)
+
+2. **Stacked Area Chart**:
+   - Shows Cash, Investments, and 401k growth over time
+   - X-axis: Years (1 to retirement)
+   - Y-axis: Dollar value
+   - Toggleable between Nominal and Present Value
+
+3. **Waterfall Breakdown** (every 5 years):
+   - Starting Net Worth
+   - Cash Change (positive/negative)
+   - Investment Contributions (new cost basis)
+   - Investment Growth (market appreciation)
+   - 401k Contributions (individual)
+   - 401k Growth (including company match)
+   - Ending Net Worth
+
+**Key Calculations**:
+```javascript
+// Net Worth Formula
+netWorth = cash + retirement401kValue + totalInvestmentValue
+
+// Year-over-Year Deltas
+cashChange = currentYear.cash - previousYear.cash
+investmentContributions = currentYear.costBasis - previousYear.costBasis
+investmentGrowth = (currentYear.investmentValue - previousYear.investmentValue) - investmentContributions
+```
+
+### Tab 2: Income
+
+**Data Source**: `calculateIncomeProjections()` from Income.calc.js
+
+**Components**:
+- Stream tabs (All Streams + individual streams)
+- 4 summary cards (Current Year, Year 10, Lifetime, Average)
+- Line chart showing Total Comp, Base Salary, Total Bonus over time
+
+### Tab 3: Expenses
+
+**Data Source**: `calculateExpenseProjections()` from Expenses.calc.js
+
+**Components**:
+- 4 summary cards (Current Year, Year 10, Lifetime, Average)
+- Stacked bar chart by category
+- Category breakdown table with percentages
+
+### Tab 4: Retirement Readiness
+
+**Data Source**: `calculateGapProjections()` from Gap.calc.js
+
+**Components**:
+1. **Summary Cards**:
+   - Years to Retirement
+   - Net Worth at Retirement
+   - Safe Withdrawal Income (4% rule)
+   - Income Replacement Ratio
+
+2. **Readiness Assessment**:
+   - Excellent: ≥100% income replacement
+   - Good: 80-99% income replacement
+   - Fair: 60-79% income replacement
+   - Needs Improvement: <60% income replacement
+
+3. **Visualizations**:
+   - Donut chart: Asset allocation at retirement (Cash/Investments/401k)
+   - Bar chart: Final year income vs. safe withdrawal
+   - Detailed metrics table (nominal and PV)
+
+**Key Calculations**:
+```javascript
+// 4% Safe Withdrawal Rule
+safeWithdrawal = retirementNetWorth * 0.04  // Annual sustainable income
+
+// Income Replacement Ratio
+incomeReplacement = (safeWithdrawal / finalYearIncome) * 100
+```
+
+**Navigation**: Dashboard link appears first in main navigation (after Home)
 
 ---
 
-**Last Updated**: 2025-11-09
-**Version**: 2.0
+## ⚙️ Calculation Methodology: Monthly vs Annual
+
+### Annual Calculations (Compounded Yearly)
+
+All **growth rates** are compounded **annually**, not monthly:
+
+1. **Income Growth Rate**:
+   ```javascript
+   const yearsOfGrowth = year - 1  // Year 1 has 0 years of growth
+   const growthMultiplier = Math.pow(1 + stream.growthRate / 100, yearsOfGrowth)
+   const annualSalary = stream.annualIncome * growthMultiplier
+   ```
+   - Growth rate: 3% means 3% per year, not per month
+   - Applied once per year (in January)
+   - Compounds annually: (1.03)^years
+
+2. **Investment Growth Rate**:
+   ```javascript
+   // Applied at end of each year
+   inv.marketValue = inv.costBasis * Math.pow(1 + inv.growthRate / 100, year)
+   ```
+   - Growth rate: 7% means 7% per year
+   - Applied annually, not monthly
+   - Example: $100,000 at 7% = $107,000 after 1 year
+
+3. **401k Growth Rate**:
+   ```javascript
+   // Applied annually
+   retirement401k.value = retirement401k.value * (1 + retirement401k.growthRate / 100) +
+                         totalIndividual401k +
+                         retirement401k.companyContribution
+   ```
+   - Growth rate: 8% means 8% per year
+   - Applied once per year
+   - Includes contributions and growth
+
+4. **Inflation Rate**:
+   ```javascript
+   const discountFactor = Math.pow(1 + inflationRate / 100, yearsFromNow)
+   presentValue = nominalValue / discountFactor
+   ```
+   - Inflation rate: 2.7% means 2.7% per year
+   - Used for Present Value calculations
+   - Compounds annually
+
+### Monthly Calculations (For Display Only)
+
+Monthly values are derived by **dividing annual values by 12**:
+
+1. **Monthly Income**:
+   ```javascript
+   const annualSalary = stream.annualIncome * growthMultiplier
+   const monthlySalary = annualSalary / 12  // Display only
+   ```
+   - Growth is NOT applied monthly
+   - Monthly value = Annual / 12
+   - Used for monthly projection rows
+
+2. **Monthly Expenses**:
+   ```javascript
+   const monthlyExpense = (annualExpense * inflationMultiplier) / 12
+   ```
+   - Inflation is NOT applied monthly
+   - Monthly value = Annual / 12
+
+### Important Notes
+
+⚠️ **All growth, inflation, and interest rates are ANNUAL rates**:
+- Income growth: Applied annually (January)
+- Investment growth: Applied annually (end of year)
+- 401k growth: Applied annually (end of year)
+- Inflation: Applied annually for PV calculations
+- Expense inflation: Applied annually
+
+📊 **Monthly projections are for display purposes only**:
+- The app generates monthly projection rows
+- BUT growth calculations happen annually
+- Monthly rows show: `annualValue / 12`
+
+🔄 **Growth is NOT compounded monthly**:
+- A 3% annual growth rate means exactly 3% per year
+- NOT 3%/12 = 0.25% per month
+- This is standard financial modeling practice
+
+---
+
+**Last Updated**: 2025-11-10
+**Version**: 3.0
