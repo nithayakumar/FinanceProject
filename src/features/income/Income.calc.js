@@ -3,6 +3,11 @@
  */
 
 /**
+ * Helper function for 5 decimal place rounding
+ */
+const round5 = (value) => Math.round(value * 100000) / 100000
+
+/**
  * Validate income input data
  */
 export function validateIncome(data, yearsToRetirement) {
@@ -21,6 +26,11 @@ export function validateIncome(data, yearsToRetirement) {
     // Company 401k
     if (stream.company401k === '' || stream.company401k < 0) {
       errors[`${stream.id}-company401k`] = 'Company 401k must be a positive number or 0'
+    }
+
+    // Individual 401k
+    if (stream.individual401k === '' || stream.individual401k < 0) {
+      errors[`${stream.id}-individual401k`] = 'Individual 401k contribution must be a positive number or 0'
     }
 
     // Equity
@@ -149,24 +159,24 @@ export function calculateIncomeProjections(data, profile) {
         .reduce((sum, s) => sum + (s.growthRate * s.annualIncome), 0) / totalSalary
     }
 
-    // Store monthly projection
+    // Store monthly projection (keep full precision, round only on display)
     projections.push({
       year,
       month,
       absoluteYear,
       monthIndex,
 
-      // Nominal values
-      salaryNominal: Math.round(salaryNominal),
-      equityNominal: Math.round(equityNominal),
-      company401kNominal: Math.round(company401kNominal),
-      totalCompNominal: Math.round(totalCompNominal),
+      // Nominal values (no rounding - preserve precision)
+      salaryNominal,
+      equityNominal,
+      company401kNominal,
+      totalCompNominal,
 
-      // Present values
-      salaryPV: Math.round(salaryPV),
-      equityPV: Math.round(equityPV),
-      company401kPV: Math.round(company401kPV),
-      totalCompPV: Math.round(totalCompPV),
+      // Present values (no rounding - preserve precision)
+      salaryPV,
+      equityPV,
+      company401kPV,
+      totalCompPV,
 
       // Metadata
       appliedGrowthRate,
@@ -252,11 +262,11 @@ function prepareChartData(projections, incomeStreams, yearsToRetirement, inflati
       })
 
       // Store this stream's annual PV
-      yearData[stream.name] = Math.round(streamAnnualPV)
+      yearData[stream.name] = round5(streamAnnualPV)
       yearData.total += streamAnnualPV
     })
 
-    yearData.total = Math.round(yearData.total)
+    yearData.total = round5(yearData.total)
     chartData.push(yearData)
   }
 
@@ -321,8 +331,8 @@ function calculateSummary(projections, yearsToRetirement, incomeStreams, inflati
             milestones.push({
               year: jump.year,
               label: `Year ${jump.year}: ${stream.name} - ${jump.description || 'Income Jump'} (+${jump.jumpPercent}%)`,
-              compNominal: Math.round(compNominal),
-              compPV: Math.round(compPV)
+              compNominal: round5(compNominal),
+              compPV: round5(compPV)
             })
           }
         })
@@ -341,23 +351,23 @@ function calculateSummary(projections, yearsToRetirement, incomeStreams, inflati
   )
 
   return {
-    currentYearCompNominal: Math.round(currentYearCompNominal),
-    currentYearCompPV: Math.round(currentYearCompPV),
+    currentYearCompNominal: round5(currentYearCompNominal),
+    currentYearCompPV: round5(currentYearCompPV),
 
-    year10CompNominal: Math.round(year10CompNominal),
-    year10CompPV: Math.round(year10CompPV),
+    year10CompNominal: round5(year10CompNominal),
+    year10CompPV: round5(year10CompPV),
 
-    lifetimeEarningsNominal: Math.round(lifetimeEarningsNominal),
-    lifetimeEarningsPV: Math.round(lifetimeEarningsPV),
+    lifetimeEarningsNominal: round5(lifetimeEarningsNominal),
+    lifetimeEarningsPV: round5(lifetimeEarningsPV),
 
-    totalSalaryNominal: Math.round(totalSalaryNominal),
-    totalSalaryPV: Math.round(totalSalaryPV),
+    totalSalaryNominal: round5(totalSalaryNominal),
+    totalSalaryPV: round5(totalSalaryPV),
 
-    totalEquityNominal: Math.round(totalEquityNominal),
-    totalEquityPV: Math.round(totalEquityPV),
+    totalEquityNominal: round5(totalEquityNominal),
+    totalEquityPV: round5(totalEquityPV),
 
-    total401kNominal: Math.round(total401kNominal),
-    total401kPV: Math.round(total401kPV),
+    total401kNominal: round5(total401kNominal),
+    total401kPV: round5(total401kPV),
 
     averageAnnualGrowth,
 
@@ -453,18 +463,18 @@ function calculatePerStreamSummaries(projections, incomeStreams, yearsToRetireme
     return {
       streamId: stream.id,
       streamName: stream.name,
-      currentYearCompNominal: Math.round(currentYearCompNominal),
-      currentYearCompPV: Math.round(currentYearCompPV),
-      year10CompNominal: Math.round(year10CompNominal),
-      year10CompPV: Math.round(year10CompPV),
-      lifetimeEarningsNominal: Math.round(lifetimeEarningsNominal),
-      lifetimeEarningsPV: Math.round(lifetimeEarningsPV),
-      totalSalaryNominal: Math.round(totalSalaryNominal),
-      totalSalaryPV: Math.round(totalSalaryPV),
-      totalEquityNominal: Math.round(totalEquityNominal),
-      totalEquityPV: Math.round(totalEquityPV),
-      total401kNominal: Math.round(total401kNominal),
-      total401kPV: Math.round(total401kPV)
+      currentYearCompNominal: round5(currentYearCompNominal),
+      currentYearCompPV: round5(currentYearCompPV),
+      year10CompNominal: round5(year10CompNominal),
+      year10CompPV: round5(year10CompPV),
+      lifetimeEarningsNominal: round5(lifetimeEarningsNominal),
+      lifetimeEarningsPV: round5(lifetimeEarningsPV),
+      totalSalaryNominal: round5(totalSalaryNominal),
+      totalSalaryPV: round5(totalSalaryPV),
+      totalEquityNominal: round5(totalEquityNominal),
+      totalEquityPV: round5(totalEquityPV),
+      total401kNominal: round5(total401kNominal),
+      total401kPV: round5(total401kPV)
     }
   })
 }

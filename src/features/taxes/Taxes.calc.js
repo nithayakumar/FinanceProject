@@ -5,6 +5,11 @@
 import { storage } from '../../shared/storage'
 
 /**
+ * Helper function for 5 decimal place rounding
+ */
+const round5 = (value) => Math.round(value * 100000) / 100000
+
+/**
  * Load custom tax brackets from storage or use defaults
  */
 function loadTaxBrackets() {
@@ -182,15 +187,15 @@ function calculateBracketTax(income, brackets) {
   }
 
   return {
-    total: Math.round(tax),
+    total: round5(tax),
     breakdown
   }
 }
 
 /**
- * Calculate FICA taxes
+ * Calculate FICA taxes with inflation adjustment
  */
-function calculateFICATax(salary, filingType) {
+function calculateFICATax(salary, filingType, inflationMultiplier = 1) {
   if (salary <= 0) {
     return {
       socialSecurity: 0,
@@ -200,18 +205,22 @@ function calculateFICATax(salary, filingType) {
     }
   }
 
-  // Social Security (capped)
-  const socialSecurity = Math.round(
-    Math.min(salary, FICA_RATES_2025.socialSecurity.wageBase) * FICA_RATES_2025.socialSecurity.rate
+  // Apply inflation to thresholds
+  const inflatedWageBase = round5(FICA_RATES_2025.socialSecurity.wageBase * inflationMultiplier)
+  const baseThreshold = FICA_RATES_2025.additionalMedicare.threshold[filingType] || 200000
+  const inflatedThreshold = round5(baseThreshold * inflationMultiplier)
+
+  // Social Security (capped at inflated wage base)
+  const socialSecurity = round5(
+    Math.min(salary, inflatedWageBase) * FICA_RATES_2025.socialSecurity.rate
   )
 
   // Medicare (no cap)
-  const medicare = Math.round(salary * FICA_RATES_2025.medicare.rate)
+  const medicare = round5(salary * FICA_RATES_2025.medicare.rate)
 
-  // Additional Medicare (over threshold)
-  const threshold = FICA_RATES_2025.additionalMedicare.threshold[filingType] || 200000
-  const additionalMedicare = salary > threshold
-    ? Math.round((salary - threshold) * FICA_RATES_2025.additionalMedicare.rate)
+  // Additional Medicare (over inflated threshold)
+  const additionalMedicare = salary > inflatedThreshold
+    ? round5((salary - inflatedThreshold) * FICA_RATES_2025.additionalMedicare.rate)
     : 0
 
   return {
@@ -224,14 +233,27 @@ function calculateFICATax(salary, filingType) {
 
 /**
  * Calculate taxes for a single income source
+ * @param {number} income - The income to calculate taxes on
+ * @param {string} incomeType - 'salary' or 'investment'
+ * @param {string} filingType - Filing status
+ * @param {string} state - State for state taxes
+ * @param {string} country - Country for federal taxes
+ * @param {number} year - Year for inflation adjustment (1 = current year, 2 = next year, etc.)
+ * @param {number} inflationRate - Annual inflation rate as percentage (e.g., 2.7 for 2.7%)
  */
-export function calculateTaxes(income, incomeType, filingType, state = 'california', country = 'usa') {
+export function calculateTaxes(income, incomeType, filingType, state = 'california', country = 'usa', year = 1, inflationRate = 0) {
   console.group('💰 Calculating Taxes')
   console.log('Income:', income)
   console.log('Income Type:', incomeType)
   console.log('Filing Type:', filingType)
   console.log('State:', state)
   console.log('Country:', country)
+  console.log('Year:', year)
+  console.log('Inflation Rate:', inflationRate + '%')
+
+  // Calculate inflation multiplier for this year
+  const yearsOfInflation = year - 1
+  const inflationMultiplier = Math.pow(1 + inflationRate / 100, yearsOfInflation)
 
   // Load custom tax brackets if available
   const customLadders = loadTaxBrackets()
@@ -257,6 +279,18 @@ export function calculateTaxes(income, incomeType, filingType, state = 'californ
     return stepTax
   }
 
+  // Helper to inflate brackets for a given year
+  const inflateBrackets = (brackets, multiplier) => {
+    if (multiplier === 1) return brackets
+
+    return brackets.map((bracket, idx) => ({
+      rate: bracket.rate,
+      min: round5(bracket.min * multiplier),
+      max: bracket.max === Infinity ? Infinity : round5(bracket.max * multiplier),
+      stepTax: bracket.stepTax * multiplier  // Step tax also needs to be scaled
+    }))
+  }
+
   // Get state brackets
   let stateBrackets = CA_TAX_BRACKETS_2025[filingType]
   let actualStateFilingType = filingType
@@ -277,6 +311,9 @@ export function calculateTaxes(income, incomeType, filingType, state = 'californ
       stateBrackets = convertBrackets(filingTypeData.brackets)
     }
   }
+
+  // Apply inflation to state brackets
+  stateBrackets = inflateBrackets(stateBrackets, inflationMultiplier)
 
   // Get country/federal brackets
   let federalBrackets
@@ -305,6 +342,9 @@ export function calculateTaxes(income, incomeType, filingType, state = 'californ
     }
   }
 
+  // Apply inflation to federal brackets
+  federalBrackets = inflateBrackets(federalBrackets, inflationMultiplier)
+
   console.log('Actual State Filing Type Used:', actualStateFilingType)
   console.log('Actual Federal Filing Type Used:', actualFederalFilingType)
 
@@ -316,7 +356,7 @@ export function calculateTaxes(income, incomeType, filingType, state = 'californ
 
   // Calculate FICA (only on salary, not investment income)
   const fica = incomeType === 'salary'
-    ? calculateFICATax(income, filingType)
+    ? calculateFICATax(income, filingType, inflationMultiplier)
     : { socialSecurity: 0, medicare: 0, additionalMedicare: 0, total: 0 }
 
   const result = {

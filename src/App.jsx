@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Navigation from './shared/components/Navigation'
 import Home from './features/Home'
+import Dashboard from './features/dashboard/Dashboard'
 import PersonalDetails from './features/personal-details/PersonalDetails'
 import Income from './features/income/Income'
 import Expenses from './features/expenses/Expenses'
@@ -17,6 +18,7 @@ function App() {
       <main className="container mx-auto">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/personal-details" element={<PersonalDetails />} />
           <Route path="/income" element={<Income />} />
           <Route path="/expenses" element={<Expenses />} />

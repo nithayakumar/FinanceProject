@@ -3,6 +3,11 @@
  */
 
 /**
+ * Helper function for 5 decimal place rounding
+ */
+const round5 = (value) => Math.round(value * 100000) / 100000
+
+/**
  * Validate expense input data
  */
 export function validateExpenses(data, yearsToRetirement) {
@@ -165,23 +170,23 @@ export function calculateExpenseProjections(data, profile) {
       categoryBreakdownPV[cat] = categoryBreakdown[cat] / discountFactor
     })
 
-    // Store monthly projection
+    // Store monthly projection (keep full precision, round only on display)
     projections.push({
       year,
       month,
       absoluteYear,
       monthIndex,
 
-      // Nominal values
-      totalRecurringNominal: Math.round(totalRecurringNominal),
-      oneTimeNominal: Math.round(oneTimeNominal),
-      totalExpensesNominal: Math.round(totalExpensesNominal),
+      // Nominal values (no rounding - preserve precision)
+      totalRecurringNominal,
+      oneTimeNominal,
+      totalExpensesNominal,
       categoryBreakdownNominal: categoryBreakdown,
 
-      // Present values
-      totalRecurringPV: Math.round(totalRecurringPV),
-      oneTimePV: Math.round(oneTimePV),
-      totalExpensesPV: Math.round(totalExpensesPV),
+      // Present values (no rounding - preserve precision)
+      totalRecurringPV,
+      oneTimePV,
+      totalExpensesPV,
       categoryBreakdownPV: categoryBreakdownPV
     })
   }
@@ -247,8 +252,8 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
 
   // Round category totals
   Object.keys(categoryTotals).forEach(cat => {
-    categoryTotals[cat] = Math.round(categoryTotals[cat])
-    categoryTotalsPV[cat] = Math.round(categoryTotalsPV[cat])
+    categoryTotals[cat] = round5(categoryTotals[cat])
+    categoryTotalsPV[cat] = round5(categoryTotalsPV[cat])
   })
 
   // One-time expenses total (in today's dollars as entered)
@@ -285,8 +290,8 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
             milestones.push({
               year: jump.year,
               label: `Year ${jump.year}: ${category.category} - ${jump.description || 'Expense change'} (${jump.jumpPercent > 0 ? '+' : ''}${jump.jumpPercent}%)`,
-              expensesNominal: Math.round(expensesNominal),
-              expensesPV: Math.round(expensesPV),
+              expensesNominal: round5(expensesNominal),
+              expensesPV: round5(expensesPV),
               changeType
             })
           }
@@ -310,20 +315,20 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
   milestones.sort((a, b) => a.year - b.year)
 
   return {
-    currentYearExpensesNominal: Math.round(currentYearExpensesNominal),
-    currentYearExpensesPV: Math.round(currentYearExpensesPV),
+    currentYearExpensesNominal: round5(currentYearExpensesNominal),
+    currentYearExpensesPV: round5(currentYearExpensesPV),
 
-    year10ExpensesNominal: Math.round(year10ExpensesNominal),
-    year10ExpensesPV: Math.round(year10ExpensesPV),
+    year10ExpensesNominal: round5(year10ExpensesNominal),
+    year10ExpensesPV: round5(year10ExpensesPV),
 
-    lifetimeExpensesNominal: Math.round(lifetimeExpensesNominal),
-    lifetimeExpensesPV: Math.round(lifetimeExpensesPV),
+    lifetimeExpensesNominal: round5(lifetimeExpensesNominal),
+    lifetimeExpensesPV: round5(lifetimeExpensesPV),
 
     categoryTotals,
     categoryTotalsPV,
 
-    oneTimeTotalNominal: Math.round(oneTimeTotalNominal),
-    oneTimeTotalPV: Math.round(oneTimeTotalPV),
+    oneTimeTotalNominal: round5(oneTimeTotalNominal),
+    oneTimeTotalPV: round5(oneTimeTotalPV),
 
     milestones
   }
@@ -355,7 +360,7 @@ function prepareChartData(projections, expenseCategories, yearsToRetirement, inf
         }
       })
 
-      yearData[category.category] = Math.round(categoryAnnualPV)
+      yearData[category.category] = round5(categoryAnnualPV)
       yearData.total += categoryAnnualPV
     })
 
@@ -367,10 +372,10 @@ function prepareChartData(projections, expenseCategories, yearsToRetirement, inf
       }
     })
 
-    yearData['One-Time'] = Math.round(oneTimeForYear)
+    yearData['One-Time'] = round5(oneTimeForYear)
     yearData.total += oneTimeForYear
 
-    yearData.total = Math.round(yearData.total)
+    yearData.total = round5(yearData.total)
     chartData.push(yearData)
   }
 

@@ -8,6 +8,7 @@ function Income() {
   const navigate = useNavigate()
   const [view, setView] = useState('input')
   const [errors, setErrors] = useState({})
+  const [isSaved, setIsSaved] = useState(false)
 
   // Load profile for retirement year
   const profile = storage.load('profile') || {}
@@ -22,6 +23,7 @@ function Income() {
         name: 'Income Stream 1',
         annualIncome: '',
         company401k: '',
+        individual401k: '',
         equity: '',
         growthRate: '',
         endWorkYear: yearsToRetirement,
@@ -38,11 +40,13 @@ function Income() {
     const saved = storage.load('income')
     if (saved) {
       setData(saved)
+      setIsSaved(saved.incomeStreams && saved.incomeStreams.length > 0)
       console.log('📋 Loaded saved income:', saved)
     }
   }, [])
 
   const handleStreamChange = (streamId, field, value) => {
+    setIsSaved(false)
     setData(prev => ({
       ...prev,
       incomeStreams: prev.incomeStreams.map(stream =>
@@ -84,6 +88,7 @@ function Income() {
       name: `Income Stream ${data.incomeStreams.length + 1}`,
       annualIncome: '',
       company401k: '',
+      individual401k: '',
       equity: '',
       growthRate: '',
       endWorkYear: yearsToRetirement,
@@ -149,6 +154,7 @@ function Income() {
 
     // Save to localStorage
     storage.save('income', data)
+    setIsSaved(true)
 
     // Calculate projections
     console.log('📊 Calculating income projections...')
@@ -175,7 +181,26 @@ function Income() {
     return (
       <div className="max-w-4xl mx-auto p-8">
         <h1 className="text-3xl font-bold mb-2">Income</h1>
-        <p className="text-gray-600 mb-8">Tell us about your income streams and expected growth</p>
+        <p className="text-gray-600 mb-4">Tell us about your income streams and expected growth</p>
+
+        {/* Save Status Banner */}
+        {isSaved ? (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
+            <span className="text-green-600 text-xl mr-3">✅</span>
+            <div>
+              <p className="text-green-900 font-medium">Data Saved</p>
+              <p className="text-green-700 text-sm">This section is ready for the Dashboard</p>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center">
+            <span className="text-yellow-600 text-xl mr-3">⚠️</span>
+            <div>
+              <p className="text-yellow-900 font-medium">Not Saved Yet</p>
+              <p className="text-yellow-700 text-sm">Fill out the form and click "Calculate Income Projections" to save</p>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-6">
           {/* Income Streams */}
@@ -230,7 +255,7 @@ function Income() {
                     {/* Company 401k */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Company 401k Contribution
+                        Company 401k Match
                       </label>
                       <div className="relative">
                         <span className="absolute left-3 top-2 text-gray-500">$</span>
@@ -247,6 +272,29 @@ function Income() {
                       {errors[`${stream.id}-company401k`] && (
                         <p className="mt-1 text-sm text-red-600">{errors[`${stream.id}-company401k`]}</p>
                       )}
+                    </div>
+
+                    {/* Individual 401k Contribution Goal */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        401k Contribution Goal
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-gray-500">$</span>
+                        <input
+                          type="number"
+                          value={stream.individual401k}
+                          onChange={(e) => handleStreamChange(stream.id, 'individual401k', e.target.value ? Number(e.target.value) : '')}
+                          placeholder="23000"
+                          className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            errors[`${stream.id}-individual401k`] ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
+                      </div>
+                      {errors[`${stream.id}-individual401k`] && (
+                        <p className="mt-1 text-sm text-red-600">{errors[`${stream.id}-individual401k`]}</p>
+                      )}
+                      <p className="mt-1 text-xs text-gray-500">Reduces taxable income</p>
                     </div>
 
                     {/* Equity */}
@@ -458,14 +506,14 @@ function Income() {
       <div className={`grid grid-cols-1 md:grid-cols-2 ${activeTab === 'all' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4 mb-6`}>
         <SummaryCard
           title="Current Year Total Comp"
-          value={`$${currentSummary.currentYearCompNominal.toLocaleString()}`}
-          subtitle={`PV: $${currentSummary.currentYearCompPV.toLocaleString()}`}
+          value={`$${Math.round(currentSummary.currentYearCompNominal).toLocaleString()}`}
+          subtitle={`PV: $${Math.round(currentSummary.currentYearCompPV).toLocaleString()}`}
           highlight
         />
         <SummaryCard
           title="Year 10 Projected Comp"
-          value={`$${currentSummary.year10CompNominal.toLocaleString()}`}
-          subtitle={`PV: $${currentSummary.year10CompPV.toLocaleString()}`}
+          value={`$${Math.round(currentSummary.year10CompNominal).toLocaleString()}`}
+          subtitle={`PV: $${Math.round(currentSummary.year10CompPV).toLocaleString()}`}
         />
         <SummaryCard
           title="Lifetime Earnings"
@@ -497,7 +545,7 @@ function Income() {
               tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
             />
             <Tooltip
-              formatter={(value) => `$${value.toLocaleString()}`}
+              formatter={(value) => `$${Math.round(value).toLocaleString()}`}
               labelFormatter={(label) => `Year ${label}`}
             />
             <Legend />
@@ -568,9 +616,9 @@ function Income() {
                 <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
                   <span className="font-medium text-gray-700">{milestone.label}</span>
                   <span className="text-gray-900">
-                    ${milestone.compNominal.toLocaleString()}/year
+                    ${Math.round(milestone.compNominal).toLocaleString()}/year
                     <span className="text-gray-500 text-sm ml-2">
-                      (PV: ${milestone.compPV.toLocaleString()})
+                      (PV: ${Math.round(milestone.compPV).toLocaleString()})
                     </span>
                   </span>
                 </div>

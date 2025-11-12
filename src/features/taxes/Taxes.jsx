@@ -1,20 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../../shared/storage'
-import { validateTaxInput, calculateTaxes } from './Taxes.calc'
+import { calculateTaxes } from './Taxes.calc'
 
 function Taxes() {
   const navigate = useNavigate()
-  const [view, setView] = useState('input')
-  const [errors, setErrors] = useState({})
-
+  const [calculations, setCalculations] = useState(null)
+  const [isSaved, setIsSaved] = useState(false)
   const [data, setData] = useState({
     filingType: 'single',
     state: 'california',
     incomes: []
   })
-
-  const [calculations, setCalculations] = useState(null)
 
   // Helper to map filing status from profile to tax format
   const mapFilingStatus = (status) => {
@@ -27,20 +24,20 @@ function Taxes() {
     return mapping[status] || 'single'
   }
 
-  // Load profile and income data on mount
+  // Load profile and income data on mount, then auto-calculate
   useEffect(() => {
     const profile = storage.load('profile') || {}
     const incomeData = storage.load('income') || { incomeStreams: [] }
 
-    // Calculate total income excluding 401k
+    // Calculate total income excluding 401k contributions
     const totalSalary = incomeData.incomeStreams.reduce((sum, stream) => {
       const annualIncome = Number(stream.annualIncome) || 0
-      return sum + annualIncome
+      const individual401k = Number(stream.individual401k) || 0
+      return sum + annualIncome - individual401k
     }, 0)
 
     // Auto-populate with data from profile and income
-    setData(prev => ({
-      ...prev,
+    const taxData = {
       filingType: mapFilingStatus(profile.filingStatus),
       state: 'california',
       incomes: totalSalary > 0 ? [{
@@ -49,280 +46,58 @@ function Taxes() {
         amount: totalSalary,
         incomeType: 'salary'
       }] : []
-    }))
+    }
+
+    setData(taxData)
 
     console.log('📋 Auto-loaded from profile and income:', {
       filingStatus: profile.filingStatus,
       mappedFilingType: mapFilingStatus(profile.filingStatus),
       totalSalary
     })
+
+    // Auto-calculate taxes
+    if (taxData.incomes.length > 0) {
+      console.group('💰 Auto-calculating Taxes')
+
+      // Save to localStorage
+      storage.save('taxes', taxData)
+      setIsSaved(true)
+
+      // Calculate taxes for each income source
+      const taxCalculations = taxData.incomes.map(income =>
+        calculateTaxes(income.amount, income.incomeType, taxData.filingType, taxData.state)
+      )
+
+      // Calculate totals
+      const totals = {
+        totalIncome: taxCalculations.reduce((sum, calc) => sum + calc.income, 0),
+        totalStateTax: taxCalculations.reduce((sum, calc) => sum + calc.stateTax, 0),
+        totalFederalTax: taxCalculations.reduce((sum, calc) => sum + calc.federalTax, 0),
+        totalFICA: taxCalculations.reduce((sum, calc) => sum + calc.fica.total, 0),
+        totalTax: taxCalculations.reduce((sum, calc) => sum + calc.totalTax, 0)
+      }
+      totals.effectiveRate = totals.totalIncome > 0 ? (totals.totalTax / totals.totalIncome) : 0
+
+      setCalculations({
+        individual: taxCalculations,
+        totals
+      })
+
+      console.log('✅ Taxes auto-calculated')
+      console.groupEnd()
+    }
   }, [])
 
-  const handleFilingTypeChange = (value) => {
-    setData(prev => ({
-      ...prev,
-      filingType: value
-    }))
-
-    if (errors.filingType) {
-      setErrors(prev => ({ ...prev, filingType: '' }))
-    }
-  }
-
-  const handleStateChange = (value) => {
-    setData(prev => ({
-      ...prev,
-      state: value
-    }))
-  }
-
-  const addIncome = () => {
-    const newIncome = {
-      id: `income-${Date.now()}`,
-      description: '',
-      amount: '',
-      incomeType: 'salary'
-    }
-
-    setData(prev => ({
-      ...prev,
-      incomes: [...prev.incomes, newIncome]
-    }))
-  }
-
-  const handleIncomeChange = (incomeId, field, value) => {
-    setData(prev => ({
-      ...prev,
-      incomes: prev.incomes.map(income =>
-        income.id === incomeId
-          ? { ...income, [field]: value }
-          : income
-      )
-    }))
-
-    // Clear error
-    const index = data.incomes.findIndex(i => i.id === incomeId)
-    if (errors[`${index}-${field}`]) {
-      setErrors(prev => ({ ...prev, [`${index}-${field}`]: '' }))
-    }
-  }
-
-  const removeIncome = (incomeId) => {
-    setData(prev => ({
-      ...prev,
-      incomes: prev.incomes.filter(i => i.id !== incomeId)
-    }))
-  }
-
-  const handleCalculate = () => {
-    console.group('💾 Calculating Taxes')
-    console.log('Data:', data)
-
-    // Validate
-    const validationErrors = validateTaxInput(data)
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
-      console.error('Validation errors:', validationErrors)
-      console.groupEnd()
-      return
-    }
-
-    // Save to localStorage
-    storage.save('taxes', data)
-
-    // Calculate taxes for each income source
-    const taxCalculations = data.incomes.map(income =>
-      calculateTaxes(income.amount, income.incomeType, data.filingType, data.state)
-    )
-
-    // Calculate totals
-    const totals = {
-      totalIncome: taxCalculations.reduce((sum, calc) => sum + calc.income, 0),
-      totalStateTax: taxCalculations.reduce((sum, calc) => sum + calc.stateTax, 0),
-      totalFederalTax: taxCalculations.reduce((sum, calc) => sum + calc.federalTax, 0),
-      totalFICA: taxCalculations.reduce((sum, calc) => sum + calc.fica.total, 0),
-      totalTax: taxCalculations.reduce((sum, calc) => sum + calc.totalTax, 0)
-    }
-    totals.effectiveRate = totals.totalIncome > 0 ? (totals.totalTax / totals.totalIncome) : 0
-
-    setCalculations({
-      individual: taxCalculations,
-      totals
-    })
-
-    // Switch to output view
-    setView('output')
-    console.log('✅ Taxes calculated and saved')
-    console.groupEnd()
-  }
-
-  const handleEdit = () => {
-    setView('input')
-  }
-
-  const handleNextFeature = () => {
-    navigate('/retirement')
-  }
-
-  // Input View
-  if (view === 'input') {
+  if (!calculations) {
     return (
-      <div className="max-w-4xl mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-2">Taxes</h1>
-        <p className="text-gray-600 mb-8">Calculate your tax liability</p>
-
-        <div className="space-y-6">
-          {/* Auto-loaded notice */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-800">
-              ℹ️ Tax information has been automatically loaded from your Personal Details and Income data.
-              You can adjust values below if needed.
-            </p>
-          </div>
-
-          {/* Filing Type and State */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4">Filing Information</h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filing Type
-                </label>
-                <select
-                  value={data.filingType}
-                  onChange={(e) => handleFilingTypeChange(e.target.value)}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.filingType ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="single">Single</option>
-                  <option value="married">Married Filing Jointly</option>
-                  <option value="separate">Married Filing Separately</option>
-                  <option value="head">Head of Household</option>
-                </select>
-                {errors.filingType && (
-                  <p className="mt-1 text-sm text-red-600">{errors.filingType}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  State
-                </label>
-                <select
-                  value={data.state}
-                  onChange={(e) => handleStateChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="california">California</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Income Sources */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex justify-between items-center mb-4">
-              <div>
-                <h2 className="text-xl font-semibold">Income Sources</h2>
-                <p className="text-sm text-gray-600">
-                  {data.incomes.length > 0
-                    ? 'Review and adjust your income sources, or add additional income'
-                    : 'Add your income to calculate taxes'}
-                </p>
-              </div>
-              <button
-                onClick={addIncome}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                + Add Income
-              </button>
-            </div>
-
-            {data.incomes.length > 0 ? (
-              <div className="space-y-4">
-                {data.incomes.map((income, index) => (
-                  <div key={income.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-1 space-y-3">
-                        <input
-                          type="text"
-                          value={income.description}
-                          onChange={(e) => handleIncomeChange(income.id, 'description', e.target.value)}
-                          placeholder="Description (e.g., W-2 Salary, Dividends)"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-1">Amount</label>
-                            <div className="relative">
-                              <span className="absolute left-3 top-2 text-gray-500">$</span>
-                              <input
-                                type="number"
-                                value={income.amount}
-                                onChange={(e) => handleIncomeChange(income.id, 'amount', e.target.value ? Number(e.target.value) : '')}
-                                placeholder="100000"
-                                className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                  errors[`${index}-amount`] ? 'border-red-500' : 'border-gray-300'
-                                }`}
-                              />
-                            </div>
-                            {errors[`${index}-amount`] && (
-                              <p className="mt-1 text-xs text-red-600">{errors[`${index}-amount`]}</p>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-1">Type</label>
-                            <select
-                              value={income.incomeType}
-                              onChange={(e) => handleIncomeChange(income.id, 'incomeType', e.target.value)}
-                              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors[`${index}-incomeType`] ? 'border-red-500' : 'border-gray-300'
-                              }`}
-                            >
-                              <option value="salary">Salary</option>
-                              <option value="investment">Investment Income</option>
-                            </select>
-                            {errors[`${index}-incomeType`] && (
-                              <p className="mt-1 text-xs text-red-600">{errors[`${index}-incomeType`]}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => removeIncome(income.id)}
-                        className="text-red-600 hover:text-red-700 text-sm"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic">No income sources added yet</p>
-            )}
-          </div>
-
-          {/* Calculate Button */}
-          <button
-            onClick={handleCalculate}
-            className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition"
-          >
-            Calculate Taxes →
-          </button>
+      <div className="max-w-6xl mx-auto p-8">
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600">Loading tax calculations...</p>
         </div>
       </div>
     )
-  }
-
-  // Output View
-  if (!calculations) {
-    return <div className="p-8">Loading calculations...</div>
   }
 
   return (
@@ -332,47 +107,57 @@ function Taxes() {
           <h1 className="text-3xl font-bold mb-2">Tax Summary</h1>
           <p className="text-gray-600">
             Filing as: <span className="font-medium">{data.filingType === 'married' ? 'Married Filing Jointly' : data.filingType === 'separate' ? 'Married Filing Separately' : data.filingType === 'head' ? 'Head of Household' : 'Single'}</span>
+            {' • '}
+            <span className="font-medium">{data.state === 'california' ? 'California' : data.state}</span>
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            Auto-loaded from Personal Details and Income
           </p>
         </div>
-        <div className="flex gap-2">
+        <div>
           <button
             onClick={() => navigate('/tax-brackets')}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition"
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
           >
             Manage Tax Brackets
           </button>
-          <button
-            onClick={handleEdit}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition"
-          >
-            Edit
-          </button>
         </div>
       </div>
+
+      {/* Save Status Banner */}
+      {isSaved && (
+        <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
+          <span className="text-green-600 text-xl mr-3">✅</span>
+          <div>
+            <p className="text-green-900 font-medium">Data Auto-Calculated and Saved</p>
+            <p className="text-green-700 text-sm">This section is ready for the Dashboard</p>
+          </div>
+        </div>
+      )}
 
       {/* Total Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <SummaryCard
           title="Total Income"
-          value={`$${calculations.totals.totalIncome.toLocaleString()}`}
+          value={`$${Math.round(calculations.totals.totalIncome).toLocaleString()}`}
         />
         <SummaryCard
           title="State Tax"
           subtitle="California"
-          value={`$${calculations.totals.totalStateTax.toLocaleString()}`}
+          value={`$${Math.round(calculations.totals.totalStateTax).toLocaleString()}`}
         />
         <SummaryCard
           title="Federal Tax"
-          value={`$${calculations.totals.totalFederalTax.toLocaleString()}`}
+          value={`$${Math.round(calculations.totals.totalFederalTax).toLocaleString()}`}
         />
         <SummaryCard
           title="FICA Tax"
           subtitle="Soc Sec + Medicare"
-          value={`$${calculations.totals.totalFICA.toLocaleString()}`}
+          value={`$${Math.round(calculations.totals.totalFICA).toLocaleString()}`}
         />
         <SummaryCard
           title="Total Tax"
-          value={`$${calculations.totals.totalTax.toLocaleString()}`}
+          value={`$${Math.round(calculations.totals.totalTax).toLocaleString()}`}
           subtitle={`${(calculations.totals.effectiveRate * 100).toFixed(2)}% effective rate`}
           highlight
         />
@@ -390,11 +175,11 @@ function Taxes() {
                   <div>
                     <h3 className="font-semibold text-gray-900">{income.description || 'Untitled Income'}</h3>
                     <p className="text-sm text-gray-500">
-                      {income.incomeType === 'salary' ? 'Salary' : 'Investment Income'} • ${income.amount.toLocaleString()}
+                      {income.incomeType === 'salary' ? 'Salary' : 'Investment Income'} • ${Math.round(income.amount).toLocaleString()}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">Total Tax: ${calc.totalTax.toLocaleString()}</p>
+                    <p className="text-sm font-medium text-gray-900">Total Tax: ${Math.round(calc.totalTax).toLocaleString()}</p>
                     <p className="text-xs text-gray-500">{(calc.effectiveRate * 100).toFixed(2)}% effective rate</p>
                   </div>
                 </div>
@@ -403,41 +188,39 @@ function Taxes() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4 pb-4 border-b">
                   <div>
                     <p className="text-gray-600">State Tax</p>
-                    <p className="font-medium">${calc.stateTax.toLocaleString()}</p>
+                    <p className="font-medium">${Math.round(calc.stateTax).toLocaleString()}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Federal Tax</p>
-                    <p className="font-medium">${calc.federalTax.toLocaleString()}</p>
+                    <p className="font-medium">${Math.round(calc.federalTax).toLocaleString()}</p>
                   </div>
                   {income.incomeType === 'salary' && (
                     <>
                       <div>
                         <p className="text-gray-600">Social Security</p>
-                        <p className="font-medium">${calc.fica.socialSecurity.toLocaleString()}</p>
+                        <p className="font-medium">${Math.round(calc.fica.socialSecurity).toLocaleString()}</p>
                       </div>
                       <div>
                         <p className="text-gray-600">Medicare</p>
-                        <p className="font-medium">${(calc.fica.medicare + calc.fica.additionalMedicare).toLocaleString()}</p>
+                        <p className="font-medium">${Math.round(calc.fica.medicare + calc.fica.additionalMedicare).toLocaleString()}</p>
                       </div>
                     </>
                   )}
                 </div>
 
-                {/* California Tax Ladder */}
+                {/* State Tax Breakdown */}
                 {calc.stateTaxBreakdown.length > 0 && (
                   <div className="mb-4">
                     <h4 className="text-sm font-semibold text-gray-700 mb-2">
-                      California Tax Breakdown
-                      {income.incomeType === 'investment' && (
+                      {data.state === 'california' ? 'California' : data.state.charAt(0).toUpperCase() + data.state.slice(1)} Tax Breakdown
+                      {income.incomeType === 'investment' && data.state === 'california' && (
                         <span className="text-xs font-normal text-blue-600 ml-2">(Capital gains taxed as ordinary income)</span>
                       )}
-                      <span className="text-xs font-normal text-gray-500 ml-2">
-                        (Filing as: {(() => {
-                          // Show mapped filing type for California
-                          const mappedType = data.filingType === 'separate' ? 'single' : data.filingType
-                          return mappedType === 'married' ? 'Married Filing Jointly' : mappedType === 'head' ? 'Head of Household' : 'Single'
-                        })()})
-                      </span>
+                      {calc.actualStateFilingType !== data.filingType && (
+                        <span className="text-xs font-normal text-orange-600 ml-2">
+                          (Using {calc.actualStateFilingType === 'married' ? 'Married' : calc.actualStateFilingType === 'head' ? 'Head' : 'Single'} brackets - {data.filingType === 'separate' ? 'Separate' : data.filingType} not available)
+                        </span>
+                      )}
                     </h4>
                     <div className="bg-gray-50 rounded-lg p-3">
                       <table className="w-full text-sm">
@@ -453,7 +236,7 @@ function Taxes() {
                           {calc.stateTaxBreakdown.map((bracket, idx) => (
                             <tr key={idx} className="border-b border-gray-100 last:border-b-0">
                               <td className="py-2 text-gray-700">
-                                ${bracket.min.toLocaleString()} - {bracket.max === Infinity ? '∞' : `$${bracket.max.toLocaleString()}`}
+                                ${Math.round(bracket.min).toLocaleString()} - {bracket.max === Infinity ? '∞' : `$${Math.round(bracket.max).toLocaleString()}`}
                               </td>
                               <td className="text-right text-gray-700">{(bracket.rate * 100).toFixed(1)}%</td>
                               <td className="text-right text-gray-700">${Math.round(bracket.taxableAmount).toLocaleString()}</td>
@@ -462,7 +245,7 @@ function Taxes() {
                           ))}
                           <tr className="font-semibold">
                             <td colSpan="3" className="text-right py-2">Total:</td>
-                            <td className="text-right py-2">${calc.stateTax.toLocaleString()}</td>
+                            <td className="text-right py-2">${Math.round(calc.stateTax).toLocaleString()}</td>
                           </tr>
                         </tbody>
                       </table>
@@ -470,7 +253,7 @@ function Taxes() {
                   </div>
                 )}
 
-                {/* Federal Tax Ladder */}
+                {/* Federal Tax Breakdown */}
                 {calc.federalTaxBreakdown.length > 0 && (
                   <div className="mb-4">
                     <h4 className="text-sm font-semibold text-gray-700 mb-2">
@@ -478,9 +261,11 @@ function Taxes() {
                       {income.incomeType === 'investment' && (
                         <span className="text-xs font-normal text-blue-600 ml-2">(Capital Gains Rates)</span>
                       )}
-                      <span className="text-xs font-normal text-gray-500 ml-2">
-                        (Filing as: {data.filingType === 'married' ? 'Married Filing Jointly' : data.filingType === 'separate' ? 'Married Filing Separately' : data.filingType === 'head' ? 'Head of Household' : 'Single'})
-                      </span>
+                      {calc.actualFederalFilingType !== data.filingType && (
+                        <span className="text-xs font-normal text-orange-600 ml-2">
+                          (Using {calc.actualFederalFilingType === 'married' ? 'Married' : calc.actualFederalFilingType === 'head' ? 'Head' : 'Single'} brackets)
+                        </span>
+                      )}
                     </h4>
                     <div className="bg-gray-50 rounded-lg p-3">
                       <table className="w-full text-sm">
@@ -496,7 +281,7 @@ function Taxes() {
                           {calc.federalTaxBreakdown.map((bracket, idx) => (
                             <tr key={idx} className="border-b border-gray-100 last:border-b-0">
                               <td className="py-2 text-gray-700">
-                                ${bracket.min.toLocaleString()} - {bracket.max === Infinity ? '∞' : `$${bracket.max.toLocaleString()}`}
+                                ${Math.round(bracket.min).toLocaleString()} - {bracket.max === Infinity ? '∞' : `$${Math.round(bracket.max).toLocaleString()}`}
                               </td>
                               <td className="text-right text-gray-700">{(bracket.rate * 100).toFixed(1)}%</td>
                               <td className="text-right text-gray-700">${Math.round(bracket.taxableAmount).toLocaleString()}</td>
@@ -505,7 +290,7 @@ function Taxes() {
                           ))}
                           <tr className="font-semibold">
                             <td colSpan="3" className="text-right py-2">Total:</td>
-                            <td className="text-right py-2">${calc.federalTax.toLocaleString()}</td>
+                            <td className="text-right py-2">${Math.round(calc.federalTax).toLocaleString()}</td>
                           </tr>
                         </tbody>
                       </table>
@@ -513,67 +298,33 @@ function Taxes() {
                   </div>
                 )}
 
-                {/* FICA Tax Breakdown */}
+                {/* FICA Breakdown (Salary only) */}
                 {income.incomeType === 'salary' && calc.fica.total > 0 && (
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">FICA Tax Breakdown (Employee Share)</h4>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">FICA Tax Breakdown</h4>
                     <div className="bg-gray-50 rounded-lg p-3">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="text-xs text-gray-600 border-b border-gray-200">
-                            <th className="text-left py-2">Component</th>
-                            <th className="text-right py-2">Rate</th>
-                            <th className="text-right py-2">Wage Base</th>
-                            <th className="text-right py-2">Tax</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {/* Social Security */}
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-700">Social Security (OASDI)</td>
-                            <td className="text-right text-gray-700">6.2%</td>
-                            <td className="text-right text-gray-700">
-                              ${Math.min(income.amount, 168600).toLocaleString()} <span className="text-xs text-gray-500">(max $168,600)</span>
-                            </td>
-                            <td className="text-right font-medium text-gray-900">${calc.fica.socialSecurity.toLocaleString()}</td>
-                          </tr>
-
-                          {/* Medicare */}
-                          <tr className="border-b border-gray-100">
-                            <td className="py-2 text-gray-700">Medicare (HI)</td>
-                            <td className="text-right text-gray-700">1.45%</td>
-                            <td className="text-right text-gray-700">
-                              ${income.amount.toLocaleString()} <span className="text-xs text-gray-500">(no limit)</span>
-                            </td>
-                            <td className="text-right font-medium text-gray-900">${calc.fica.medicare.toLocaleString()}</td>
-                          </tr>
-
-                          {/* Additional Medicare */}
-                          {calc.fica.additionalMedicare > 0 && (
-                            <tr className="border-b border-gray-100">
-                              <td className="py-2 text-gray-700">Additional Medicare</td>
-                              <td className="text-right text-gray-700">0.9%</td>
-                              <td className="text-right text-gray-700">
-                                ${(() => {
-                                  const threshold = data.filingType === 'married' ? 250000 : data.filingType === 'separate' ? 125000 : 200000
-                                  return (income.amount - threshold).toLocaleString()
-                                })()}
-                                <span className="text-xs text-gray-500 block">
-                                  (over ${data.filingType === 'married' ? '250,000' : data.filingType === 'separate' ? '125,000' : '200,000'})
-                                </span>
-                              </td>
-                              <td className="text-right font-medium text-gray-900">${calc.fica.additionalMedicare.toLocaleString()}</td>
-                            </tr>
-                          )}
-
-                          <tr className="font-semibold">
-                            <td colSpan="3" className="text-right py-2">Total FICA:</td>
-                            <td className="text-right py-2">${calc.fica.total.toLocaleString()}</td>
-                          </tr>
-                        </tbody>
-                      </table>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Social Security (6.2% up to $168,600):</span>
+                          <span className="font-medium">${Math.round(calc.fica.socialSecurity).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700">Medicare (1.45%):</span>
+                          <span className="font-medium">${Math.round(calc.fica.medicare).toLocaleString()}</span>
+                        </div>
+                        {calc.fica.additionalMedicare > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-700">Additional Medicare (0.9% over threshold):</span>
+                            <span className="font-medium">${Math.round(calc.fica.additionalMedicare).toLocaleString()}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between pt-2 border-t border-gray-200 font-semibold">
+                          <span>Total FICA:</span>
+                          <span>${Math.round(calc.fica.total).toLocaleString()}</span>
+                        </div>
+                      </div>
                       <p className="text-xs text-gray-500 mt-2">
-                        Note: Employer matches Social Security (6.2%) and Medicare (1.45%) for a combined total of 15.3%. Self-employed individuals pay both shares.
+                        Note: Your employer also pays matching FICA taxes
                       </p>
                     </div>
                   </div>
@@ -584,24 +335,26 @@ function Taxes() {
         </div>
       </div>
 
-      <button
-        onClick={handleNextFeature}
-        className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition"
-      >
-        Continue to Retirement →
-      </button>
+      {/* Continue Button */}
+      <div className="flex justify-end mt-6">
+        <button
+          onClick={() => navigate('/investments-debt')}
+          className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-medium"
+        >
+          Continue to Investments & Debt →
+        </button>
+      </div>
     </div>
   )
 }
 
+// Summary Card Component
 function SummaryCard({ title, subtitle, value, highlight }) {
   return (
-    <div className={`bg-white rounded-lg shadow-sm border p-6 ${highlight ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'}`}>
-      <div className="text-sm font-medium text-gray-600 mb-1">{title}</div>
-      {subtitle && <div className="text-xs text-gray-500 mb-2">{subtitle}</div>}
-      <div className={`text-2xl font-bold ${highlight ? 'text-blue-600' : 'text-gray-900'}`}>
-        {value}
-      </div>
+    <div className={`bg-white rounded-lg shadow-sm border p-6 ${highlight ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
+      <h3 className="text-sm font-medium text-gray-600 mb-1">{title}</h3>
+      {subtitle && <p className="text-xs text-gray-500 mb-2">{subtitle}</p>}
+      <p className={`text-2xl font-bold ${highlight ? 'text-red-600' : 'text-gray-900'}`}>{value}</p>
     </div>
   )
 }

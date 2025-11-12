@@ -42,7 +42,9 @@ export const storage = {
       profile: this.load('profile'),
       income: this.load('income'),
       expenses: this.load('expenses'),
-      investmentsDebt: this.load('investments-debt'),
+      investmentsDebt: this.load('investmentsDebt'),
+      taxes: this.load('taxes'),
+      taxLadders: this.load('taxLadders'),
       scenarios: this.load('scenarios') || []
     }
   },
@@ -54,9 +56,7 @@ export const storage = {
   importAll(data) {
     Object.entries(data).forEach(([key, value]) => {
       if (value !== null && value !== undefined) {
-        // Convert camelCase to kebab-case for consistency
-        const storageKey = key === 'investmentsDebt' ? 'investments-debt' : key
-        this.save(storageKey, value)
+        this.save(key, value)
       }
     })
     console.log('✅ Data imported successfully')
@@ -66,7 +66,7 @@ export const storage = {
    * Clear all app data from localStorage
    */
   clearAll() {
-    const keys = ['profile', 'income', 'expenses', 'investments-debt', 'scenarios']
+    const keys = ['profile', 'income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'scenarios']
     keys.forEach(key => localStorage.removeItem(key))
     console.log('✅ All data cleared')
   }

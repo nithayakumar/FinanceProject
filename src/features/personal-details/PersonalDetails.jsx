@@ -17,12 +17,14 @@ function PersonalDetails() {
     currentSavings: ''
   })
   const [errors, setErrors] = useState({})
+  const [isSaved, setIsSaved] = useState(false)
 
   // Load saved data on mount
   useEffect(() => {
     const saved = storage.load('profile')
     if (saved) {
       setData(saved)
+      setIsSaved(true)
       console.log('📋 Loaded saved profile:', saved)
     }
   }, [])
@@ -32,6 +34,8 @@ function PersonalDetails() {
       ...prev,
       [field]: value
     }))
+    // Mark as not saved when user makes changes
+    setIsSaved(false)
     // Clear error for this field when user types
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }))
@@ -53,6 +57,7 @@ function PersonalDetails() {
 
     // Save to localStorage
     storage.save('profile', data)
+    setIsSaved(true)
 
     // Switch to output view
     setView('output')
@@ -73,7 +78,30 @@ function PersonalDetails() {
     return (
       <div className="max-w-2xl mx-auto p-8">
         <h1 className="text-3xl font-bold mb-2">Personal Details</h1>
-        <p className="text-gray-600 mb-8">Tell us about yourself and your financial goals</p>
+        <p className="text-gray-600 mb-4">Tell us about yourself and your financial goals</p>
+
+        {/* Save Status Banner */}
+        {isSaved ? (
+          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-green-600 text-xl mr-3">✅</span>
+              <div>
+                <p className="text-green-900 font-medium">Data Saved</p>
+                <p className="text-green-700 text-sm">This section is ready for the Dashboard</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="text-yellow-600 text-xl mr-3">⚠️</span>
+              <div>
+                <p className="text-yellow-900 font-medium">Not Saved Yet</p>
+                <p className="text-yellow-700 text-sm">Fill out the form and click "Continue" to save</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
           {/* Location */}
@@ -252,9 +280,9 @@ function PersonalDetails() {
         <SummaryRow label="Filing Status" value={data.filingStatus} />
         <SummaryRow label="Age" value={data.age} />
         <SummaryRow label="Retirement Age" value={data.retirementAge} />
-        <SummaryRow label="Current Cash" value={`$${data.currentCash.toLocaleString()}`} />
-        <SummaryRow label="Target Cash on Hand" value={`$${data.targetCash.toLocaleString()}`} />
-        <SummaryRow label="Current Savings" value={`$${Number(data.currentSavings).toLocaleString()}`} />
+        <SummaryRow label="Current Cash" value={`$${Math.round(data.currentCash).toLocaleString()}`} />
+        <SummaryRow label="Target Cash on Hand" value={`$${Math.round(data.targetCash).toLocaleString()}`} />
+        <SummaryRow label="Current Savings" value={`$${Math.round(Number(data.currentSavings)).toLocaleString()}`} />
         <SummaryRow label="Inflation Rate" value={`${data.inflationRate}%`} />
 
         {/* Years to Retirement */}

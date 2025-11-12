@@ -5,6 +5,7 @@ function Navigation() {
 
   const navItems = [
     { path: '/', label: 'Home' },
+    { path: '/dashboard', label: 'Dashboard' },
     { path: '/personal-details', label: 'Personal Details' },
     { path: '/income', label: 'Income' },
     { path: '/expenses', label: 'Expenses' },
