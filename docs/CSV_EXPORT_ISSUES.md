@@ -367,6 +367,105 @@ investedThisYear = $0     // No investing
 
 ---
 
+## Enhancement 3: Monthly Balance Interpolation ✅ ADDED (2025-11-13)
+
+### Enhancement
+Added monthly balance tracking for all investment accounts instead of just January (beginning) and December (ending).
+
+### Problem
+**Before**: Only 2 balance rows per year per account
+- Month 1 (January): Beginning Balance
+- Month 12 (December): Ending Balance
+- Months 2-11: No balance data
+
+**User Impact**:
+- Couldn't track monthly account growth
+- No visibility into progressive contribution buildup
+- Difficult to create monthly charts/dashboards
+
+### Solution Implemented
+
+**Approach**: Linear interpolation of contributions with year-end growth
+- Contributions are interpolated linearly across months
+- Investment growth is applied only in December (year-end)
+- Formula: `Balance(month) = Beginning + (month-1)/12 * Annual Contribution`
+
+**InvestmentsTransformer.js Changes:**
+
+1. **Cash Account** (lines 69-89):
+   - Added 10 monthly balance rows (months 2-11)
+   - Shows progressive cash buildup throughout year
+
+2. **Investment Accounts** (lines 200-258):
+   - Added 30 monthly rows per account (10 months × 3 types)
+   - Market Value: Beginning + progressive contributions
+   - Cost Basis: Beginning cost basis + progressive contributions
+   - Unrealized Gains: Market Value - Cost Basis
+
+3. **401k Account** (lines 445-504):
+   - Added 30 monthly rows (10 months × 3 types)
+   - Combines individual + company contributions
+   - Same structure as investment accounts
+
+### How It Works
+
+**Example: Cash Account with $20k annual contribution**
+```
+Month 1:  $30,000  (Beginning balance)
+Month 2:  $31,667  (Beginning + 1/12 * $20k)
+Month 3:  $33,333  (Beginning + 2/12 * $20k)
+Month 6:  $38,333  (Beginning + 5/12 * $20k)
+Month 12: $50,000  (Actual ending from Gap.calc.js - includes any growth)
+```
+
+**Key Design Decision**: Growth applied only in December
+- Matches Gap.calc.js annual calculation model
+- Notes clearly state: "Linear interpolation (contributions only, growth at year-end)"
+- Honest about estimation method
+
+### CSV Impact
+
+**Rows Added per Year:**
+- Cash: 10 balance rows (months 2-11)
+- Each investment account: 30 rows (10 months × 3 balance types)
+- 401k: 30 rows (10 months × 3 balance types)
+
+**For 23-year projection with 1 investment account:**
+- Cash: +230 rows
+- Investment: +690 rows
+- 401k: +690 rows
+- **Total new rows: ~1,610**
+
+**New Subcategories:**
+- `Balance` - Monthly market value snapshot
+- `Balance_Cost_Basis` - Monthly cost basis buildup
+- `Unrealized_Gains` - Monthly unrealized gains (market - cost basis)
+
+### Benefits
+
+✅ **Monthly tracking**: See account balances for all 12 months
+✅ **Progressive visibility**: Watch contributions build up over time
+✅ **Better charting**: Can create smooth monthly charts instead of year-end snapshots
+✅ **Budgeting tool**: Track how close you are to targets throughout the year
+✅ **Honest estimation**: Notes clearly explain growth happens at year-end
+
+### Limitations
+
+⚠️ **Approximation**: This is linear interpolation, not true monthly compounding
+⚠️ **Growth timing**: All growth applied in December, not distributed monthly
+⚠️ **Future enhancement**: True monthly calculation would require Gap.calc.js refactor (see TO_DO.md)
+
+### Validation
+
+Math check formula:
+```
+Month 6 Balance ≈ Beginning Balance + (5/12 * (Ending - Beginning - Growth))
+```
+
+User confirmed: ✅ Tests passed!
+
+---
+
 ## Issue 5: Inconsistent Module Naming in CSV Export
 
 ### Problem
@@ -435,8 +534,8 @@ src/features/export/transformers/IncomeTransformer.js
 |-------------|----------|------------|--------|
 | Cost Basis & Capital Gains | High | Medium | ✅ **ADDED** |
 | Cash Contribution Tracking | High | Medium - Architecture change | ✅ **ADDED** |
+| Monthly Balance Interpolation | Medium | Medium - Architecture change | ✅ **ADDED** |
 | Standardize Module Naming | Low | Low | Pending |
-| Monthly Balance Interpolation | Medium | Medium | Pending |
 
 ---
 
@@ -446,8 +545,10 @@ src/features/export/transformers/IncomeTransformer.js
 2. ~~**Issue 2 (Company 401k)**~~ - ✅ **FIXED** (2025-11-13)
 3. ~~**Enhancement: Cost Basis tracking**~~ - ✅ **ADDED** (2025-11-13)
 4. ~~**Enhancement: Cash Contribution Tracking**~~ - ✅ **ADDED** (2025-11-13)
-5. **Enhancement: Monthly Balance Interpolation** - UX improvement - MEDIUM priority - **NEXT**
-6. **Issue 3 (Net Worth yearly)** - Requires bigger refactor, defer to future
+5. ~~**Enhancement: Monthly Balance Interpolation**~~ - ✅ **ADDED** (2025-11-13)
+6. **Enhancement: Standardize Module Naming** - Cosmetic fix - LOW priority - **NEXT**
+7. **Issue 3 (Net Worth yearly)** - Requires bigger refactor, defer to future
+8. **Enhancement: Inflation-Adjusted Target Cash** - In TO_DO, defer to future
 
 ---
 

@@ -66,6 +66,28 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
       })
     }
 
+    // Monthly balances (months 2-11) - linear interpolation of contributions
+    for (let month = 2; month <= 11; month++) {
+      const progressiveContribution = (month - 1) / 12 * cashContributionAnnual
+      const monthlyBalance = cashBeginning + progressiveContribution
+
+      rows.push({
+        Year: year,
+        Month: month,
+        Module: 'Investments',
+        Primary_Category: 'Cash',
+        Subcategory: 'Balance',
+        Sub_Sub_Category: null,
+        Value_Type: 'Balance',
+        Value_Nominal: monthlyBalance.toFixed(2),
+        Value_PV: (monthlyBalance / discountFactor).toFixed(2),
+        Inflation_Multiplier: inflationMultiplier.toFixed(5),
+        Growth_Multiplier: 'N/A',
+        Growth_Type: 'N/A',
+        Notes: 'Linear interpolation (contributions only, growth at year-end)'
+      })
+    }
+
     // Ending balance (December only)
     rows.push({
       Year: year,
@@ -172,6 +194,66 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
             Growth_Multiplier: 'N/A',
             Growth_Type: 'N/A',
             Notes: `${(invAccount.portfolioPercent || 0)}% of gap`
+          })
+        }
+
+        // Monthly balances (months 2-11) - linear interpolation
+        for (let month = 2; month <= 11; month++) {
+          const progressiveContribution = (month - 1) / 12 * invContribution
+          const monthlyMarketValue = invBeginning + progressiveContribution
+          const monthlyContributionToCostBasis = (month - 1) / 12 * invContribution
+          const monthlyCostBasis = costBasisBeginning + monthlyContributionToCostBasis
+          const monthlyCapitalGains = monthlyMarketValue - monthlyCostBasis
+
+          // Market value balance
+          rows.push({
+            Year: year,
+            Month: month,
+            Module: 'Investments',
+            Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
+            Subcategory: 'Balance',
+            Sub_Sub_Category: invAccount.accountType || null,
+            Value_Type: 'Balance',
+            Value_Nominal: monthlyMarketValue.toFixed(2),
+            Value_PV: (monthlyMarketValue / discountFactor).toFixed(2),
+            Inflation_Multiplier: inflationMultiplier.toFixed(5),
+            Growth_Multiplier: 'N/A',
+            Growth_Type: 'N/A',
+            Notes: 'Linear interpolation (contributions only, growth at year-end)'
+          })
+
+          // Cost basis balance
+          rows.push({
+            Year: year,
+            Month: month,
+            Module: 'Investments',
+            Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
+            Subcategory: 'Balance_Cost_Basis',
+            Sub_Sub_Category: invAccount.accountType || null,
+            Value_Type: 'Balance',
+            Value_Nominal: monthlyCostBasis.toFixed(2),
+            Value_PV: (monthlyCostBasis / discountFactor).toFixed(2),
+            Inflation_Multiplier: inflationMultiplier.toFixed(5),
+            Growth_Multiplier: 'N/A',
+            Growth_Type: 'N/A',
+            Notes: 'Linear interpolation of contributions'
+          })
+
+          // Unrealized gains balance
+          rows.push({
+            Year: year,
+            Month: month,
+            Module: 'Investments',
+            Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
+            Subcategory: 'Unrealized_Gains',
+            Sub_Sub_Category: invAccount.accountType || null,
+            Value_Type: 'Balance',
+            Value_Nominal: monthlyCapitalGains.toFixed(2),
+            Value_PV: (monthlyCapitalGains / discountFactor).toFixed(2),
+            Inflation_Multiplier: inflationMultiplier.toFixed(5),
+            Growth_Multiplier: 'N/A',
+            Growth_Type: 'N/A',
+            Notes: 'Market value - cost basis (no growth until year-end)'
           })
         }
 
@@ -357,6 +439,67 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
         Growth_Multiplier: 'N/A',
         Growth_Type: 'N/A',
         Notes: 'Employer match'
+      })
+    }
+
+    // Monthly balances (months 2-11) - linear interpolation
+    const total401kContributions = individual401k + company401kAnnual
+    for (let month = 2; month <= 11; month++) {
+      const progressiveContribution = (month - 1) / 12 * total401kContributions
+      const monthlyMarketValue = prev401k + progressiveContribution
+      const monthlyContributionToCostBasis = (month - 1) / 12 * total401kContributions
+      const monthlyCostBasis = costBasisBeginning401k + monthlyContributionToCostBasis
+      const monthlyCapitalGains = monthlyMarketValue - monthlyCostBasis
+
+      // Market value balance
+      rows.push({
+        Year: year,
+        Month: month,
+        Module: 'Investments',
+        Primary_Category: '401k',
+        Subcategory: 'Balance',
+        Sub_Sub_Category: 'Tax_Deferred',
+        Value_Type: 'Balance',
+        Value_Nominal: monthlyMarketValue.toFixed(2),
+        Value_PV: (monthlyMarketValue / discountFactor).toFixed(2),
+        Inflation_Multiplier: inflationMultiplier.toFixed(5),
+        Growth_Multiplier: 'N/A',
+        Growth_Type: 'N/A',
+        Notes: 'Linear interpolation (contributions only, growth at year-end)'
+      })
+
+      // Cost basis balance
+      rows.push({
+        Year: year,
+        Month: month,
+        Module: 'Investments',
+        Primary_Category: '401k',
+        Subcategory: 'Balance_Cost_Basis',
+        Sub_Sub_Category: 'Tax_Deferred',
+        Value_Type: 'Balance',
+        Value_Nominal: monthlyCostBasis.toFixed(2),
+        Value_PV: (monthlyCostBasis / discountFactor).toFixed(2),
+        Inflation_Multiplier: inflationMultiplier.toFixed(5),
+        Growth_Multiplier: 'N/A',
+        Growth_Type: 'N/A',
+        Notes: 'Linear interpolation of contributions'
+      })
+
+      // Unrealized gains balance
+      rows.push({
+        Year: year,
+        Month: month,
+        Module: 'Investments',
+        Primary_Category: '401k',
+        Subcategory: 'Unrealized_Gains',
+        Sub_Sub_Category: 'Tax_Deferred',
+        Value_Type: 'Balance',
+        Value_Nominal: monthlyCapitalGains.toFixed(2),
+        Value_PV: (monthlyCapitalGains / discountFactor).toFixed(2),
+        Inflation_Multiplier: inflationMultiplier.toFixed(5),
+        Growth_Multiplier: 'N/A',
+        Growth_Type: 'N/A',
+        Notes: 'Market value - cost basis (no growth until year-end)'
       })
     }
 
