@@ -367,6 +367,61 @@ investedThisYear = $0     // No investing
 
 ---
 
+## Issue 5: Inconsistent Module Naming in CSV Export
+
+### Problem
+Module names in the CSV export are inconsistent between singular and plural forms.
+
+**Current State:**
+- `Income` - Singular
+- `Expenses` - Plural
+- `Investments` - Plural
+- `Taxes` - Plural
+- `Net_Worth` - Underscore separator
+
+### Impact
+- **Low**: Functional impact - CSV works fine
+- **Medium**: UX/consistency - users may find it confusing
+- **Low**: Data analysis - minor issue for pivot tables/grouping
+
+### Options
+
+**Option A: All Plural** (RECOMMENDED)
+```
+Incomes → Expenses → Investments → Taxes → Net_Worth
+```
+- Pro: Matches most modules (3/5 already plural)
+- Pro: Represents collections of data (multiple income streams, expenses, etc.)
+- Con: "Incomes" sounds slightly awkward grammatically
+
+**Option B: All Singular**
+```
+Income → Expense → Investment → Tax → Net_Worth
+```
+- Pro: Cleaner grammatically
+- Pro: Matches financial statement conventions
+- Con: More changes required (3 modules vs 1)
+
+**Option C: Keep As-Is**
+- Pro: No work required
+- Con: Inconsistency remains
+
+### Recommendation
+**Option A (All Plural)** - Less work and represents the data structure better.
+
+### Files to Change (for Option A)
+```
+src/features/export/transformers/IncomeTransformer.js
+  - Change all Module: 'Income' → Module: 'Incomes' (3 locations)
+```
+
+### Testing
+- Export CSV before and after
+- Verify module names updated in all rows
+- Update any documentation referencing module names
+
+---
+
 ## Summary of Issues
 
 | Issue | Severity | Root Cause | Fix Complexity | Status |
@@ -380,6 +435,7 @@ investedThisYear = $0     // No investing
 |-------------|----------|------------|--------|
 | Cost Basis & Capital Gains | High | Medium | ✅ **ADDED** |
 | Cash Contribution Tracking | High | Medium - Architecture change | ✅ **ADDED** |
+| Standardize Module Naming | Low | Low | Pending |
 | Monthly Balance Interpolation | Medium | Medium | Pending |
 
 ---

@@ -122,6 +122,18 @@
 - [ ] Add emergency fund targets and warnings
 
 ## General
+- [ ] **Standardize Module naming in CSV export**
+  - Current naming is inconsistent:
+    - Income (singular)
+    - Expenses (plural)
+    - Investments (plural)
+    - Taxes (plural)
+    - Net_Worth (underscore)
+  - Decision needed: All singular or all plural?
+  - Recommendation: All plural for consistency (Incomes, Expenses, Investments, Taxes, Net_Worth)
+  - OR: All singular (Income, Expense, Investment, Tax, Net_Worth)
+  - Affects all transformer files in src/features/export/transformers/
+  - Update CSV_EXPORT_ISSUES.md documentation after change
 - [x] **Add CSV data export** ✅ COMPLETED (2025-11-12) ⚠️ **ISSUES FOUND**
   - Single CSV file with monthly-level financial projections
   - 13 columns: Year, Month, Module, Primary_Category, Subcategory, Sub_Sub_Category, Value_Type, Value_Nominal, Value_PV, Inflation_Multiplier, Growth_Multiplier, Growth_Type, Notes
