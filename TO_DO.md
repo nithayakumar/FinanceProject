@@ -121,19 +121,58 @@
 - [ ] Model borrowing/credit when cash is negative
 - [ ] Add emergency fund targets and warnings
 
+## Dashboard
+- [ ] **Add detailed year-by-year Net Worth breakdown table**
+  - Show annual changes in net worth components:
+    - Income after taxes and expenses (annual available cash flow)
+    - Increased cost basis (contributions to investments)
+    - Increased capital gains (investment growth)
+    - Increased 401k value (contributions + growth)
+    - Increased cash on hand (change in cash balance)
+  - Show % of net worth by component (cash %, 401k %, investments %)
+  - Display as table with columns:
+    - Year
+    - Net Worth (beginning, ending, change)
+    - Income After Tax & Expenses
+    - Cash Change ($ and %)
+    - 401k Change ($ and %)
+    - Investment Cost Basis Change ($ and %)
+    - Investment Capital Gains Change ($ and %)
+  - Include both nominal and present value views
+  - Add export to CSV functionality for this table
+  - Helps users understand drivers of net worth growth year-over-year
+
 ## General
-- [ ] **Standardize Module naming in CSV export**
-  - Current naming is inconsistent:
-    - Income (singular)
-    - Expenses (plural)
-    - Investments (plural)
-    - Taxes (plural)
-    - Net_Worth (underscore)
-  - Decision needed: All singular or all plural?
-  - Recommendation: All plural for consistency (Incomes, Expenses, Investments, Taxes, Net_Worth)
-  - OR: All singular (Income, Expense, Investment, Tax, Net_Worth)
-  - Affects all transformer files in src/features/export/transformers/
-  - Update CSV_EXPORT_ISSUES.md documentation after change
+- [ ] **Add Input Configuration Export**
+  - Export all user inputs to JSON or CSV file
+  - Should include:
+    - Personal Details (name, age, retirement year, inflation rate, etc.)
+    - All income streams (salary, equity, 401k settings, growth rates, jumps)
+    - All expense categories (recurring amounts, growth rates, jumps)
+    - All one-time expenses
+    - Investment accounts (names, current values, growth rates, allocations)
+    - Cash settings (current cash, target cash)
+    - 401k settings (current value, growth rate, company contribution)
+    - Tax configuration (filing status, state, custom brackets if any)
+  - Use cases:
+    - Backup configuration before making changes
+    - Share configuration with financial advisor
+    - Transfer to another device
+    - Version control / scenario planning
+    - Debug data issues
+  - Format: JSON for readability and re-import capability
+  - Add "Export Inputs" button in Dashboard next to "Export Data" button
+  - Future: Add "Import Inputs" to restore configuration
+- [x] **Standardize Module naming in CSV export** ✅ FIXED (2025-11-13)
+  - Changed to all plural for consistency:
+    - Incomes (was Income)
+    - Expenses (unchanged)
+    - Savings & Investments (was Investments)
+    - Taxes (unchanged)
+    - Net_Worth (unchanged)
+  - Also fixed: "Large Purchase" → "Large_Purchase" fallback
+  - Files updated: IncomeTransformer.js, InvestmentsTransformer.js, ExpensesTransformer.js
+  - Documentation updated in CSV_EXPORT_ISSUES.md
 - [x] **Add CSV data export** ✅ COMPLETED (2025-11-12) ⚠️ **ISSUES FOUND**
   - Single CSV file with monthly-level financial projections
   - 13 columns: Year, Month, Module, Primary_Category, Subcategory, Sub_Sub_Category, Value_Type, Value_Nominal, Value_PV, Inflation_Multiplier, Growth_Multiplier, Growth_Type, Notes
@@ -154,11 +193,10 @@
   - Estimated ~15,000 rows for 30-year projection
   - Uses `papaparse` library for CSV generation
   - **Known Issues (see docs/CSV_EXPORT_ISSUES.md for details):**
-    - [ ] **FIX: Company 401k contribution showing as $0** (HIGH PRIORITY)
-      - Company 401k values not appearing in CSV export
-      - Check data flow from Income → InvestmentsTransformer
-      - Verify incomeData is passed correctly to transformer
-      - May be missing from Income input or not calculated
+    - [x] **FIX: Company 401k contribution showing as $0** ✅ FIXED (2025-11-13)
+      - **Root Cause**: CSVExporter wasn't passing projections array with incomeData
+      - **Fix**: Merged incomeProjections with incomeData before passing to transformers
+      - Company 401k values now appear correctly and grow with income
     - [x] **FIX: Tax values inconsistent across sections** ✅ FIXED (2025-11-12)
       - **Issue**: Taxes UI, CSV Export, and Net Worth showed different tax amounts
       - **Root Cause**: TaxesTransformer was re-calculating taxes instead of using Gap.calc.js values
