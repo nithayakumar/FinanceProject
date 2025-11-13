@@ -7,6 +7,7 @@ import NetWorthTab from './NetWorthTab'
 import IncomeTab from './IncomeTab'
 import ExpensesTab from './ExpensesTab'
 import RetirementTab from './RetirementTab'
+import ExportButton from '../../components/ExportButton'
 
 function Dashboard() {
   const [activeTab, setActiveTab] = useState('networth')
@@ -290,10 +291,15 @@ function Dashboard() {
     <div className="max-w-7xl mx-auto p-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Financial Dashboard</h1>
-        <p className="text-gray-600">
-          Comprehensive view of your financial projections and retirement readiness
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Financial Dashboard</h1>
+            <p className="text-gray-600">
+              Comprehensive view of your financial projections and retirement readiness
+            </p>
+          </div>
+          <ExportButton appData={data} />
+        </div>
       </div>
 
       {/* Tab Navigation */}
