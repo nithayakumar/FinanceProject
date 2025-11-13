@@ -298,6 +298,75 @@ Added detailed cost basis and unrealized capital gains tracking for all investme
 
 ---
 
+## Enhancement 2: Cash Contribution Tracking ✅ ADDED (2025-11-13)
+
+### Enhancement
+Fixed misleading cash contribution display in CSV export by tracking actual cash allocated instead of showing gap/12.
+
+### Problem
+**Before**: CSV showed `gap / 12` as monthly cash contribution, but this was incorrect because gap gets split between:
+1. Cash (to fill to target)
+2. Investments (per portfolio %)
+3. Excess back to cash (if allocation < 100%)
+
+**Example Issue**:
+```
+Scenario: Gap = $24,000, Fill cash = $10,000, Invest = $14,000
+Before: CSV showed $2,000/month ($24k gap / 12)
+Reality: Only $833/month went to cash ($10k / 12)
+Difference: $1,167/month was actually going to investments!
+```
+
+### Solution Implemented
+
+**Gap.calc.js** (lines 118, 130, 146, 151, 190, 216):
+- Added `cashContribution` tracking variable
+- Tracks cash added to reach target (Step 1 of allocation)
+- Tracks excess cash from allocation (Step 3 of allocation)
+- Tracks withdrawals on negative gap
+- Stores both nominal and PV values in projection
+
+**InvestmentsTransformer.js** (lines 30, 50, 65):
+- Gets `cashContribution` from projection (not gap)
+- Divides by 12 for monthly value
+- Updated notes to clarify "Actual cash contributed (target fill + excess)"
+
+### How It Works
+
+**Positive Gap - Below Target:**
+```javascript
+// Gap = $40k, Target = $50k, Current = $30k, Allocation = 100%
+cashContribution = $20k  // Fills to target
+investedThisYear = $20k  // Remainder invests
+```
+
+**Positive Gap - Above Target, < 100% Allocation:**
+```javascript
+// Gap = $30k, Target = $50k, Current = $60k, Allocation = 70%
+cashContribution = $9k   // 30% excess returns to cash
+investedThisYear = $21k  // 70% invests
+```
+
+**Negative Gap (Withdrawal):**
+```javascript
+// Gap = -$10k
+cashContribution = -$10k  // Withdrawn from cash
+investedThisYear = $0     // No investing
+```
+
+### Benefits
+- **Accurate cash flow tracking**: Shows actual monthly cash additions/withdrawals
+- **Better budgeting**: Can see real cash accumulation vs investment growth
+- **Negative gap visibility**: Shows when drawing from savings (negative values)
+- **Debugging**: Easier to verify gap allocation logic
+
+### CSV Impact
+- Cash Contribution rows now show correct values
+- Can be positive (adding to cash) or negative (withdrawing)
+- Notes clearly explain source: "target fill + excess"
+
+---
+
 ## Summary of Issues
 
 | Issue | Severity | Root Cause | Fix Complexity | Status |
@@ -310,7 +379,7 @@ Added detailed cost basis and unrealized capital gains tracking for all investme
 | Enhancement | Priority | Complexity | Status |
 |-------------|----------|------------|--------|
 | Cost Basis & Capital Gains | High | Medium | ✅ **ADDED** |
-| Cash Contribution Tracking | High | Medium - Architecture change | Pending |
+| Cash Contribution Tracking | High | Medium - Architecture change | ✅ **ADDED** |
 | Monthly Balance Interpolation | Medium | Medium | Pending |
 
 ---
@@ -320,8 +389,8 @@ Added detailed cost basis and unrealized capital gains tracking for all investme
 1. ~~**Issue 4 (Tax inconsistency)**~~ - ✅ **FIXED** (2025-11-12)
 2. ~~**Issue 2 (Company 401k)**~~ - ✅ **FIXED** (2025-11-13)
 3. ~~**Enhancement: Cost Basis tracking**~~ - ✅ **ADDED** (2025-11-13)
-4. **Enhancement: Cash Contribution Tracking** - Architecture change, HIGH priority - **NEXT**
-5. **Enhancement: Monthly Balance Interpolation** - UX improvement - MEDIUM priority
+4. ~~**Enhancement: Cash Contribution Tracking**~~ - ✅ **ADDED** (2025-11-13)
+5. **Enhancement: Monthly Balance Interpolation** - UX improvement - MEDIUM priority - **NEXT**
 6. **Issue 3 (Net Worth yearly)** - Requires bigger refactor, defer to future
 
 ---

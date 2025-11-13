@@ -62,6 +62,9 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     const incomeProjection = incomeData.projections[janIndex] || {}
     const annualIncome = (incomeProjection.totalCompNominal || 0) * 12
 
+    // Get annual company 401k contribution from income projections (grows with income)
+    const annualCompany401k = (incomeProjection.company401kNominal || 0) * 12
+
     // Calculate total individual 401k contribution across all streams
     const totalIndividual401k = incomeData.incomeStreams.reduce((sum, stream) => {
       if (year <= stream.endWorkYear) {
@@ -87,6 +90,14 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     const taxCalc = calculateTaxes(taxableIncome, 'salary', filingType, 'california', 'usa', year, inflationRate)
     const annualTaxes = taxCalc.totalTax
 
+    // Store tax breakdown for export
+    const taxBreakdown = {
+      federal: taxCalc.federalTax,
+      state: taxCalc.stateTax,
+      socialSecurity: taxCalc.fica.socialSecurity,
+      medicare: taxCalc.fica.medicare + taxCalc.fica.additionalMedicare
+    }
+
     // Diagnostic logging for tax % changes
     if (year <= 5) {
       console.log(`\n📊 Year ${year} Tax Breakdown:`)
@@ -104,6 +115,7 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
 
     // Track investments made this year
     let investedThisYear = 0
+    let cashContribution = 0  // Track actual cash allocated/withdrawn
     const investmentAllocations = {}
 
     if (gap > 0) {
@@ -115,6 +127,7 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
         const needed = targetCash - cash
         const toAdd = Math.min(needed, remainingGap)
         cash += toAdd
+        cashContribution += toAdd  // Track what we added to cash
         remainingGap -= toAdd
       }
 
@@ -130,10 +143,12 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       // Step 3: Excess goes to cash (if allocation < 100%)
       if (remainingGap > 0) {
         cash += remainingGap
+        cashContribution += remainingGap  // Track excess that went to cash
       }
     } else if (gap < 0) {
       // Negative gap - draw from cash, don't invest
       cash += gap  // gap is negative, so this reduces cash
+      cashContribution = gap  // Track the withdrawal (negative value)
     }
 
     // Apply growth to investments (at end of year)
@@ -141,10 +156,11 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       inv.marketValue = inv.costBasis * Math.pow(1 + inv.growthRate / 100, year)
     })
 
-    // Apply growth to 401k and add company contribution
+    // Apply growth to 401k and add contributions
+    // Company contribution now comes from income projections (grows with income)
     retirement401k.value = retirement401k.value * (1 + retirement401k.growthRate / 100) +
                           totalIndividual401k +
-                          retirement401k.companyContribution
+                          annualCompany401k
 
     // Calculate net worth
     const totalInvestmentValue = investments.reduce((sum, inv) => sum + inv.marketValue, 0)
@@ -162,9 +178,16 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       annualIncome: round5(annualIncome),
       totalIndividual401k: round5(totalIndividual401k),
       annualTaxes: round5(annualTaxes),
+      taxBreakdown: {
+        federal: round5(taxBreakdown.federal),
+        state: round5(taxBreakdown.state),
+        socialSecurity: round5(taxBreakdown.socialSecurity),
+        medicare: round5(taxBreakdown.medicare)
+      },
       annualExpenses: round5(annualExpenses),
       gap: round5(gap),
       investedThisYear: round5(investedThisYear),
+      cashContribution: round5(cashContribution),
       cash: round5(cash),
       retirement401kValue: round5(retirement401k.value),
       totalCostBasis: round5(totalCostBasis),
@@ -181,9 +204,16 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       annualIncomePV: round5(annualIncome / discountFactor),
       totalIndividual401kPV: round5(totalIndividual401k / discountFactor),
       annualTaxesPV: round5(annualTaxes / discountFactor),
+      taxBreakdownPV: {
+        federal: round5(taxBreakdown.federal / discountFactor),
+        state: round5(taxBreakdown.state / discountFactor),
+        socialSecurity: round5(taxBreakdown.socialSecurity / discountFactor),
+        medicare: round5(taxBreakdown.medicare / discountFactor)
+      },
       annualExpensesPV: round5(annualExpenses / discountFactor),
       gapPV: round5(gap / discountFactor),
       investedThisYearPV: round5(investedThisYear / discountFactor),
+      cashContributionPV: round5(cashContribution / discountFactor),
       cashPV: round5(cash / discountFactor),
       retirement401kValuePV: round5(retirement401k.value / discountFactor),
       totalCostBasisPV: round5(totalCostBasis / discountFactor),

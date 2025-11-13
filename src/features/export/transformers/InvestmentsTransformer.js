@@ -27,7 +27,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
     // ===== CASH ACCOUNT =====
     const cashBeginning = prevProjection ? (prevProjection.cash || 0) : (investmentsData.currentCash || 0)
     const cashEnding = projection.cash || 0
-    const gapAmount = projection.gap || 0
+    const cashContributionAnnual = projection.cashContribution || 0  // Actual cash contribution tracked in Gap.calc.js
 
     // Beginning balance (January only)
     rows.push({
@@ -46,8 +46,8 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
       Notes: ''
     })
 
-    // Monthly cash flow from gap (spread across 12 months)
-    const monthlyCashFlow = gapAmount / 12
+    // Monthly cash contribution (actual amount allocated to cash, spread across 12 months)
+    const monthlyCashFlow = cashContributionAnnual / 12
     for (let month = 1; month <= 12; month++) {
       rows.push({
         Year: year,
@@ -62,7 +62,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
         Inflation_Multiplier: inflationMultiplier.toFixed(5),
         Growth_Multiplier: 'N/A',
         Growth_Type: 'N/A',
-        Notes: 'Gap allocation to cash'
+        Notes: 'Actual cash contributed (target fill + excess) or withdrawn (negative)'
       })
     }
 
@@ -254,19 +254,6 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
     const janIndex = (year - 1) * 12
     const incomeProjection = incomeData?.projections?.[janIndex] || {}
     const company401kAnnual = (incomeProjection.company401kNominal || 0) * 12
-
-    // Diagnostic logging for company 401k issue
-    if (year <= 2) {
-      console.group(`🔍 Company 401k Debug - Year ${year}`)
-      console.log('  janIndex:', janIndex)
-      console.log('  incomeData exists:', !!incomeData)
-      console.log('  incomeData.projections exists:', !!incomeData?.projections)
-      console.log('  incomeData.projections length:', incomeData?.projections?.length)
-      console.log('  incomeProjection:', incomeProjection)
-      console.log('  company401kNominal:', incomeProjection.company401kNominal)
-      console.log('  company401kAnnual:', company401kAnnual)
-      console.groupEnd()
-    }
 
     const returns401k = ending401k - prev401k - individual401k - company401kAnnual
 
