@@ -90,7 +90,7 @@ export function transformExpensesData(expensesData, yearsToRetirement, inflation
             Module: 'Expenses',
             Primary_Category: expense.category || 'One_Time',
             Subcategory: 'One_Time',
-            Sub_Sub_Category: expense.description || 'Large Purchase',
+            Sub_Sub_Category: expense.description || 'Large_Purchase',
             Value_Type: 'Flow',
             Value_Nominal: (expense.amount || 0).toFixed(2),
             Value_PV: ((expense.amount || 0) / expenseInflation).toFixed(2),

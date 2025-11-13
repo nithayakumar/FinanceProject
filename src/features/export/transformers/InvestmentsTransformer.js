@@ -33,7 +33,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
     rows.push({
       Year: year,
       Month: 1,
-      Module: 'Investments',
+      Module: 'Savings & Investments',
       Primary_Category: 'Cash',
       Subcategory: 'Beginning_Balance',
       Sub_Sub_Category: null,
@@ -52,7 +52,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
       rows.push({
         Year: year,
         Month: month,
-        Module: 'Investments',
+        Module: 'Savings & Investments',
         Primary_Category: 'Cash',
         Subcategory: 'Contribution',
         Sub_Sub_Category: null,
@@ -74,7 +74,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
       rows.push({
         Year: year,
         Month: month,
-        Module: 'Investments',
+        Module: 'Savings & Investments',
         Primary_Category: 'Cash',
         Subcategory: 'Balance',
         Sub_Sub_Category: null,
@@ -92,7 +92,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
     rows.push({
       Year: year,
       Month: 12,
-      Module: 'Investments',
+      Module: 'Savings & Investments',
       Primary_Category: 'Cash',
       Subcategory: 'Ending_Balance',
       Sub_Sub_Category: null,
@@ -130,7 +130,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
         rows.push({
           Year: year,
           Month: 1,
-          Module: 'Investments',
+          Module: 'Savings & Investments',
           Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
           Subcategory: 'Beginning_Balance',
           Sub_Sub_Category: invAccount.accountType || null,
@@ -147,7 +147,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
         rows.push({
           Year: year,
           Month: 1,
-          Module: 'Investments',
+          Module: 'Savings & Investments',
           Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
           Subcategory: 'Beginning_Balance_Cost_Basis',
           Sub_Sub_Category: invAccount.accountType || null,
@@ -164,7 +164,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
         rows.push({
           Year: year,
           Month: 1,
-          Module: 'Investments',
+          Module: 'Savings & Investments',
           Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
           Subcategory: 'Beginning_Unrealized_Gains',
           Sub_Sub_Category: invAccount.accountType || null,
@@ -183,7 +183,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
           rows.push({
             Year: year,
             Month: month,
-            Module: 'Investments',
+            Module: 'Savings & Investments',
             Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
             Subcategory: 'Contribution',
             Sub_Sub_Category: invAccount.accountType || null,
@@ -209,7 +209,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
           rows.push({
             Year: year,
             Month: month,
-            Module: 'Investments',
+            Module: 'Savings & Investments',
             Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
             Subcategory: 'Balance',
             Sub_Sub_Category: invAccount.accountType || null,
@@ -226,7 +226,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
           rows.push({
             Year: year,
             Month: month,
-            Module: 'Investments',
+            Module: 'Savings & Investments',
             Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
             Subcategory: 'Balance_Cost_Basis',
             Sub_Sub_Category: invAccount.accountType || null,
@@ -243,7 +243,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
           rows.push({
             Year: year,
             Month: month,
-            Module: 'Investments',
+            Module: 'Savings & Investments',
             Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
             Subcategory: 'Unrealized_Gains',
             Sub_Sub_Category: invAccount.accountType || null,
@@ -261,7 +261,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
         rows.push({
           Year: year,
           Month: 12,
-          Module: 'Investments',
+          Module: 'Savings & Investments',
           Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
           Subcategory: 'Investment_Returns',
           Sub_Sub_Category: invAccount.accountType || null,
@@ -278,7 +278,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
         rows.push({
           Year: year,
           Month: 12,
-          Module: 'Investments',
+          Module: 'Savings & Investments',
           Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
           Subcategory: 'Ending_Balance',
           Sub_Sub_Category: invAccount.accountType || null,
@@ -295,7 +295,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
         rows.push({
           Year: year,
           Month: 12,
-          Module: 'Investments',
+          Module: 'Savings & Investments',
           Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
           Subcategory: 'Ending_Balance_Cost_Basis',
           Sub_Sub_Category: invAccount.accountType || null,
@@ -312,7 +312,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
         rows.push({
           Year: year,
           Month: 12,
-          Module: 'Investments',
+          Module: 'Savings & Investments',
           Primary_Category: invAccount.name || `Investment_${invIndex + 1}`,
           Subcategory: 'Ending_Unrealized_Gains',
           Sub_Sub_Category: invAccount.accountType || null,
@@ -355,7 +355,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
     rows.push({
       Year: year,
       Month: 1,
-      Module: 'Investments',
+      Module: 'Savings & Investments',
       Primary_Category: '401k',
       Subcategory: 'Beginning_Balance',
       Sub_Sub_Category: 'Tax_Deferred',
@@ -372,7 +372,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
     rows.push({
       Year: year,
       Month: 1,
-      Module: 'Investments',
+      Module: 'Savings & Investments',
       Primary_Category: '401k',
       Subcategory: 'Beginning_Balance_Cost_Basis',
       Sub_Sub_Category: 'Tax_Deferred',
@@ -389,7 +389,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
     rows.push({
       Year: year,
       Month: 1,
-      Module: 'Investments',
+      Module: 'Savings & Investments',
       Primary_Category: '401k',
       Subcategory: 'Beginning_Unrealized_Gains',
       Sub_Sub_Category: 'Tax_Deferred',
@@ -408,7 +408,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
       rows.push({
         Year: year,
         Month: month,
-        Module: 'Investments',
+        Module: 'Savings & Investments',
         Primary_Category: '401k',
         Subcategory: 'Individual_Contribution',
         Sub_Sub_Category: 'Tax_Deferred',
@@ -428,7 +428,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
       rows.push({
         Year: year,
         Month: month,
-        Module: 'Investments',
+        Module: 'Savings & Investments',
         Primary_Category: '401k',
         Subcategory: 'Company_Contribution',
         Sub_Sub_Category: 'Tax_Deferred',
@@ -455,7 +455,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
       rows.push({
         Year: year,
         Month: month,
-        Module: 'Investments',
+        Module: 'Savings & Investments',
         Primary_Category: '401k',
         Subcategory: 'Balance',
         Sub_Sub_Category: 'Tax_Deferred',
@@ -472,7 +472,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
       rows.push({
         Year: year,
         Month: month,
-        Module: 'Investments',
+        Module: 'Savings & Investments',
         Primary_Category: '401k',
         Subcategory: 'Balance_Cost_Basis',
         Sub_Sub_Category: 'Tax_Deferred',
@@ -489,7 +489,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
       rows.push({
         Year: year,
         Month: month,
-        Module: 'Investments',
+        Module: 'Savings & Investments',
         Primary_Category: '401k',
         Subcategory: 'Unrealized_Gains',
         Sub_Sub_Category: 'Tax_Deferred',
@@ -507,7 +507,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
     rows.push({
       Year: year,
       Month: 12,
-      Module: 'Investments',
+      Module: 'Savings & Investments',
       Primary_Category: '401k',
       Subcategory: 'Investment_Returns',
       Sub_Sub_Category: 'Tax_Deferred',
@@ -524,7 +524,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
     rows.push({
       Year: year,
       Month: 12,
-      Module: 'Investments',
+      Module: 'Savings & Investments',
       Primary_Category: '401k',
       Subcategory: 'Ending_Balance',
       Sub_Sub_Category: 'Tax_Deferred',
@@ -541,7 +541,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
     rows.push({
       Year: year,
       Month: 12,
-      Module: 'Investments',
+      Module: 'Savings & Investments',
       Primary_Category: '401k',
       Subcategory: 'Ending_Balance_Cost_Basis',
       Sub_Sub_Category: 'Tax_Deferred',
@@ -558,7 +558,7 @@ export function transformInvestmentsData(gapProjections, investmentsData, inflat
     rows.push({
       Year: year,
       Month: 12,
-      Module: 'Investments',
+      Module: 'Savings & Investments',
       Primary_Category: '401k',
       Subcategory: 'Ending_Unrealized_Gains',
       Sub_Sub_Category: 'Tax_Deferred',

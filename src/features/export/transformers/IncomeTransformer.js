@@ -57,7 +57,7 @@ export function transformIncomeData(incomeData, yearsToRetirement, inflationRate
       rows.push({
         Year: year,
         Month: month,
-        Module: 'Income',
+        Module: 'Incomes',
         Primary_Category: stream.name || `Stream_${stream.id}`,
         Subcategory: 'Salary',
         Sub_Sub_Category: jumpNote || null,
@@ -74,7 +74,7 @@ export function transformIncomeData(incomeData, yearsToRetirement, inflationRate
       rows.push({
         Year: year,
         Month: month,
-        Module: 'Income',
+        Module: 'Incomes',
         Primary_Category: stream.name || `Stream_${stream.id}`,
         Subcategory: 'Equity_RSU',
         Sub_Sub_Category: jumpNote || null,
@@ -91,7 +91,7 @@ export function transformIncomeData(incomeData, yearsToRetirement, inflationRate
       rows.push({
         Year: year,
         Month: month,
-        Module: 'Income',
+        Module: 'Incomes',
         Primary_Category: stream.name || `Stream_${stream.id}`,
         Subcategory: 'Company_401k',
         Sub_Sub_Category: jumpNote || null,

@@ -466,17 +466,24 @@ User confirmed: ✅ Tests passed!
 
 ---
 
-## Issue 5: Inconsistent Module Naming in CSV Export
+## Issue 5: Inconsistent Module Naming in CSV Export ✅ FIXED (2025-11-13)
 
 ### Problem
 Module names in the CSV export are inconsistent between singular and plural forms.
 
-**Current State:**
-- `Income` - Singular
-- `Expenses` - Plural
-- `Investments` - Plural
-- `Taxes` - Plural
-- `Net_Worth` - Underscore separator
+**Before:**
+- `Income` - Singular ❌
+- `Expenses` - Plural ✓
+- `Investments` - Plural ✓
+- `Taxes` - Plural ✓
+- `Net_Worth` - Underscore separator ✓
+
+**After:**
+- `Incomes` - Plural ✓
+- `Expenses` - Plural ✓
+- `Savings & Investments` - Updated terminology ✓
+- `Taxes` - Plural ✓
+- `Net_Worth` - Underscore separator ✓
 
 ### Impact
 - **Low**: Functional impact - CSV works fine
@@ -505,19 +512,27 @@ Income → Expense → Investment → Tax → Net_Worth
 - Pro: No work required
 - Con: Inconsistency remains
 
-### Recommendation
-**Option A (All Plural)** - Less work and represents the data structure better.
+### ✅ SOLUTION IMPLEMENTED
 
-### Files to Change (for Option A)
-```
-src/features/export/transformers/IncomeTransformer.js
-  - Change all Module: 'Income' → Module: 'Incomes' (3 locations)
-```
+**Changes Made:**
 
-### Testing
-- Export CSV before and after
-- Verify module names updated in all rows
-- Update any documentation referencing module names
+1. **IncomeTransformer.js** (lines 60, 77, 94):
+   - Changed `Module: 'Income'` → `Module: 'Incomes'`
+   - All 3 income component rows updated (Salary, Equity_RSU, Company_401k)
+
+2. **InvestmentsTransformer.js** (all occurrences):
+   - Changed `Module: 'Investments'` → `Module: 'Savings & Investments'`
+   - Updated ~27 occurrences throughout the file
+   - Reflects terminology change from "Investments & Debt" to "Savings & Investments"
+
+3. **ExpensesTransformer.js** (line 93):
+   - Changed fallback `'Large Purchase'` → `'Large_Purchase'`
+   - Adds underscore for consistency with hardcoded values
+
+**Result:**
+- All module names now consistent (plural forms)
+- "Savings & Investments" better reflects purpose (tracking savings + investment accounts)
+- Hardcoded fallback values use underscores consistently
 
 ---
 
@@ -535,7 +550,7 @@ src/features/export/transformers/IncomeTransformer.js
 | Cost Basis & Capital Gains | High | Medium | ✅ **ADDED** |
 | Cash Contribution Tracking | High | Medium - Architecture change | ✅ **ADDED** |
 | Monthly Balance Interpolation | Medium | Medium - Architecture change | ✅ **ADDED** |
-| Standardize Module Naming | Low | Low | Pending |
+| Standardize Module Naming | Low | Low | ✅ **FIXED** |
 
 ---
 
@@ -546,7 +561,7 @@ src/features/export/transformers/IncomeTransformer.js
 3. ~~**Enhancement: Cost Basis tracking**~~ - ✅ **ADDED** (2025-11-13)
 4. ~~**Enhancement: Cash Contribution Tracking**~~ - ✅ **ADDED** (2025-11-13)
 5. ~~**Enhancement: Monthly Balance Interpolation**~~ - ✅ **ADDED** (2025-11-13)
-6. **Enhancement: Standardize Module Naming** - Cosmetic fix - LOW priority - **NEXT**
+6. ~~**Enhancement: Standardize Module Naming**~~ - ✅ **FIXED** (2025-11-13)
 7. **Issue 3 (Net Worth yearly)** - Requires bigger refactor, defer to future
 8. **Enhancement: Inflation-Adjusted Target Cash** - In TO_DO, defer to future
 
