@@ -226,3 +226,481 @@
   - Affects: Income.calc.js, Gap.calc.js, Expenses.calc.js
   - Formula change: `Math.pow(1 + rate/100, years)` → `Math.pow(1 + rate/1200, months)`
   - Note: This will provide more accurate month-to-month projections
+
+---
+
+# COMPREHENSIVE IMPLEMENTATION PLAN: Advanced Financial Planning Features
+
+**Implementation Date:** 2025-11-16
+**Goal:** Enable 8 critical use cases for advanced financial planning
+
+**Use Cases:**
+1. Compare income scenarios (job choices)
+2. Compare tax scenarios (location changes)
+3. Model work breaks (sabbaticals/layoffs)
+4. Calculate "when can I retire?"
+5. Calculate "how much can I withdraw in retirement?"
+6. Plan retirement withdrawals (tax-efficient)
+7. Prioritize and manage existing debt
+8. Model new debt (home purchases, cars)
+
+---
+
+## PHASE 1: SCENARIOS MODULE 🎯 Priority: HIGH
+**Goal:** Enable side-by-side comparison of different financial scenarios (jobs, locations, lifestyle changes)
+**Use Cases Unlocked:** #1 (Job comparison), #2 (Location comparison)
+
+### 1.1 Core Scenario Engine
+- [ ] **Create Scenario.calc.js** - Core scenario calculation engine
+  - `mergeScenarioData(baseData, scenarioOverrides)` - Deep merge base + overrides
+  - `calculateScenarioProjections(scenarioData)` - Run full Gap projection with merged data
+  - `compareScenarios(scenarios)` - Calculate differences between scenarios
+  - Support overriding any module: profile, income, expenses, investments, taxes
+  - Return normalized comparison data structure
+  - Technical note: Reuse existing Gap.calc.js, just with different input data
+
+- [ ] **Create ScenarioManager.jsx** - Scenario creation and management UI
+  - List all saved scenarios (name, description, last modified)
+  - "Create New Scenario" button → opens scenario builder
+  - "Clone Current Profile" button → creates scenario from current localStorage data
+  - Edit existing scenario (inline or modal)
+  - Delete scenario (with confirmation)
+  - Storage: localStorage key `scenarios` = array of scenario objects
+  - Data structure:
+    ```javascript
+    {
+      id: 'scenario-uuid',
+      name: 'Texas Remote Job',
+      description: 'Same job, remote from Austin',
+      createdAt: timestamp,
+      modifiedAt: timestamp,
+      overrides: {
+        profile: { state: 'TX', location: 'Austin' },
+        income: { incomeStreams: [{ salary: 145000 }] },
+        expenses: { housing: { rent: 1800 } }
+      }
+    }
+    ```
+
+- [ ] **Create ScenarioBuilder.jsx** - Guided scenario creation form
+  - Step 1: Name and description
+  - Step 2: Choose what to override (checkboxes for modules)
+  - Step 3: For each selected module, show simplified override form
+  - Step 4: Preview comparison before saving
+  - Save scenario to localStorage
+  - "Quick Templates" for common scenarios:
+    - "New Job Offer" - override income only
+    - "Move to New State" - override profile.state, expenses.housing
+    - "Lifestyle Change" - override expenses
+  - Validation: Ensure overrides are valid
+
+- [ ] **Create ScenarioCompare.jsx** - Side-by-side comparison view
+  - Select 2-4 scenarios to compare (dropdown multi-select)
+  - Comparison table with key metrics:
+    - Annual income (gross, post-tax, post-expense)
+    - Annual taxes (federal, state, total)
+    - Annual expenses
+    - Annual savings (gap)
+    - Savings rate (%)
+    - Net worth at retirement
+  - Difference columns showing Δ$ and Δ%
+  - Color coding: green for better, red for worse
+  - Charts:
+    - Net worth trajectory (line chart, multiple lines)
+    - Tax comparison (bar chart)
+    - Savings comparison (bar chart)
+  - Export comparison to CSV/PDF
+
+- [ ] **Integrate Scenarios into Navigation**
+  - Add "Scenarios" to main navigation
+  - Route: `/scenarios` → ScenarioManager
+  - Route: `/scenarios/compare` → ScenarioCompare
+  - Route: `/scenarios/new` → ScenarioBuilder
+  - Route: `/scenarios/:id/edit` → ScenarioBuilder (edit mode)
+
+### 1.2 Scenario Templates
+- [ ] **Create ScenarioTemplates.js** - Pre-built scenario templates
+  - Template: "Move to Texas" (state → TX, state tax → 0, optional COL adjust)
+  - Template: "Move to California" (state → CA, state tax → CA brackets)
+  - Template: "New Job Offer" (override income streams)
+  - Template: "Lifestyle Upgrade" (override expenses)
+  - Template: "Aggressive Savings" (expenses down, investment allocation up)
+  - User can select template, then customize before saving
+
+### 1.3 Scenario Validation & Testing
+- [ ] **Ensure scenario calculations match base calculations**
+  - Test: Scenario with no overrides should match base profile exactly
+  - Test: Override income only → taxes and gap should recalculate correctly
+  - Test: Override state → state taxes should update
+  - Add validation to prevent invalid overrides (negative income, etc.)
+
+---
+
+## PHASE 2: LIFE EVENTS MODULE 🎯 Priority: HIGH
+**Goal:** Model temporary and permanent life events that impact finances over time
+**Use Cases Unlocked:** #3 (Work breaks), #8 (New debt/home purchases)
+
+### 2.1 Core Life Events Engine
+- [ ] **Create LifeEvents.calc.js** - Life event calculation logic
+  - `applyLifeEventToYear(year, event, baseData)` - Modify projections based on active events
+  - `isEventActiveInYear(year, event)` - Check if event affects this year
+  - Support event types:
+    - SABBATICAL - Temporary income reduction
+    - LAYOFF - Temporary income loss + optional severance
+    - CAREER_CHANGE - Permanent income change
+    - HOME_PURCHASE - One-time cash outflow + new debt + new expenses
+    - CAR_PURCHASE - One-time cash outflow + optional debt
+    - CHILD_BIRTH - Income reduction + expense increase + tax credits
+    - EDUCATION - Temporary income loss + tuition expenses
+  - Each event type has specific impact formula
+
+- [ ] **Create LifeEvents.jsx** - Life events management UI
+  - View: Timeline visualization of all planned events
+  - List view: All events with start date, duration, type, impact summary
+  - "Add Life Event" button → Event creation modal
+  - Edit/delete existing events
+  - Drag-and-drop timeline interface (optional enhancement)
+  - Storage: localStorage key `lifeEvents` = array of event objects
+
+- [ ] **Create EventBuilder.jsx** - Event creation wizard
+  - Step 1: Select event type (cards with icons)
+  - Step 2: Event-specific form based on type
+  - Step 3: Preview financial impact (before/after comparison)
+  - Step 4: Save event
+
+  Event-specific forms:
+
+  **Sabbatical:**
+  - Start year/month, Duration (months)
+  - Income reduction (% or $)
+  - Expense changes (travel budget, etc.)
+
+  **Layoff:**
+  - Layoff year/month, Duration unemployed (months)
+  - Severance amount ($), Unemployment benefits ($/month)
+  - New job income (if different)
+
+  **Home Purchase:**
+  - Purchase year/month, Purchase price
+  - Down payment (% or $)
+  - Mortgage: rate, term (15/30 year)
+  - Property tax (annual), Insurance (annual), HOA fees (monthly)
+  - Maintenance budget (% of value or $/year)
+  - Home appreciation rate
+  - Impact: Cash -down payment -closing costs, Debt +mortgage, Expenses +taxes +insurance +HOA +maintenance, Assets +home value
+
+  **Career Change:**
+  - Change year, New income, New 401k match, New equity compensation
+
+  **Child Birth:**
+  - Birth year, Parent leave (months, income reduction %)
+  - Childcare years (ages 0-5), Childcare cost ($/month)
+  - General child expenses ($/month)
+  - Tax credits (child tax credit), Duration: 18 years
+
+### 2.2 Integration with Gap Calculations
+- [ ] **Enhance Gap.calc.js to support life events**
+  - Import LifeEvents.calc.js
+  - For each projection year, check for active life events
+  - Apply event impacts to income, expenses, cash, debt
+  - Example: In projection loop, filter activeEvents, apply impacts before gap calculation
+
+- [ ] **Update Dashboard to show life events on timeline**
+  - Add event markers to net worth chart
+  - Tooltips showing event details when hovering over markers
+  - Visual indication of event impacts (income drop, expense spike, etc.)
+
+### 2.3 Life Events in Scenarios
+- [ ] **Allow scenarios to include/exclude life events**
+  - Scenario override: `lifeEvents: [event1, event2]`
+  - Comparison: "With sabbatical" vs "Without sabbatical"
+  - Template: "Buy House in 2027" (pre-fills home purchase event)
+
+---
+
+## PHASE 3: DEBT MODULE 🎯 Priority: MEDIUM
+**Goal:** Track and optimize existing debt, plan for new debt (mortgages, car loans)
+**Use Cases Unlocked:** #7 (Manage debt), #8 (New debt modeling - runtime)
+
+### 3.1 Core Debt Engine
+- [ ] **Create Debt.calc.js** - Debt calculation logic
+  - `calculateAmortization(principal, rate, payment, term)` - Amortization schedule
+  - `calculatePayoffDate(principal, rate, payment)` - When debt is paid off
+  - `calculateTotalInterest(principal, rate, payment, term)` - Lifetime interest
+  - `calculateMinimumPayment(principal, rate, term)` - Required minimum
+  - `optimizePayoffStrategy(debts, extraPayment, strategy)` - Avalanche/snowball
+  - `projectDebtOverTime(debts, years)` - Year-by-year debt balances
+  - Payoff strategies: Avalanche (highest rate first), Snowball (smallest balance first), Custom
+
+- [ ] **Create Debt.jsx** - Debt management UI
+  - Input View:
+    - List of debts (table)
+    - Add debt button, Edit/delete debt
+    - Fields per debt: Name, Current balance, Interest rate (APR), Minimum monthly payment, Loan term, Type (secured/unsecured, tax-deductible)
+    - Extra payment allocation: Monthly extra payment amount, Payoff strategy (avalanche/snowball/custom)
+    - Save button
+
+  - Output View:
+    - Summary cards: Total debt balance, Weighted average interest rate, Total minimum payment, Debt-free date, Total interest
+    - Debt payoff timeline (Gantt-style chart)
+    - Amortization schedule table (expandable per debt)
+    - Strategy comparison: Avalanche vs Snowball (show difference in payoff time and interest)
+    - Debt-to-income ratio
+    - Net worth impact chart
+
+- [ ] **Create DebtForm.jsx** - Add/edit debt modal
+  - Form fields for single debt
+  - Validation: Positive balance, valid rate (0-100%), positive payment
+  - Calculate minimum payment if user doesn't know it
+  - Optional: Loan calculator to reverse-engineer payment from term
+
+### 3.2 Integration with Gap Calculations
+- [ ] **Enhance Gap.calc.js to include debt payments**
+  - Load debt data from localStorage
+  - For each year, calculate: Required debt payments (minimum + extra), Debt balance reduction, Interest paid (expense), Debt payoff events
+  - Cash flow formula: `gap = income - taxes - expenses - debtPayments`
+  - Net worth formula: `netWorth = cash + investments + 401k + homeValue - debtBalances`
+
+- [ ] **Update Net Worth calculations**
+  - Track debt balances as liabilities
+  - As debt is paid down, net worth increases (principal reduction + freed cash flow)
+
+### 3.3 Debt in Scenarios
+- [ ] **Allow scenario overrides for debt**
+  - Scenario: "Aggressive debt payoff" (increase extra payment)
+  - Scenario: "Keep debt longer" (decrease extra payment, invest more)
+  - Compare: Debt payoff vs investing (opportunity cost analysis)
+
+### 3.4 Separate Debt from Investments Module
+- [ ] **Rename InvestmentsDebt → SavingsInvestments**
+  - Remove debt fields from this module
+  - Focus on: Cash, 401k, investment accounts
+  - Update navigation, routes, storage keys
+
+- [ ] **Create separate Debt module**
+  - New navigation item: "Debt"
+  - Routes: `/debt` → Debt.jsx (input/output toggle)
+  - Storage: localStorage key `debts` = array of debt objects
+
+---
+
+## PHASE 4: RETIREMENT PLANNING MODULE 🎯 Priority: HIGH
+**Goal:** Answer "When can I retire?" and "How much can I withdraw?" with tax-efficient withdrawal planning
+**Use Cases Unlocked:** #4 (When to retire), #5 (Withdrawal amount), #6 (Withdrawal strategy)
+
+### 4.1 Core Retirement Engine
+- [ ] **Create RetirementPlanning.calc.js** - Retirement calculation logic
+
+  **Direction 1: When can I retire?**
+  - `calculateRetirementDate(targetIncome, currentAge, currentNetWorth, savingsRate, lifeExpectancy)`
+    - Iterate year by year, project net worth growth (using Gap.calc.js)
+    - Test: `netWorth * (withdrawalRate / 100) >= targetIncome`
+    - Account for Social Security (starts at age 62-70)
+    - Return: { retirementAge, retirementYear, netWorthAtRetirement }
+
+  **Direction 2: How much can I withdraw?**
+  - `calculateSustainableWithdrawal(retirementAge, netWorthAtRetirement, lifeExpectancy, withdrawalRate)`
+    - Calculate: `sustainableIncome = netWorth * (withdrawalRate / 100)`
+    - Run full retirement projection (forward to life expectancy)
+    - Verify portfolio doesn't run out
+    - Return: { annualWithdrawal, monthlyWithdrawal, successProbability }
+
+  **Withdrawal Strategy:**
+  - `calculateWithdrawalSequence(accounts, annualWithdrawal, taxRules)`
+    - Accounts: [{ name: '401k', balance, type: 'taxDeferred' }, { name: 'Roth', balance, type: 'taxFree' }, ...]
+    - Strategies: Tax-optimized (Taxable → Tax-deferred → Roth), Pro-rata (proportional), Custom
+    - Calculate year-by-year withdrawals and tax implications
+    - Handle RMDs (Required Minimum Distributions) starting age 73
+
+  **RMD Calculation:**
+  - `calculateRMD(age, accountBalance)`
+    - IRS Uniform Lifetime Table
+    - Age 73: divisor = 26.5, RMD = balance / 26.5
+    - Age 74: divisor = 25.5, etc.
+    - RMDs are ordinary income (taxed)
+
+- [ ] **Create RetirementPlanner.jsx** - Retirement planning UI
+
+  **Input View:**
+  - Retirement Goals: Target retirement income (annual, today's dollars), Desired retirement age (or "earliest possible"), Life expectancy (default: 95), Withdrawal rate (default: 4%, adjustable 3-5%)
+  - Retirement Income Sources: Social Security (estimated monthly benefit, start age), Pension (monthly, if applicable), Part-time income (optional), Rental income (optional)
+  - Retirement Expenses: Use current expenses as starting point, Adjustment factor (e.g., 80%), Or custom retirement budget, Healthcare costs (before/after Medicare age 65), Travel/discretionary budget
+  - Withdrawal Strategy: Account priority order (drag-and-drop), Strategy selection (tax-optimized, pro-rata, custom), RMD handling (auto-calculated)
+
+  **Output View:**
+  - Key Metrics: Earliest retirement date, Net worth required, Sustainable annual/monthly withdrawal, Success probability
+  - Retirement Timeline Chart: X-axis: Age, Y-axis: Net worth, Two phases: Accumulation (current age → retirement) and Decumulation (retirement → life expectancy), Show net worth trajectory with withdrawals
+  - Withdrawal Schedule Table: Year-by-year: Age, Beginning balance (by account), Withdrawal source, Withdrawal amount, Investment growth, Ending balance, Taxes on withdrawal, After-tax income
+  - Tax Projection: Annual taxes in retirement, Effective tax rate, Social Security taxation (up to 85% taxable), RMD impact
+  - Sensitivity Analysis: What if withdrawal rate is 3% vs 5%? What if market returns are lower? What if you live to 100?
+
+### 4.2 Two-Phase Gap Projections
+- [ ] **Enhance Gap.calc.js for retirement phase**
+  - Currently: Projects year 1 → retirement year (accumulation only)
+  - Add Phase 2: Retirement year + 1 → life expectancy (decumulation)
+
+  **Phase 1: Accumulation (Working Years)**
+  - Current behavior (no changes)
+  - Gap = Income - Taxes - Expenses - Debt
+  - Gap > 0: Invest (fill cash, then allocate), Gap < 0: Draw from cash/investments
+
+  **Phase 2: Decumulation (Retirement Years)**
+  - Income sources: Social Security, pension, part-time, rental
+  - Expenses: Retirement expenses (different from working expenses)
+  - Withdrawal needed: `incomeShortfall = retirementExpenses - totalRetirementIncome`
+  - Determine withdrawal source (strategy-based)
+  - Calculate taxes on withdrawal + other income
+  - Update account balances (withdrawals, investment growth)
+  - Check for RMDs (age 73+), if RMD > withdrawal, must withdraw RMD
+  - Update net worth, check if running out of money
+  - Store projection: year, age, phase, income, withdrawal, taxes, expenses, netWorth, accounts
+
+### 4.3 Retirement Expenses Module
+- [ ] **Enhance Expenses.jsx to support retirement expenses**
+  - Add section: "Retirement Expenses" (separate from current expenses)
+  - Options: "Use current expenses with adjustment" (multiply by factor), "Custom retirement budget" (separate category entry)
+  - Retirement-specific categories: Healthcare (before/after Medicare), Travel/leisure, Housing (paid-off mortgage?), Essential vs discretionary
+
+- [ ] **Create RetirementExpenses.calc.js**
+  - `calculateRetirementExpenses(year, retirementAge, expensesData, retirementExpenseOverrides)`
+  - Handle healthcare cost increases (higher than general inflation)
+  - Medicare enrollment at age 65 (reduces healthcare costs)
+  - Return monthly and annual retirement expenses
+
+### 4.4 Social Security Integration
+- [ ] **Create SocialSecurity.calc.js**
+  - `estimateSocialSecurity(fullRetirementBenefit, claimAge)`
+    - Full Retirement Age (FRA): 67
+    - Claim early (62): ~70% of FRA benefit
+    - Claim at FRA (67): 100% of benefit
+    - Claim late (70): ~124% of benefit
+  - `calculateSocialSecurityTax(benefit, otherIncome)`
+    - 0% taxable if income < $25k (single) or $32k (married)
+    - 50% taxable if income $25k-$34k (single) or $32k-$44k (married)
+    - 85% taxable if income > $34k (single) or $44k (married)
+
+- [ ] **Add Social Security to RetirementPlanner input**
+  - Estimated monthly benefit (user enters or link to SSA.gov estimator)
+  - Claim age (default: 67, adjustable 62-70)
+  - Married couple: Second person's benefit (optional)
+
+### 4.5 Retirement Tax Calculations
+- [ ] **Enhance Taxes.calc.js for retirement**
+  - `calculateRetirementTaxes(withdrawals, socialSecurity, pension, age, state)`
+    - Tax 401k withdrawals as ordinary income
+    - Tax Social Security (up to 85%)
+    - Tax pension as ordinary income
+    - Tax Roth withdrawals at 0%
+    - Tax investment withdrawals as capital gains
+    - Handle RMDs (forced ordinary income)
+  - Return detailed tax breakdown by source
+
+---
+
+## PHASE 5: ENHANCED UI & VISUALIZATIONS 🎯 Priority: MEDIUM
+**Goal:** Improve user experience with better visualizations and comparison tools
+
+### 5.1 Dashboard Enhancements
+- [ ] **Add retirement phase to Dashboard charts**
+  - Currently: Dashboard shows accumulation phase only
+  - Extend net worth chart to life expectancy
+  - Visual separator at retirement age
+  - Different shading for working vs retirement phases
+  - Show withdrawal phase clearly
+
+- [ ] **Add life events to Dashboard timeline**
+  - Markers on chart for each life event
+  - Tooltips with event details
+  - Visual impact indicators (income drop, expense spike)
+
+- [ ] **Add "At Retirement" summary cards**
+  - Net worth at retirement
+  - Estimated retirement income
+  - Years of retirement funded
+  - Success probability
+
+### 5.2 Comparison Visualizations
+- [ ] **Scenario comparison charts**
+  - Multi-line net worth chart (all scenarios)
+  - Bar chart: Key metrics side-by-side
+  - Difference heatmap (red/green for worse/better)
+
+- [ ] **Retirement strategy comparison**
+  - Withdrawal strategy A vs B
+  - Tax implications comparison
+  - Longevity of portfolio comparison
+
+### 5.3 Interactive Controls
+- [ ] **Sliders for key assumptions**
+  - Inflation rate, Investment returns, Withdrawal rate, Life expectancy
+  - Real-time recalculation with debounce
+
+- [ ] **What-if analyzer**
+  - Quick toggles: "What if I retire 2 years earlier?"
+  - Quick toggles: "What if I increase savings by $500/month?"
+  - Show immediate impact without saving
+
+---
+
+## IMPLEMENTATION ROADMAP
+
+**Sprint 1-2: Scenarios (Weeks 1-2)**
+- Week 1: Scenario.calc.js, ScenarioManager.jsx
+- Week 2: ScenarioCompare.jsx, Templates, Testing
+
+**Sprint 3-4: Life Events (Weeks 3-4)**
+- Week 3: LifeEvents.calc.js, LifeEvents.jsx, EventBuilder.jsx
+- Week 4: Gap.calc.js integration, Dashboard visualization
+
+**Sprint 5-6: Debt Module (Weeks 5-6)**
+- Week 5: Debt.calc.js, Debt.jsx, DebtForm.jsx
+- Week 6: Gap.calc.js integration, Rename InvestmentsDebt
+
+**Sprint 7-10: Retirement Planning (Weeks 7-10)**
+- Week 7: RetirementPlanning.calc.js (basic calculations)
+- Week 8: RetirementPlanner.jsx (input/output views)
+- Week 9: Two-phase Gap.calc.js (accumulation + decumulation)
+- Week 10: Withdrawal strategies, RMDs, Social Security
+
+**Sprint 11-12: Polish (Weeks 11-12)**
+- Week 11: Dashboard enhancements, visualizations
+- Week 12: Testing, refinement, documentation
+
+---
+
+## TECHNICAL NOTES
+
+### Storage Structure
+```javascript
+localStorage keys:
+- 'profile' (existing)
+- 'income' (existing)
+- 'expenses' (existing) → add retirementExpenses
+- 'taxes' (existing)
+- 'investmentsDebt' → rename to 'savingsInvestments'
+- 'debts' (NEW) - array of debt objects
+- 'scenarios' (NEW) - array of scenario objects
+- 'lifeEvents' (NEW) - array of life event objects
+- 'retirementPlan' (NEW) - retirement planning inputs
+```
+
+### Module Dependencies
+```
+RetirementPlanning
+  ↓ depends on
+Gap (two-phase)
+  ↓ depends on
+Income, Expenses, Taxes, SavingsInvestments, Debts, LifeEvents
+  ↓ depends on
+PersonalDetails
+
+Scenarios (orchestrator)
+  ↓ merges and runs
+ALL modules
+```
+
+### Calculation Performance
+- Current: ~30 years × 12 months = 360 iterations
+- With retirement phase: ~60 years × 12 months = 720 iterations
+- Consider: Optimization for large projections
+- Consider: Web workers for heavy calculations
