@@ -10,6 +10,8 @@ import TaxBracketManager from './features/taxes/TaxBracketManager'
 import InvestmentsDebt from './features/investments-debt/InvestmentsDebt'
 import Gap from './features/gap/Gap'
 import Scenarios from './features/scenarios/Scenarios'
+import ScenarioBuilder from './features/scenarios/ScenarioBuilder'
+import ScenarioCompare from './features/scenarios/ScenarioCompare'
 
 function App() {
   return (
@@ -26,6 +28,9 @@ function App() {
           <Route path="/tax-brackets" element={<TaxBracketManager />} />
           <Route path="/investments-debt" element={<InvestmentsDebt />} />
           <Route path="/gap" element={<Gap />} />
+          <Route path="/scenarios/new" element={<ScenarioBuilder />} />
+          <Route path="/scenarios/compare" element={<ScenarioCompare />} />
+          <Route path="/scenarios/:id/edit" element={<ScenarioBuilder />} />
           <Route path="/scenarios" element={<Scenarios />} />
         </Routes>
       </main>

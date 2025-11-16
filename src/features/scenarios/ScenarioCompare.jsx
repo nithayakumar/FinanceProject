@@ -1,0 +1,370 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { storage } from '../../shared/storage'
+import {
+  mergeScenarioData,
+  calculateScenarioProjections,
+  calculateScenarioSummary,
+  compareScenarios
+} from './Scenario.calc'
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts'
+
+function ScenarioCompare() {
+  const navigate = useNavigate()
+  const [scenarios, setScenarios] = useState([])
+  const [selectedScenarioIds, setSelectedScenarioIds] = useState([])
+  const [comparisonData, setComparisonData] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [baseData, setBaseData] = useState(null)
+  const [baseResults, setBaseResults] = useState(null)
+
+  // Load scenarios and base data
+  useEffect(() => {
+    const saved = storage.load('scenarios') || []
+    setScenarios(saved)
+
+    // Load base profile data
+    const profile = storage.load('profile') || {}
+    const income = storage.load('income') || {}
+    const expenses = storage.load('expenses') || {}
+    const investmentsDebt = storage.load('investmentsDebt') || {}
+
+    const base = { profile, income, expenses, investmentsDebt }
+    setBaseData(base)
+
+    // Calculate base profile projections
+    try {
+      const baseProjectionResults = calculateScenarioProjections(base)
+      setBaseResults(baseProjectionResults)
+    } catch (error) {
+      console.error('Error calculating base projections:', error)
+    }
+  }, [])
+
+  // Run comparison when scenarios are selected
+  const handleCompare = () => {
+    if (!baseResults) {
+      alert('Base profile data not loaded')
+      return
+    }
+
+    if (selectedScenarioIds.length === 0) {
+      alert('Please select at least one scenario to compare')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      // Build comparison array starting with base profile
+      const scenariosToCompare = [
+        {
+          id: 'base',
+          name: 'Current Plan (Base)',
+          projectionResults: baseResults
+        }
+      ]
+
+      // Add selected scenarios
+      selectedScenarioIds.forEach(scenarioId => {
+        const scenario = scenarios.find(s => s.id === scenarioId)
+        if (scenario) {
+          // Merge scenario with base data
+          const mergedData = mergeScenarioData(baseData, scenario.overrides || {})
+          // Calculate projections
+          const projectionResults = calculateScenarioProjections(mergedData)
+          scenariosToCompare.push({
+            id: scenario.id,
+            name: scenario.name,
+            projectionResults
+          })
+        }
+      })
+
+      // Run comparison
+      const comparison = compareScenarios(scenariosToCompare)
+      setComparisonData(comparison)
+    } catch (error) {
+      console.error('Error comparing scenarios:', error)
+      alert('Error comparing scenarios. Check console for details.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Toggle scenario selection
+  const toggleScenario = (scenarioId) => {
+    setSelectedScenarioIds(prev =>
+      prev.includes(scenarioId)
+        ? prev.filter(id => id !== scenarioId)
+        : [...prev, scenarioId]
+    )
+  }
+
+  // Format currency
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0
+    }).format(value)
+  }
+
+  // Format percentage
+  const formatPercent = (value) => {
+    return value.toFixed(1) + '%'
+  }
+
+  // Render difference indicator
+  const renderDiff = (diff) => {
+    if (!diff) return null
+
+    const isPositive = diff.absolute > 0
+    const color = diff.better ? 'text-green-600' : diff.worse ? 'text-red-600' : 'text-gray-600'
+
+    return (
+      <div className={`text-sm ${color}`}>
+        {isPositive ? '+' : ''}{formatCurrency(diff.absolute)}
+        {diff.percentage !== null && (
+          <span className="ml-1">({diff.percentage > 0 ? '+' : ''}{diff.percentage.toFixed(1)}%)</span>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-8 max-w-7xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">Compare Scenarios</h1>
+
+      {/* Scenario Selection */}
+      <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-semibold mb-4">Select Scenarios to Compare</h2>
+
+        <div className="mb-4">
+          <div className="bg-blue-50 border-2 border-blue-300 rounded p-3 mb-3">
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={true}
+                disabled={true}
+                className="mr-2"
+              />
+              <span className="font-medium">Current Plan (Baseline)</span>
+            </label>
+          </div>
+
+          {scenarios.length === 0 ? (
+            <p className="text-gray-500">No scenarios available. Create a scenario first.</p>
+          ) : (
+            <div className="space-y-2">
+              {scenarios.map(scenario => (
+                <div key={scenario.id} className="border border-gray-200 rounded p-3 hover:bg-gray-50">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedScenarioIds.includes(scenario.id)}
+                      onChange={() => toggleScenario(scenario.id)}
+                      className="mr-2"
+                    />
+                    <div>
+                      <span className="font-medium">{scenario.name}</span>
+                      {scenario.description && (
+                        <p className="text-sm text-gray-600">{scenario.description}</p>
+                      )}
+                    </div>
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={handleCompare}
+          disabled={selectedScenarioIds.length === 0 || loading}
+          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Calculating...' : 'Compare Selected Scenarios'}
+        </button>
+      </div>
+
+      {/* Comparison Results */}
+      {comparisonData && (
+        <>
+          {/* Summary Comparison Table */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6 overflow-x-auto">
+            <h2 className="text-xl font-semibold mb-4">Summary Comparison</h2>
+
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-gray-300">
+                  <th className="text-left py-2 pr-4">Metric</th>
+                  {comparisonData.scenarios.map(scenario => (
+                    <th key={scenario.id} className="text-right py-2 px-4 min-w-[150px]">
+                      {scenario.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {/* Average Annual Income */}
+                <tr className="border-b border-gray-200">
+                  <td className="py-3 pr-4 font-medium">Avg Annual Income</td>
+                  {comparisonData.scenarios.map(scenario => (
+                    <td key={scenario.id} className="text-right py-3 px-4">
+                      <div className="font-semibold">{formatCurrency(scenario.summary.avgAnnualIncome)}</div>
+                      {renderDiff(scenario.differences?.avgAnnualIncome)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Average Annual Taxes */}
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <td className="py-3 pr-4 font-medium">Avg Annual Taxes</td>
+                  {comparisonData.scenarios.map(scenario => (
+                    <td key={scenario.id} className="text-right py-3 px-4">
+                      <div className="font-semibold">{formatCurrency(scenario.summary.avgAnnualTaxes)}</div>
+                      {renderDiff(scenario.differences?.avgAnnualTaxes)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Average Annual Expenses */}
+                <tr className="border-b border-gray-200">
+                  <td className="py-3 pr-4 font-medium">Avg Annual Expenses</td>
+                  {comparisonData.scenarios.map(scenario => (
+                    <td key={scenario.id} className="text-right py-3 px-4">
+                      <div className="font-semibold">{formatCurrency(scenario.summary.avgAnnualExpenses)}</div>
+                      {renderDiff(scenario.differences?.avgAnnualExpenses)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Average Annual Savings */}
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <td className="py-3 pr-4 font-medium">Avg Annual Savings</td>
+                  {comparisonData.scenarios.map(scenario => (
+                    <td key={scenario.id} className="text-right py-3 px-4">
+                      <div className="font-semibold">{formatCurrency(scenario.summary.avgAnnualGap)}</div>
+                      {renderDiff(scenario.differences?.avgAnnualGap)}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Savings Rate */}
+                <tr className="border-b border-gray-200">
+                  <td className="py-3 pr-4 font-medium">Avg Savings Rate</td>
+                  {comparisonData.scenarios.map(scenario => (
+                    <td key={scenario.id} className="text-right py-3 px-4">
+                      <div className="font-semibold">{formatPercent(scenario.summary.avgSavingsRate)}</div>
+                      {scenario.differences?.avgSavingsRate && (
+                        <div className={`text-sm ${scenario.differences.avgSavingsRate.better ? 'text-green-600' : scenario.differences.avgSavingsRate.worse ? 'text-red-600' : 'text-gray-600'}`}>
+                          {scenario.differences.avgSavingsRate.absolute > 0 ? '+' : ''}
+                          {scenario.differences.avgSavingsRate.absolute.toFixed(1)}pp
+                        </div>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+
+                {/* Net Worth at Retirement */}
+                <tr className="border-b-2 border-gray-300 bg-yellow-50">
+                  <td className="py-3 pr-4 font-bold">Net Worth at Retirement</td>
+                  {comparisonData.scenarios.map(scenario => (
+                    <td key={scenario.id} className="text-right py-3 px-4">
+                      <div className="font-bold text-lg">{formatCurrency(scenario.summary.netWorthAtRetirement)}</div>
+                      {renderDiff(scenario.differences?.netWorthAtRetirement)}
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Net Worth Chart */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-semibold mb-4">Net Worth Trajectory</h2>
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="year"
+                  type="number"
+                  domain={['dataMin', 'dataMax']}
+                />
+                <YAxis
+                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                />
+                <Tooltip
+                  formatter={(value) => formatCurrency(value)}
+                  labelFormatter={(label) => `Year ${label}`}
+                />
+                <Legend />
+                {comparisonData.scenarios.map((scenario, index) => (
+                  <Line
+                    key={scenario.id}
+                    data={scenario.summary.yearlyProjections}
+                    dataKey="netWorth"
+                    name={scenario.name}
+                    stroke={['#3b82f6', '#10b981', '#f59e0b', '#ef4444'][index % 4]}
+                    strokeWidth={scenario.id === 'base' ? 3 : 2}
+                    dot={false}
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Bar Chart Comparison */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Key Metrics Comparison</h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart
+                data={comparisonData.scenarios.map(s => ({
+                  name: s.name.length > 20 ? s.name.substring(0, 20) + '...' : s.name,
+                  Income: s.summary.avgAnnualIncome,
+                  Taxes: s.summary.avgAnnualTaxes,
+                  Expenses: s.summary.avgAnnualExpenses,
+                  Savings: s.summary.avgAnnualGap
+                }))}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
+                <Legend />
+                <Bar dataKey="Income" fill="#3b82f6" />
+                <Bar dataKey="Taxes" fill="#ef4444" />
+                <Bar dataKey="Expenses" fill="#f59e0b" />
+                <Bar dataKey="Savings" fill="#10b981" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </>
+      )}
+
+      {/* Back Button */}
+      <div className="mt-6">
+        <button
+          onClick={() => navigate('/scenarios')}
+          className="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50"
+        >
+          ← Back to Scenarios
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default ScenarioCompare
