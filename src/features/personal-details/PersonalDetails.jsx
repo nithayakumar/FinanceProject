@@ -119,207 +119,188 @@ function PersonalDetails() {
   // Input View
   if (view === 'input') {
     return (
-      <div className="max-w-2xl mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-2">Personal Details</h1>
-        <p className="text-gray-600 mb-4">Tell us about yourself and your financial goals</p>
+      <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-1">Personal Details</h1>
 
-        {/* Save Status Banner */}
+        {/* Save Status Banner - Compact */}
         {isSaved ? (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <span className="text-green-600 text-xl mr-3">✅</span>
-              <div>
-                <p className="text-green-900 font-medium">Data Saved</p>
-                <p className="text-green-700 text-sm">This section is ready for the Dashboard</p>
-              </div>
-            </div>
+          <div className="mb-4 bg-green-50 border border-green-200 rounded px-3 py-2 flex items-center text-sm">
+            <span className="text-green-600 mr-2">✅</span>
+            <span className="text-green-900 font-medium">Saved</span>
           </div>
         ) : (
-          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <span className="text-yellow-600 text-xl mr-3">⚠️</span>
-              <div>
-                <p className="text-yellow-900 font-medium">Not Saved Yet</p>
-                <p className="text-yellow-700 text-sm">Fill out the form and click "Continue" to save</p>
-              </div>
-            </div>
+          <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 flex items-center text-sm">
+            <span className="text-yellow-600 mr-2">⚠️</span>
+            <span className="text-yellow-900 font-medium">Not saved</span>
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-6">
-          {/* Location */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Where do you live?
-            </label>
-            <select
-              value={data.location}
-              onChange={(e) => handleChange('location', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="California">California</option>
-            </select>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 space-y-4">
+          {/* Row 1: Location & Filing Status */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Location
+              </label>
+              <select
+                value={data.location}
+                onChange={(e) => handleChange('location', e.target.value)}
+                className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="California">California</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Filing Status
+              </label>
+              <select
+                value={data.filingStatus}
+                onChange={(e) => handleChange('filingStatus', e.target.value)}
+                className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Single">Single</option>
+                <option value="Married Filing Jointly">Married Filing Jointly</option>
+                <option value="Married Filing Separately">Married Filing Separately</option>
+                <option value="Head of Household">Head of Household</option>
+              </select>
+            </div>
           </div>
 
-          {/* Filing Status */}
+          {/* Row 2: Age & Retirement Age */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              How do you file?
-            </label>
-            <select
-              value={data.filingStatus}
-              onChange={(e) => handleChange('filingStatus', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="Single">Single</option>
-              <option value="Married Filing Jointly">Married Filing Jointly</option>
-              <option value="Married Filing Separately">Married Filing Separately</option>
-              <option value="Head of Household">Head of Household</option>
-            </select>
-          </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Age
+                </label>
+                <input
+                  type="number"
+                  value={data.age}
+                  onChange={(e) => handleChange('age', e.target.value ? Number(e.target.value) : '')}
+                  placeholder="30"
+                  className={`w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.age ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.age && <p className="mt-1 text-xs text-red-600">{errors.age}</p>}
+              </div>
 
-          {/* Age */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Age
-            </label>
-            <input
-              type="number"
-              value={data.age}
-              onChange={(e) => handleChange('age', e.target.value ? Number(e.target.value) : '')}
-              placeholder="Enter your age"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.age ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            {errors.age && <p className="mt-1 text-sm text-red-600">{errors.age}</p>}
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Retirement Age
+                </label>
+                <input
+                  type="number"
+                  value={data.retirementAge}
+                  onChange={(e) => handleChange('retirementAge', e.target.value ? Number(e.target.value) : '')}
+                  placeholder="65"
+                  className={`w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.retirementAge ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.retirementAge && <p className="mt-1 text-xs text-red-600">{errors.retirementAge}</p>}
+              </div>
+            </div>
 
-          {/* Retirement Age */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Retirement Age
-            </label>
-            <input
-              type="number"
-              value={data.retirementAge}
-              onChange={(e) => handleChange('retirementAge', e.target.value ? Number(e.target.value) : '')}
-              placeholder="When do you plan to retire?"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.retirementAge ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            {errors.retirementAge && <p className="mt-1 text-sm text-red-600">{errors.retirementAge}</p>}
-
-            {/* Working Years Remaining - Show only when both age and retirement age are valid */}
+            {/* Working Years Remaining - Compact */}
             {data.age && data.retirementAge && data.retirementAge > data.age && (
-              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-blue-900">
-                    You have {data.retirementAge - data.age} working years ahead
-                  </span>
-                </div>
-                <div className="relative">
-                  <div className="h-2 bg-blue-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-600 rounded-full" style={{ width: '0%' }}></div>
-                  </div>
-                  <div className="flex justify-between mt-1 text-xs text-blue-700">
-                    <span>Age {data.age}</span>
-                    <span>Age {data.retirementAge}</span>
-                  </div>
-                </div>
+              <div className="mt-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                <span className="font-medium text-blue-900">
+                  {data.retirementAge - data.age} working years ahead
+                </span>
+                <span className="text-blue-700 ml-2">
+                  (Age {data.age} → {data.retirementAge})
+                </span>
               </div>
             )}
           </div>
 
-          {/* Current Cash */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Current Cash
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input
-                type="number"
-                value={data.currentCash}
-                onChange={(e) => handleChange('currentCash', e.target.value ? Number(e.target.value) : '')}
-                placeholder="40000"
-                className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.currentCash ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
+          {/* Row 3: Cash */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Current Cash
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1.5 text-gray-500">$</span>
+                <input
+                  type="number"
+                  value={data.currentCash}
+                  onChange={(e) => handleChange('currentCash', e.target.value ? Number(e.target.value) : '')}
+                  placeholder="40000"
+                  className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.currentCash ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
+              {errors.currentCash && <p className="mt-1 text-xs text-red-600">{errors.currentCash}</p>}
             </div>
-            {errors.currentCash && <p className="mt-1 text-sm text-red-600">{errors.currentCash}</p>}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Target Cash
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1.5 text-gray-500">$</span>
+                <input
+                  type="number"
+                  value={data.targetCash}
+                  onChange={(e) => handleChange('targetCash', e.target.value ? Number(e.target.value) : '')}
+                  placeholder="60000"
+                  className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.targetCash ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
+              {errors.targetCash && <p className="mt-1 text-xs text-red-600">{errors.targetCash}</p>}
+            </div>
           </div>
 
-          {/* Target Cash on Hand */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Target Cash on Hand
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
+          {/* Row 4: Savings & Inflation */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Savings & Investments <span className="text-xs text-gray-500">(401k + stocks)</span>
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1.5 text-gray-500">$</span>
+                <input
+                  type="number"
+                  value={data.currentSavings}
+                  onChange={(e) => handleChange('currentSavings', e.target.value ? Number(e.target.value) : '')}
+                  placeholder="100000"
+                  className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.currentSavings ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+              </div>
+              {errors.currentSavings && <p className="mt-1 text-xs text-red-600">{errors.currentSavings}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Inflation Rate (%)
+              </label>
               <input
                 type="number"
-                value={data.targetCash}
-                onChange={(e) => handleChange('targetCash', e.target.value ? Number(e.target.value) : '')}
-                placeholder="60000"
-                className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.targetCash ? 'border-red-500' : 'border-gray-300'
+                step="0.1"
+                value={data.inflationRate}
+                onChange={(e) => handleChange('inflationRate', e.target.value ? Number(e.target.value) : '')}
+                placeholder="2.7"
+                className={`w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.inflationRate ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
+              {errors.inflationRate && <p className="mt-1 text-xs text-red-600">{errors.inflationRate}</p>}
             </div>
-            {errors.targetCash && <p className="mt-1 text-sm text-red-600">{errors.targetCash}</p>}
-          </div>
-
-          {/* Savings and Investments */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Savings and Investments
-              <span className="ml-2 text-xs text-blue-600 font-normal">
-                (Synced with Savings & Investments page)
-              </span>
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500">$</span>
-              <input
-                type="number"
-                value={data.currentSavings}
-                onChange={(e) => handleChange('currentSavings', e.target.value ? Number(e.target.value) : '')}
-                placeholder="Enter your savings and investments (non-cash)"
-                className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.currentSavings ? 'border-red-500' : 'border-gray-300'
-                }`}
-              />
-            </div>
-            <p className="mt-1 text-xs text-gray-600">
-              401k + Investments (excludes cash). Updates proportionally sync to Savings & Investments page.
-            </p>
-            {errors.currentSavings && <p className="mt-1 text-sm text-red-600">{errors.currentSavings}</p>}
-          </div>
-
-          {/* Inflation Rate */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Inflation Rate (%)
-            </label>
-            <input
-              type="number"
-              step="0.1"
-              value={data.inflationRate}
-              onChange={(e) => handleChange('inflationRate', e.target.value ? Number(e.target.value) : '')}
-              placeholder="2.7"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.inflationRate ? 'border-red-500' : 'border-gray-300'
-              }`}
-            />
-            {errors.inflationRate && <p className="mt-1 text-sm text-red-600">{errors.inflationRate}</p>}
           </div>
 
           {/* Continue Button */}
           <button
             onClick={handleContinue}
-            className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition"
+            className="w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 transition"
           >
             Continue →
           </button>
