@@ -10,11 +10,12 @@ function Income() {
   const [errors, setErrors] = useState({})
   const [isSaved, setIsSaved] = useState(false)
 
-  // Load profile for retirement year
+  // Load profile for retirement year and inflation rate
   const profile = storage.load('profile') || {}
   const yearsToRetirement = profile.retirementAge && profile.age
     ? profile.retirementAge - profile.age
     : 30  // Default to 30 if profile not set
+  const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
 
   const [data, setData] = useState({
     incomeStreams: [
@@ -25,7 +26,7 @@ function Income() {
         company401k: '',
         individual401k: '',
         equity: '',
-        growthRate: '',
+        growthRate: inflationRate,  // Default to inflation rate
         endWorkYear: yearsToRetirement,
         jumps: []
       }
@@ -90,7 +91,7 @@ function Income() {
       company401k: '',
       individual401k: '',
       equity: '',
-      growthRate: '',
+      growthRate: inflationRate,  // Default to inflation rate
       endWorkYear: yearsToRetirement,
       jumps: []
     }

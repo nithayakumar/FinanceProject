@@ -210,6 +210,26 @@ function PersonalDetails() {
               }`}
             />
             {errors.retirementAge && <p className="mt-1 text-sm text-red-600">{errors.retirementAge}</p>}
+
+            {/* Working Years Remaining - Show only when both age and retirement age are valid */}
+            {data.age && data.retirementAge && data.retirementAge > data.age && (
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-blue-900">
+                    You have {data.retirementAge - data.age} working years ahead
+                  </span>
+                </div>
+                <div className="relative">
+                  <div className="h-2 bg-blue-200 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-600 rounded-full" style={{ width: '0%' }}></div>
+                  </div>
+                  <div className="flex justify-between mt-1 text-xs text-blue-700">
+                    <span>Age {data.age}</span>
+                    <span>Age {data.retirementAge}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Current Cash */}
