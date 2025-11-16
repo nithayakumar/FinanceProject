@@ -328,11 +328,54 @@ function calculateSummary(projections, yearsToRetirement, incomeStreams, inflati
             const compNominal = jumpYearMonths.reduce((sum, p) => sum + p.totalCompNominal, 0)
             const compPV = jumpYearMonths.reduce((sum, p) => sum + p.totalCompPV, 0)
 
+            // Calculate per-stream breakdown for this milestone year
+            const streamBreakdown = incomeStreams.map(s => {
+              // Calculate this stream's contribution for the milestone year
+              let streamCompNominal = 0
+              let streamCompPV = 0
+
+              jumpYearMonths.forEach(monthProj => {
+                if (monthProj.activeStreams.includes(s.id)) {
+                  const year = jump.year
+                  const yearsOfGrowth = year - 1
+                  const growthMultiplier = Math.pow(1 + s.growthRate / 100, yearsOfGrowth)
+
+                  // Get jump multiplier for this stream up to this year
+                  let jumpMultiplier = 1.0
+                  if (s.jumps && s.jumps.length > 0) {
+                    s.jumps
+                      .filter(j => j.year && j.jumpPercent && j.year <= year)
+                      .forEach(j => {
+                        jumpMultiplier *= (1 + j.jumpPercent / 100)
+                      })
+                  }
+
+                  const annualTotal = (s.annualIncome + s.equity + s.company401k) * growthMultiplier * jumpMultiplier
+                  const monthlyTotal = annualTotal / 12
+
+                  // Apply inflation discount
+                  const yearsFromNow = year - 1
+                  const discountFactor = Math.pow(1 + inflationRate / 100, yearsFromNow)
+                  const monthlyPV = monthlyTotal / discountFactor
+
+                  streamCompNominal += monthlyTotal
+                  streamCompPV += monthlyPV
+                }
+              })
+
+              return {
+                streamName: s.name,
+                compNominal: round5(streamCompNominal),
+                compPV: round5(streamCompPV)
+              }
+            }).filter(s => s.compNominal > 0) // Only include active streams
+
             milestones.push({
               year: jump.year,
               label: `Year ${jump.year}: ${stream.name} - ${jump.description || 'Income Jump'} (+${jump.jumpPercent}%)`,
               compNominal: round5(compNominal),
-              compPV: round5(compPV)
+              compPV: round5(compPV),
+              streamBreakdown
             })
           }
         })

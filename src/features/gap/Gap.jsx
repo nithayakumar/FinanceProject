@@ -196,7 +196,7 @@ function Gap() {
                 <tr key={p.year} className="border-b border-gray-200 hover:bg-gray-50">
                   <td className="py-3 px-2 font-medium">{p.year}</td>
                   <td className="text-right py-3 px-2">
-                    {fmt(isPV ? p.annualIncomePV : p.annualIncome)}
+                    {fmt(isPV ? p.grossIncomePV : p.grossIncome)}
                   </td>
                   <td className="text-right py-3 px-2">
                     {fmt(isPV ? p.totalIndividual401kPV : p.totalIndividual401k)}

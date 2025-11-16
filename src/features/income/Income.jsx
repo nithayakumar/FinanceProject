@@ -611,16 +611,33 @@ function Income() {
         return filteredMilestones && filteredMilestones.length > 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
             <h2 className="text-xl font-semibold mb-4">Key Milestones</h2>
-            <div className="space-y-2">
+            <div className="space-y-4">
               {filteredMilestones.map((milestone, index) => (
-                <div key={index} className="flex justify-between items-center py-2 border-b last:border-b-0">
-                  <span className="font-medium text-gray-700">{milestone.label}</span>
-                  <span className="text-gray-900">
-                    ${Math.round(milestone.compNominal).toLocaleString()}/year
-                    <span className="text-gray-500 text-sm ml-2">
-                      (PV: ${Math.round(milestone.compPV).toLocaleString()})
+                <div key={index} className="py-3 border-b last:border-b-0">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-medium text-gray-700">{milestone.label}</span>
+                    <span className="text-gray-900 font-semibold">
+                      ${Math.round(milestone.compNominal).toLocaleString()}/year
+                      <span className="text-gray-500 text-sm ml-2 font-normal">
+                        (PV: ${Math.round(milestone.compPV).toLocaleString()})
+                      </span>
                     </span>
-                  </span>
+                  </div>
+                  {milestone.streamBreakdown && milestone.streamBreakdown.length > 0 && (
+                    <div className="ml-4 mt-2 space-y-1">
+                      {milestone.streamBreakdown.map((stream, streamIndex) => (
+                        <div key={streamIndex} className="flex justify-between items-center text-sm">
+                          <span className="text-gray-600">↳ {stream.streamName}</span>
+                          <span className="text-gray-700">
+                            ${Math.round(stream.compNominal).toLocaleString()}/year
+                            <span className="text-gray-500 text-xs ml-2">
+                              (PV: ${Math.round(stream.compPV).toLocaleString()})
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

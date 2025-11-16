@@ -25,8 +25,8 @@ export function transformNetWorthData(gapProjections, inflationRate) {
       {
         category: 'Income',
         subcategory: 'Total',
-        value: projection.annualIncome || 0,
-        valuePV: projection.annualIncomePV || 0,
+        value: projection.grossIncome || 0,
+        valuePV: projection.grossIncomePV || 0,
         type: 'Flow',
         notes: 'Total annual income'
       },

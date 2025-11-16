@@ -3,9 +3,18 @@
  *
  * Formula: Gap = Income - Pretax 401k - Taxes - Expenses
  *
- * Allocation:
- * - If Gap > 0: Fill cash to target, invest per allocation %, excess to cash
- * - If Gap < 0: Stop investing, draw from cash (can go negative)
+ * Cash Target: Inflates at inflation rate each year (maintains purchasing power)
+ *
+ * Allocation (when Gap > 0):
+ * 1. Fill cash to inflation-adjusted target
+ * 2. Invest per allocation % (e.g., 70% stocks, 30% bonds)
+ * 3. Handle excess:
+ *    - First: Try to add to cash (up to inflated target)
+ *    - Then: Invest proportionally across investments
+ *    - Prevents cash from exceeding inflated target
+ *
+ * Allocation (when Gap < 0):
+ * - Draw from cash (no new investments)
  */
 
 import { calculateTaxes } from '../taxes/Taxes.calc'
@@ -29,7 +38,7 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
 
   // Extract starting values
   let cash = Number(investmentsData.currentCash) || 0
-  const targetCash = Number(investmentsData.targetCash) || 0
+  const baseTargetCash = Number(investmentsData.targetCash) || 0  // Base target (Year 1 dollars)
 
   const retirement401k = {
     value: Number(investmentsData.retirement401k.currentValue) || 0,
@@ -49,7 +58,7 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
   const totalAllocation = investments.reduce((sum, inv) => sum + inv.portfolioPercent, 0)
 
   console.log('Starting Cash:', cash)
-  console.log('Target Cash:', targetCash)
+  console.log('Base Target Cash (Year 1):', baseTargetCash)
   console.log('Starting 401k:', retirement401k.value)
   console.log('Total Allocation %:', totalAllocation)
 
@@ -57,12 +66,17 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
   const projections = []
 
   for (let year = 1; year <= yearsToRetirement; year++) {
+    // Inflate target cash for this year
+    const inflationMultiplier = Math.pow(1 + inflationRate / 100, year - 1)
+    const targetCash = baseTargetCash * inflationMultiplier
+
     // Get annual income from income projections (January of this year, monthly * 12)
     const janIndex = (year - 1) * 12  // Month index for January of this year
     const incomeProjection = incomeData.projections[janIndex] || {}
     const annualIncome = (incomeProjection.totalCompNominal || 0) * 12
 
-    // Get annual company 401k contribution from income projections (grows with income)
+    // Extract equity and company 401k for tracking (but include in gap calculation)
+    const annualEquity = (incomeProjection.equityNominal || 0) * 12
     const annualCompany401k = (incomeProjection.company401kNominal || 0) * 12
 
     // Calculate total individual 401k contribution across all streams
@@ -110,12 +124,13 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       console.log(`  Inflation Multiplier: ${Math.pow(1 + inflationRate / 100, year - 1).toFixed(5)}`)
     }
 
-    // Calculate gap
+    // Calculate gap = disposable income after all deductions (available for cash/investments)
+    // Gap includes all income sources and flows through allocation logic
     const gap = annualIncome - totalIndividual401k - annualTaxes - annualExpenses
 
-    // Track investments made this year
+    // Track investments and cash changes this year
     let investedThisYear = 0
-    let cashContribution = 0  // Track actual cash allocated/withdrawn
+    let cashContribution = 0
     const investmentAllocations = {}
 
     if (gap > 0) {
@@ -140,10 +155,34 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
         remainingGap -= toInvest
       })
 
-      // Step 3: Excess goes to cash (if allocation < 100%)
+      // Step 3: Handle excess (if allocation < 100%)
       if (remainingGap > 0) {
-        cash += remainingGap
-        cashContribution += remainingGap  // Track excess that went to cash
+        // Check if adding to cash would exceed inflated target
+        const cashHeadroom = Math.max(0, targetCash - cash)
+
+        if (cashHeadroom > 0) {
+          // Can add some to cash without exceeding target
+          const toCashFromExcess = Math.min(remainingGap, cashHeadroom)
+          cash += toCashFromExcess
+          cashContribution += toCashFromExcess
+          remainingGap -= toCashFromExcess
+        }
+
+        // If still have excess and have investments, distribute proportionally
+        if (remainingGap > 0 && investments.length > 0 && totalAllocation > 0) {
+          investments.forEach((inv, index) => {
+            const additionalInvest = remainingGap * (inv.portfolioPercent / totalAllocation)
+            inv.costBasis += additionalInvest
+            investedThisYear += additionalInvest
+            investmentAllocations[`investment${index + 1}`] = (investmentAllocations[`investment${index + 1}`] || 0) + additionalInvest
+          })
+          remainingGap = 0  // All allocated
+        } else if (remainingGap > 0) {
+          // No investments defined - excess goes to cash (even if above target)
+          cash += remainingGap
+          cashContribution += remainingGap
+          remainingGap = 0
+        }
       }
     } else if (gap < 0) {
       // Negative gap - draw from cash, don't invest
@@ -171,12 +210,24 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     const yearsFromNow = year - 1
     const discountFactor = Math.pow(1 + inflationRate / 100, yearsFromNow)
 
+    // Calculate income breakdown for cash flow display
+    const annualSalary = annualIncome - annualEquity - annualCompany401k
+    const grossIncome = annualIncome
+    const afterTaxIncome = taxableIncome - annualTaxes
+    const disposableIncome = gap  // afterTaxIncome - annualExpenses
+
     const projection = {
       year,
 
-      // Nominal values
-      annualIncome: round5(annualIncome),
+      // Nominal values - Income Components
+      annualSalary: round5(annualSalary),
+      annualEquity: round5(annualEquity),
+      annualCompany401k: round5(annualCompany401k),
+      grossIncome: round5(grossIncome),
+
+      // Nominal values - Deductions and Taxes
       totalIndividual401k: round5(totalIndividual401k),
+      taxableIncome: round5(taxableIncome),
       annualTaxes: round5(annualTaxes),
       taxBreakdown: {
         federal: round5(taxBreakdown.federal),
@@ -184,11 +235,20 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
         socialSecurity: round5(taxBreakdown.socialSecurity),
         medicare: round5(taxBreakdown.medicare)
       },
+      afterTaxIncome: round5(afterTaxIncome),
+
+      // Nominal values - Expenses and Disposable Income
       annualExpenses: round5(annualExpenses),
-      gap: round5(gap),
+      disposableIncome: round5(disposableIncome),
+      gap: round5(gap),  // Same as disposableIncome
+
+      // Nominal values - Allocations
       investedThisYear: round5(investedThisYear),
       cashContribution: round5(cashContribution),
+
+      // Nominal values - Balances
       cash: round5(cash),
+      targetCash: round5(targetCash),  // Inflation-adjusted target for this year
       retirement401kValue: round5(retirement401k.value),
       totalCostBasis: round5(totalCostBasis),
       totalInvestmentValue: round5(totalInvestmentValue),
@@ -200,9 +260,15 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
         marketValue: round5(inv.marketValue)
       })),
 
-      // Present values
-      annualIncomePV: round5(annualIncome / discountFactor),
+      // Present values - Income Components
+      annualSalaryPV: round5(annualSalary / discountFactor),
+      annualEquityPV: round5(annualEquity / discountFactor),
+      annualCompany401kPV: round5(annualCompany401k / discountFactor),
+      grossIncomePV: round5(grossIncome / discountFactor),
+
+      // Present values - Deductions and Taxes
       totalIndividual401kPV: round5(totalIndividual401k / discountFactor),
+      taxableIncomePV: round5(taxableIncome / discountFactor),
       annualTaxesPV: round5(annualTaxes / discountFactor),
       taxBreakdownPV: {
         federal: round5(taxBreakdown.federal / discountFactor),
@@ -210,11 +276,20 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
         socialSecurity: round5(taxBreakdown.socialSecurity / discountFactor),
         medicare: round5(taxBreakdown.medicare / discountFactor)
       },
+      afterTaxIncomePV: round5(afterTaxIncome / discountFactor),
+
+      // Present values - Expenses and Disposable Income
       annualExpensesPV: round5(annualExpenses / discountFactor),
+      disposableIncomePV: round5(disposableIncome / discountFactor),
       gapPV: round5(gap / discountFactor),
+
+      // Present values - Allocations
       investedThisYearPV: round5(investedThisYear / discountFactor),
       cashContributionPV: round5(cashContribution / discountFactor),
+
+      // Present values - Balances
       cashPV: round5(cash / discountFactor),
+      targetCashPV: round5(targetCash / discountFactor),  // PV of inflation-adjusted target
       retirement401kValuePV: round5(retirement401k.value / discountFactor),
       totalCostBasisPV: round5(totalCostBasis / discountFactor),
       totalInvestmentValuePV: round5(totalInvestmentValue / discountFactor),

@@ -50,8 +50,12 @@ function InvestmentsDebt() {
     }, 0)
 
     if (saved) {
+      // Always sync targetCash from profile (in case it was updated in Personal Details)
+      const profileTargetCash = profile.targetCash || saved.targetCash || 0
+
       setData(prev => ({
         ...saved,
+        targetCash: profileTargetCash,  // Use profile's targetCash if available
         retirement401k: {
           ...saved.retirement401k,
           companyContribution: totalCompany401k
@@ -59,6 +63,7 @@ function InvestmentsDebt() {
       }))
       setIsSaved(true)
       console.log('📋 Loaded saved investments:', saved)
+      console.log('💰 Synced targetCash from profile:', profileTargetCash)
     } else {
       // Initialize from profile
       const currentCash = profile.currentCash || 0
@@ -198,12 +203,22 @@ function InvestmentsDebt() {
     storage.save('investmentsDebt', data)
     setIsSaved(true)
 
-    // Also update profile with current and target cash
+    // Also update profile with current and target cash, and sync non-cash savings
     const profile = storage.load('profile') || {}
     profile.currentCash = data.currentCash
     profile.targetCash = data.targetCash
+
+    // Calculate non-cash savings (401k + investments) and sync to Personal Details
+    const nonCashSavings = (Number(data.retirement401k.currentValue) || 0) +
+                           data.investments.reduce((sum, inv) => sum + (Number(inv.currentValue) || 0), 0)
+    profile.currentSavings = nonCashSavings
+
     storage.save('profile', profile)
-    console.log('✅ Updated profile with cash values')
+    console.log('✅ Updated profile with cash values and savings:', {
+      currentCash: data.currentCash,
+      targetCash: data.targetCash,
+      currentSavings: nonCashSavings
+    })
 
     // Get years to retirement from profile
     const yearsToRetirement = profile.yearsToRetirement || 30
@@ -231,12 +246,17 @@ function InvestmentsDebt() {
                                (Number(data.retirement401k.currentValue) || 0) +
                                data.investments.reduce((sum, inv) => sum + (Number(inv.currentValue) || 0), 0)
 
+  const totalInvestments = data.investments.reduce((sum, inv) => sum + (Number(inv.currentValue) || 0), 0)
+
   // Input View
   if (view === 'input') {
     return (
       <div className="max-w-5xl mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-2">Investments & Debt</h1>
-        <p className="text-gray-600 mb-4">Manage your cash, 401k, and investments</p>
+        <h1 className="text-3xl font-bold mb-2">Savings & Investments</h1>
+        <p className="text-gray-600 mb-4">
+          Manage your cash, 401k, and investments
+          <span className="ml-2 text-xs text-blue-600">(Synced with Personal Details)</span>
+        </p>
 
         {/* Save Status Banner */}
         {isSaved ? (
@@ -261,15 +281,68 @@ function InvestmentsDebt() {
           </div>
         )}
 
-        {/* Total Savings Summary */}
-        <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 mb-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-sm text-blue-700 font-medium">Total Savings</p>
-              <p className="text-xs text-blue-600">Cash + 401(k) + Investments</p>
-            </div>
-            <p className="text-3xl font-bold text-blue-700">${Math.round(currentTotalSavings).toLocaleString()}</p>
+        {/* Total Savings & Investments Summary with Breakdown */}
+        <div className="bg-blue-50 border border-blue-300 rounded-lg p-6 mb-6">
+          <div className="mb-4">
+            <p className="text-sm text-blue-700 font-medium mb-1">Total Savings & Investments</p>
+            <p className="text-4xl font-bold text-blue-700">${Math.round(currentTotalSavings).toLocaleString()}</p>
           </div>
+
+          {/* Breakdown */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-blue-200">
+            {/* Cash */}
+            <div className="bg-white rounded-lg p-3">
+              <p className="text-xs text-gray-600 mb-1">Cash</p>
+              <p className="text-lg font-bold text-blue-700">
+                ${Math.round(Number(data.currentCash || 0)).toLocaleString()}
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                {currentTotalSavings > 0 ? ((Number(data.currentCash || 0) / currentTotalSavings) * 100).toFixed(1) : 0}%
+              </p>
+            </div>
+
+            {/* 401k */}
+            <div className="bg-white rounded-lg p-3">
+              <p className="text-xs text-gray-600 mb-1">401k</p>
+              <p className="text-lg font-bold text-green-700">
+                ${Math.round(Number(data.retirement401k?.currentValue || 0)).toLocaleString()}
+              </p>
+              <p className="text-xs text-green-600 mt-1">
+                {currentTotalSavings > 0 ? ((Number(data.retirement401k?.currentValue || 0) / currentTotalSavings) * 100).toFixed(1) : 0}%
+              </p>
+            </div>
+
+            {/* Investments */}
+            <div className="bg-white rounded-lg p-3">
+              <p className="text-xs text-gray-600 mb-1">Investments</p>
+              <p className="text-lg font-bold text-purple-700">
+                ${Math.round(totalInvestments).toLocaleString()}
+              </p>
+              <p className="text-xs text-purple-600 mt-1">
+                {currentTotalSavings > 0 ? ((totalInvestments / currentTotalSavings) * 100).toFixed(1) : 0}%
+              </p>
+            </div>
+          </div>
+
+          {/* Individual Investment Breakdown */}
+          {data.investments && data.investments.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-blue-200">
+              <p className="text-xs text-blue-700 font-medium mb-2">Investment Breakdown:</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {data.investments.map((inv, index) => (
+                  <div key={inv.id} className="bg-white rounded p-2">
+                    <p className="text-xs text-gray-600">Investment {index + 1}</p>
+                    <p className="text-sm font-semibold text-purple-700">
+                      ${Math.round(Number(inv.currentValue || 0)).toLocaleString()}
+                    </p>
+                    <p className="text-xs text-purple-600">
+                      {currentTotalSavings > 0 ? ((Number(inv.currentValue || 0) / currentTotalSavings) * 100).toFixed(1) : 0}%
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -534,7 +607,7 @@ function InvestmentsDebt() {
     <div className="max-w-6xl mx-auto p-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Investment Projections</h1>
+          <h1 className="text-3xl font-bold mb-2">Savings & Investments Projections</h1>
           <p className="text-gray-600">Growth projections over {yearsToRetirement} years</p>
         </div>
         <button

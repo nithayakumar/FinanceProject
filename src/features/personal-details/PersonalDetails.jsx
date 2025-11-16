@@ -55,8 +55,51 @@ function PersonalDetails() {
       return
     }
 
+    // Get old savings BEFORE saving new profile
+    const oldSavings = storage.load('profile')?.currentSavings || 0
+    const newSavings = data.currentSavings
+
     // Save to localStorage
     storage.save('profile', data)
+
+    // Sync targetCash and currentSavings to Investments section
+    const investmentsData = storage.load('investmentsDebt')
+    if (investmentsData) {
+      // Sync targetCash
+      investmentsData.targetCash = data.targetCash
+
+      // If currentSavings changed and there's investment data, update proportionally
+      if (oldSavings !== newSavings && oldSavings > 0) {
+        // Calculate current non-cash total (401k + investments)
+        const current401k = investmentsData.retirement401k?.currentValue || 0
+        const currentInvestments = investmentsData.investments?.reduce((sum, inv) => sum + (inv.currentValue || 0), 0) || 0
+        const currentNonCashTotal = current401k + currentInvestments
+
+        if (currentNonCashTotal > 0) {
+          // Calculate the scale factor
+          const scaleFactor = newSavings / currentNonCashTotal
+
+          // Update 401k proportionally
+          if (investmentsData.retirement401k) {
+            investmentsData.retirement401k.currentValue = Math.round(current401k * scaleFactor)
+          }
+
+          // Update each investment proportionally
+          if (investmentsData.investments) {
+            investmentsData.investments = investmentsData.investments.map(inv => ({
+              ...inv,
+              currentValue: Math.round((inv.currentValue || 0) * scaleFactor)
+            }))
+          }
+
+          console.log(`✅ Proportionally updated non-cash savings from $${currentNonCashTotal.toLocaleString()} to $${newSavings.toLocaleString()}`)
+        }
+      }
+
+      storage.save('investmentsDebt', investmentsData)
+      console.log('✅ Synced targetCash and savings to Investments section')
+    }
+
     setIsSaved(true)
 
     // Switch to output view
@@ -209,10 +252,13 @@ function PersonalDetails() {
             {errors.targetCash && <p className="mt-1 text-sm text-red-600">{errors.targetCash}</p>}
           </div>
 
-          {/* Current Savings */}
+          {/* Savings and Investments */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Current Savings
+              Savings and Investments
+              <span className="ml-2 text-xs text-blue-600 font-normal">
+                (Synced with Savings & Investments page)
+              </span>
             </label>
             <div className="relative">
               <span className="absolute left-3 top-2 text-gray-500">$</span>
@@ -220,12 +266,15 @@ function PersonalDetails() {
                 type="number"
                 value={data.currentSavings}
                 onChange={(e) => handleChange('currentSavings', e.target.value ? Number(e.target.value) : '')}
-                placeholder="Enter your current savings"
+                placeholder="Enter your savings and investments (non-cash)"
                 className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.currentSavings ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
             </div>
+            <p className="mt-1 text-xs text-gray-600">
+              401k + Investments (excludes cash). Updates proportionally sync to Savings & Investments page.
+            </p>
             {errors.currentSavings && <p className="mt-1 text-sm text-red-600">{errors.currentSavings}</p>}
           </div>
 
@@ -282,7 +331,7 @@ function PersonalDetails() {
         <SummaryRow label="Retirement Age" value={data.retirementAge} />
         <SummaryRow label="Current Cash" value={`$${Math.round(data.currentCash).toLocaleString()}`} />
         <SummaryRow label="Target Cash on Hand" value={`$${Math.round(data.targetCash).toLocaleString()}`} />
-        <SummaryRow label="Current Savings" value={`$${Math.round(Number(data.currentSavings)).toLocaleString()}`} />
+        <SummaryRow label="Savings and Investments" value={`$${Math.round(Number(data.currentSavings)).toLocaleString()}`} />
         <SummaryRow label="Inflation Rate" value={`${data.inflationRate}%`} />
 
         {/* Years to Retirement */}

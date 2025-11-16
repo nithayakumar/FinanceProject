@@ -392,3 +392,26 @@ investments.forEach(inv => {
   - Tax % of Taxable Income
   - Inflation Multiplier
 - **Purpose**: Help diagnose unexpected tax % changes across years
+
+### ✅ Fixed: Company 401k Contribution Growth (2025-11-12)
+- **Issue**: Company 401k contribution was static, not growing with income
+- **Root Cause**: `Gap.calc.js` initialized `companyContribution` once at line 37 and applied same static value every year
+- **Fix Applied**:
+  - `Gap.calc.js:66` - Now pulls `annualCompany401k` from income projections each year
+  - `Gap.calc.js:151` - Uses year-specific `annualCompany401k` instead of static value
+  - Company contribution now correctly grows with income growth rate
+- **Impact**: 401k balance calculations now accurately reflect growing employer match
+- **Note**: Income module was already calculating company 401k growth correctly at `Income.calc.js:128`
+
+### ✅ Fixed: Key Milestones Per-Stream Breakdown (2025-11-12)
+- **Issue**: Key milestones only showed joint total compensation, not per-stream breakdown
+- **Fix Applied**:
+  - `Income.calc.js:332-371` - Added `streamBreakdown` calculation for each milestone
+  - Calculates each active stream's contribution to milestone year total
+  - Includes both nominal and present value for each stream
+  - `Income.jsx:626-640` - Updated display to show per-stream breakdown below total
+- **Display Format**:
+  - Main milestone shows total (bold)
+  - Indented breakdown with ↳ arrow shows each stream's contribution
+  - Both nominal and PV values displayed for total and per-stream
+- **Impact**: Users can now see exactly how each income stream contributes to milestone compensation

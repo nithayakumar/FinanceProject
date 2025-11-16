@@ -10,7 +10,7 @@ function Navigation() {
     { path: '/income', label: 'Income' },
     { path: '/expenses', label: 'Expenses' },
     { path: '/taxes', label: 'Taxes' },
-    { path: '/investments-debt', label: 'Investments & Debt' },
+    { path: '/investments-debt', label: 'Savings & Investments' },
     { path: '/gap', label: 'Gap' },
     { path: '/scenarios', label: 'Scenarios' },
   ]

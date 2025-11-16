@@ -13,6 +13,14 @@ export const storage = {
     try {
       localStorage.setItem(key, JSON.stringify(data))
       console.log(`✅ Saved ${key}:`, data)
+
+      // Update last modified timestamp for Dashboard refresh detection
+      localStorage.setItem('lastModified', Date.now().toString())
+
+      // Dispatch custom event for same-tab updates (native storage event doesn't fire in same tab)
+      window.dispatchEvent(new CustomEvent('localStorageChange', {
+        detail: { key, data }
+      }))
     } catch (error) {
       console.error(`❌ Error saving ${key}:`, error)
     }

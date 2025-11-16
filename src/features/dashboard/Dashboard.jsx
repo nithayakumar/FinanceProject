@@ -13,6 +13,23 @@ function Dashboard() {
   const [activeTab, setActiveTab] = useState('networth')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  // Check on mount if data was modified while Dashboard was unmounted
+  useEffect(() => {
+    const lastModified = localStorage.getItem('lastModified')
+    const dashboardLastViewed = localStorage.getItem('dashboardLastViewed')
+
+    if (dashboardLastViewed && lastModified && parseInt(lastModified) > parseInt(dashboardLastViewed)) {
+      console.log('📡 Data was modified while Dashboard was unmounted, refreshing...')
+      setRefreshTrigger(prev => prev + 1)
+    }
+
+    // Update last viewed timestamp when leaving
+    return () => {
+      localStorage.setItem('dashboardLastViewed', Date.now().toString())
+    }
+  }, [])
 
   useEffect(() => {
     console.group('📊 Loading Dashboard Data')
@@ -130,6 +147,32 @@ function Dashboard() {
         }
       })
       setLoading(false)
+    }
+  }, [refreshTrigger])
+
+  // Listen for storage changes and refresh dashboard
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      // Storage event fires for changes in other tabs
+      if (e.key === 'profile' || e.key === 'income' || e.key === 'expenses' || e.key === 'investmentsDebt') {
+        console.log('📡 Storage changed (other tab):', e.key)
+        setRefreshTrigger(prev => prev + 1)
+      }
+    }
+
+    const handleCustomStorageChange = (e) => {
+      // Custom event fires for changes in same tab
+      console.log('📡 Storage changed (same tab):', e.detail.key)
+      setRefreshTrigger(prev => prev + 1)
+    }
+
+    // Listen for both native storage events (cross-tab) and custom events (same-tab)
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('localStorageChange', handleCustomStorageChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('localStorageChange', handleCustomStorageChange)
     }
   }, [])
 
