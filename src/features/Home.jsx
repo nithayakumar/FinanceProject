@@ -12,8 +12,12 @@ function Home() {
   let snapshot = null
 
   if (hasData) {
+    // Calculate total compensation (salary + equity + company 401k match)
     const totalIncome = income.incomeStreams?.reduce((sum, stream) => {
-      return sum + (Number(stream.annualIncome) || 0)
+      const salary = Number(stream.annualIncome) || 0
+      const equity = Number(stream.equity) || 0
+      const company401k = Number(stream.company401k) || 0
+      return sum + salary + equity + company401k
     }, 0) || 0
 
     const totalExpenses = expenses.expenseCategories?.reduce((sum, cat) => {
