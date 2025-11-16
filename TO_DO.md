@@ -15,17 +15,21 @@
 - [ ] Allow custom tax years beyond 2025
 
 ## Gap
+- [ ] Rename "Gap"
 - [ ] Add notifications when cash goes negative
 - [ ] Model borrowing/credit when cash is negative
-- [ ] Add emergency fund targets and warnings
 
 ## General
-- [ ] Add data export (CSV, PDF)
+- [ ] Add a % version of the net worth dashboard (a toggle)
+- [ ] Add a detailed version of the net worth dashboard (a toggle) where it adds each income stream, expense category, and investment # to the net worth dashboard.
 - [ ] Add scenarios comparison (side-by-side)
-- [ ] Multi-currency support
+- [ ] Complex: Determine right database structure and implement DB
+- [ ] Complex: Implement sharing with a URL
+
+
 
 ## Calculation Methodology
-- [ ] **Move all growth calculations from annual to monthly**
+- [ ] **Move all growth calculations from annual to monthly** -> Or confirm if this is done
   - Currently all growth rates (income, investments, 401k, inflation) are compounded annually
   - Target: Compound growth on a monthly basis for more accurate projections
   - Affects: Income.calc.js, Gap.calc.js, Expenses.calc.js
