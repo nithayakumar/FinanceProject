@@ -209,56 +209,49 @@ function Expenses() {
     )
 
     return (
-      <div className="max-w-4xl mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-2">Expenses</h1>
-        <p className="text-gray-600 mb-4">Track your expected expenses by category</p>
+      <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-1">Expenses</h1>
 
-        {/* Save Status Banner */}
+        {/* Save Status Banner - Compact */}
         {isSaved ? (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
-            <span className="text-green-600 text-xl mr-3">✅</span>
-            <div>
-              <p className="text-green-900 font-medium">Data Saved</p>
-              <p className="text-green-700 text-sm">This section is ready for the Dashboard</p>
-            </div>
+          <div className="mb-4 bg-green-50 border border-green-200 rounded px-3 py-2 flex items-center text-sm">
+            <span className="text-green-600 mr-2">✅</span>
+            <span className="text-green-900 font-medium">Saved</span>
           </div>
         ) : (
-          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center">
-            <span className="text-yellow-600 text-xl mr-3">⚠️</span>
-            <div>
-              <p className="text-yellow-900 font-medium">Not Saved Yet</p>
-              <p className="text-yellow-700 text-sm">Fill out the form and click "Calculate Expense Projections" to save</p>
-            </div>
+          <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 flex items-center text-sm">
+            <span className="text-yellow-600 mr-2">⚠️</span>
+            <span className="text-yellow-900 font-medium">Not saved</span>
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Expense Categories - Table Format */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4">Annual Expenses by Category</h2>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h2 className="text-lg font-semibold mb-2">Annual Expenses by Category</h2>
 
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Category</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Annual Amount</th>
-                    <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Growth Rate (%)</th>
+                    <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Category</th>
+                    <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Annual Amount</th>
+                    <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Growth Rate (%)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.expenseCategories.map((category, index) => (
                     <tr key={category.id} className={index !== data.expenseCategories.length - 1 ? 'border-b border-gray-100' : ''}>
-                      <td className="py-3 px-4 font-medium text-gray-900">{category.category}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 px-3 font-medium text-gray-900">{category.category}</td>
+                      <td className="py-2 px-3">
                         <div className="relative max-w-xs">
-                          <span className="absolute left-3 top-2 text-gray-500">$</span>
+                          <span className="absolute left-3 top-1.5 text-gray-500">$</span>
                           <input
                             type="number"
                             value={category.annualAmount}
                             onChange={(e) => handleCategoryChange(category.id, 'annualAmount', e.target.value ? Number(e.target.value) : '')}
                             placeholder="0"
-                            className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                               errors[`${category.id}-annualAmount`] ? 'border-red-500' : 'border-gray-300'
                             }`}
                           />
@@ -267,14 +260,14 @@ function Expenses() {
                           <p className="mt-1 text-xs text-red-600">{errors[`${category.id}-annualAmount`]}</p>
                         )}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 px-3">
                         <input
                           type="number"
                           step="0.1"
                           value={category.growthRate}
                           onChange={(e) => handleCategoryChange(category.id, 'growthRate', e.target.value ? Number(e.target.value) : '')}
                           placeholder="2.7"
-                          className={`max-w-xs w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          className={`max-w-xs w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors[`${category.id}-growthRate`] ? 'border-red-500' : 'border-gray-300'
                           }`}
                         />
@@ -290,23 +283,23 @@ function Expenses() {
           </div>
 
           {/* Expense Changes Section */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex justify-between items-start mb-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex justify-between items-start mb-2">
               <div>
-                <h2 className="text-xl font-semibold">Expense Changes</h2>
-                <p className="text-sm text-gray-600">Add one-time increases or decreases to specific categories</p>
+                <h2 className="text-lg font-semibold">Expense Changes</h2>
+                <p className="text-xs text-gray-600">Add one-time increases or decreases to specific categories</p>
               </div>
             </div>
 
             {/* Add Change Button with Category Selection */}
-            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">Add a new expense change:</p>
+            <div className="mb-3 p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs font-medium text-gray-700 mb-2">Add a new expense change:</p>
               <div className="flex flex-wrap gap-2">
                 {data.expenseCategories.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => addJump(category.id)}
-                    className="text-sm px-3 py-2 bg-white border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-500 transition"
+                    className="text-xs px-2 py-1.5 bg-white border border-gray-300 rounded-md hover:bg-blue-50 hover:border-blue-500 transition"
                   >
                     {category.category}
                   </button>
@@ -315,20 +308,20 @@ function Expenses() {
             </div>
 
             {allExpenseChanges.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {allExpenseChanges.map((change) => (
-                  <div key={change.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-start gap-4">
+                  <div key={change.id} className="border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-start gap-3">
                       <div className="flex-1">
-                        <div className="font-medium text-sm text-gray-500 mb-2">{change.categoryName}</div>
+                        <div className="font-medium text-xs text-gray-500 mb-1">{change.categoryName}</div>
                         <input
                           type="text"
                           value={change.description}
                           onChange={(e) => handleJumpChange(change.categoryId, change.id, 'description', e.target.value)}
-                          className="w-full text-base font-medium border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 mb-2"
-                          placeholder="Description (e.g., Move to cheaper area)"
+                          className="w-full text-sm font-medium border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 mb-2"
+                          placeholder="Description"
                         />
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-3 gap-2">
                           <div>
                             <label className="block text-xs text-gray-600 mb-1">Year</label>
                             <input
@@ -336,7 +329,7 @@ function Expenses() {
                               value={change.year}
                               onChange={(e) => handleJumpChange(change.categoryId, change.id, 'year', e.target.value ? Number(e.target.value) : '')}
                               placeholder="5"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                           </div>
                           <div>
@@ -344,7 +337,7 @@ function Expenses() {
                             <select
                               value={change.changeType || 'percent'}
                               onChange={(e) => handleJumpChange(change.categoryId, change.id, 'changeType', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             >
                               <option value="percent">%</option>
                               <option value="dollar">$</option>
@@ -352,11 +345,11 @@ function Expenses() {
                           </div>
                           <div>
                             <label className="block text-xs text-gray-600 mb-1">
-                              {change.changeType === 'dollar' ? 'Amount ($)' : 'Change (%)'}
+                              {change.changeType === 'dollar' ? 'Amount' : 'Change'}
                             </label>
                             <div className="relative">
                               {change.changeType === 'dollar' && (
-                                <span className="absolute left-3 top-2 text-gray-500">$</span>
+                                <span className="absolute left-2 top-1.5 text-gray-500 text-xs">$</span>
                               )}
                               <input
                                 type="number"
@@ -364,7 +357,7 @@ function Expenses() {
                                 value={change.changeValue !== undefined ? change.changeValue : (change.jumpPercent || '')}
                                 onChange={(e) => handleJumpChange(change.categoryId, change.id, 'changeValue', e.target.value ? Number(e.target.value) : '')}
                                 placeholder={change.changeType === 'dollar' ? '5000' : '-20'}
-                                className={`w-full ${change.changeType === 'dollar' ? 'pl-8' : 'pl-3'} pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                className={`w-full ${change.changeType === 'dollar' ? 'pl-6' : 'pl-2'} pr-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                               />
                             </div>
                           </div>
@@ -372,7 +365,7 @@ function Expenses() {
                       </div>
                       <button
                         onClick={() => removeJump(change.categoryId, change.id)}
-                        className="text-red-600 hover:text-red-700 text-sm"
+                        className="text-red-600 hover:text-red-700 text-xs"
                       >
                         Remove
                       </button>
@@ -381,79 +374,79 @@ function Expenses() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 italic">No expense changes added yet. Click a category button above to add one.</p>
+              <p className="text-xs text-gray-500 italic">No expense changes added yet. Click a category button above to add one.</p>
             )}
           </div>
 
           {/* One-Time Expenses */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex justify-between items-center mb-4">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="flex justify-between items-center mb-2">
               <div>
-                <h2 className="text-xl font-semibold">One-Time Expenses</h2>
-                <p className="text-sm text-gray-600">Add major one-time expenses (wedding, travel, medical procedure, etc.)</p>
+                <h2 className="text-lg font-semibold">One-Time Expenses</h2>
+                <p className="text-xs text-gray-600">Add major one-time expenses (wedding, travel, etc.)</p>
               </div>
               <button
                 onClick={addOneTimeExpense}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="text-xs text-blue-600 hover:text-blue-700 font-medium"
               >
-                + Add One-Time Expense
+                + Add
               </button>
             </div>
 
             {data.oneTimeExpenses.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {data.oneTimeExpenses.map((expense) => (
-                  <div key={expense.id} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-3">
+                  <div key={expense.id} className="border border-gray-200 rounded-lg p-3">
+                    <div className="flex justify-between items-start mb-2">
                       <input
                         type="text"
                         value={expense.description}
                         onChange={(e) => handleOneTimeChange(expense.id, 'description', e.target.value)}
-                        placeholder="Description (e.g., Wedding)"
-                        className="flex-1 text-base font-medium border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2"
+                        placeholder="Description"
+                        className="flex-1 text-sm font-medium border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2"
                       />
                       <button
                         onClick={() => removeOneTimeExpense(expense.id)}
-                        className="text-red-600 hover:text-red-700 text-sm ml-2"
+                        className="text-red-600 hover:text-red-700 text-xs ml-2"
                       >
                         Remove
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
                         <input
                           type="number"
                           value={expense.year}
                           onChange={(e) => handleOneTimeChange(expense.id, 'year', e.target.value ? Number(e.target.value) : '')}
                           placeholder="3"
                           max={yearsToRetirement}
-                          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          className={`w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors[`${expense.id}-year`] ? 'border-red-500' : 'border-gray-300'
                           }`}
                         />
                         {errors[`${expense.id}-year`] && (
-                          <p className="mt-1 text-sm text-red-600">{errors[`${expense.id}-year`]}</p>
+                          <p className="mt-1 text-xs text-red-600">{errors[`${expense.id}-year`]}</p>
                         )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Amount</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
                         <div className="relative">
-                          <span className="absolute left-3 top-2 text-gray-500">$</span>
+                          <span className="absolute left-3 top-1.5 text-gray-500">$</span>
                           <input
                             type="number"
                             value={expense.amount}
                             onChange={(e) => handleOneTimeChange(expense.id, 'amount', e.target.value ? Number(e.target.value) : '')}
                             placeholder="50000"
-                            className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                               errors[`${expense.id}-amount`] ? 'border-red-500' : 'border-gray-300'
                             }`}
                           />
                         </div>
                         {errors[`${expense.id}-amount`] && (
-                          <p className="mt-1 text-sm text-red-600">{errors[`${expense.id}-amount`]}</p>
+                          <p className="mt-1 text-xs text-red-600">{errors[`${expense.id}-amount`]}</p>
                         )}
                       </div>
                     </div>
@@ -461,14 +454,14 @@ function Expenses() {
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500 italic">No one-time expenses added yet</p>
+              <p className="text-xs text-gray-500 italic">No one-time expenses added yet</p>
             )}
           </div>
 
           {/* Continue Button */}
           <button
             onClick={handleContinue}
-            className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition"
+            className="w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 transition"
           >
             Calculate Expense Projections →
           </button>

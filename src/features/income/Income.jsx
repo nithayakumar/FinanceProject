@@ -180,36 +180,29 @@ function Income() {
   // Input View
   if (view === 'input') {
     return (
-      <div className="max-w-4xl mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-2">Income</h1>
-        <p className="text-gray-600 mb-4">Tell us about your income streams and expected growth</p>
+      <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-1">Income</h1>
 
-        {/* Save Status Banner */}
+        {/* Save Status Banner - Compact */}
         {isSaved ? (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
-            <span className="text-green-600 text-xl mr-3">✅</span>
-            <div>
-              <p className="text-green-900 font-medium">Data Saved</p>
-              <p className="text-green-700 text-sm">This section is ready for the Dashboard</p>
-            </div>
+          <div className="mb-4 bg-green-50 border border-green-200 rounded px-3 py-2 flex items-center text-sm">
+            <span className="text-green-600 mr-2">✅</span>
+            <span className="text-green-900 font-medium">Saved</span>
           </div>
         ) : (
-          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center">
-            <span className="text-yellow-600 text-xl mr-3">⚠️</span>
-            <div>
-              <p className="text-yellow-900 font-medium">Not Saved Yet</p>
-              <p className="text-yellow-700 text-sm">Fill out the form and click "Calculate Income Projections" to save</p>
-            </div>
+          <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 flex items-center text-sm">
+            <span className="text-yellow-600 mr-2">⚠️</span>
+            <span className="text-yellow-900 font-medium">Not saved</span>
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Income Streams */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 className="text-xl font-semibold mb-4">Income Streams</h2>
-            <p className="text-sm text-gray-600 mb-4">Add up to 3 income streams</p>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <h2 className="text-lg font-semibold mb-2">Income Streams</h2>
+            <p className="text-xs text-gray-600 mb-3">Add up to 3 income streams</p>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               {data.incomeStreams.map((stream, index) => (
                 <div key={stream.id} className="border border-gray-200 rounded-lg p-4 relative">
                   <div className="flex justify-between items-start mb-4">
@@ -233,96 +226,96 @@ function Income() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Annual Income */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Annual Income
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3 top-2 text-gray-500">$</span>
+                        <span className="absolute left-3 top-1.5 text-gray-500">$</span>
                         <input
                           type="number"
                           value={stream.annualIncome}
                           onChange={(e) => handleStreamChange(stream.id, 'annualIncome', e.target.value ? Number(e.target.value) : '')}
                           placeholder="150000"
-                          className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors[`${stream.id}-annualIncome`] ? 'border-red-500' : 'border-gray-300'
                           }`}
                         />
                       </div>
                       {errors[`${stream.id}-annualIncome`] && (
-                        <p className="mt-1 text-sm text-red-600">{errors[`${stream.id}-annualIncome`]}</p>
+                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-annualIncome`]}</p>
                       )}
                     </div>
 
                     {/* Company 401k */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Company 401k Match
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3 top-2 text-gray-500">$</span>
+                        <span className="absolute left-3 top-1.5 text-gray-500">$</span>
                         <input
                           type="number"
                           value={stream.company401k}
                           onChange={(e) => handleStreamChange(stream.id, 'company401k', e.target.value ? Number(e.target.value) : '')}
                           placeholder="10000"
-                          className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors[`${stream.id}-company401k`] ? 'border-red-500' : 'border-gray-300'
                           }`}
                         />
                       </div>
                       {errors[`${stream.id}-company401k`] && (
-                        <p className="mt-1 text-sm text-red-600">{errors[`${stream.id}-company401k`]}</p>
+                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-company401k`]}</p>
                       )}
                     </div>
 
                     {/* Individual 401k Contribution Goal */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         401k Contribution Goal
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3 top-2 text-gray-500">$</span>
+                        <span className="absolute left-3 top-1.5 text-gray-500">$</span>
                         <input
                           type="number"
                           value={stream.individual401k}
                           onChange={(e) => handleStreamChange(stream.id, 'individual401k', e.target.value ? Number(e.target.value) : '')}
                           placeholder="23000"
-                          className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors[`${stream.id}-individual401k`] ? 'border-red-500' : 'border-gray-300'
                           }`}
                         />
                       </div>
                       {errors[`${stream.id}-individual401k`] && (
-                        <p className="mt-1 text-sm text-red-600">{errors[`${stream.id}-individual401k`]}</p>
+                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-individual401k`]}</p>
                       )}
                       <p className="mt-1 text-xs text-gray-500">Reduces taxable income</p>
                     </div>
 
                     {/* Equity */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Equity (RSU)
                       </label>
                       <div className="relative">
-                        <span className="absolute left-3 top-2 text-gray-500">$</span>
+                        <span className="absolute left-3 top-1.5 text-gray-500">$</span>
                         <input
                           type="number"
                           value={stream.equity}
                           onChange={(e) => handleStreamChange(stream.id, 'equity', e.target.value ? Number(e.target.value) : '')}
                           placeholder="50000"
-                          className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                             errors[`${stream.id}-equity`] ? 'border-red-500' : 'border-gray-300'
                           }`}
                         />
                       </div>
                       {errors[`${stream.id}-equity`] && (
-                        <p className="mt-1 text-sm text-red-600">{errors[`${stream.id}-equity`]}</p>
+                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-equity`]}</p>
                       )}
                     </div>
 
                     {/* Growth Rate */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Annual Growth Rate (%)
                       </label>
                       <input
@@ -331,18 +324,18 @@ function Income() {
                         value={stream.growthRate}
                         onChange={(e) => handleStreamChange(stream.id, 'growthRate', e.target.value ? Number(e.target.value) : '')}
                         placeholder="3.5"
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        className={`w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors[`${stream.id}-growthRate`] ? 'border-red-500' : 'border-gray-300'
                         }`}
                       />
                       {errors[`${stream.id}-growthRate`] && (
-                        <p className="mt-1 text-sm text-red-600">{errors[`${stream.id}-growthRate`]}</p>
+                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-growthRate`]}</p>
                       )}
                     </div>
 
                     {/* End Work Year */}
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         End Work Year (relative, max: {yearsToRetirement})
                       </label>
                       <input
@@ -351,39 +344,39 @@ function Income() {
                         onChange={(e) => handleStreamChange(stream.id, 'endWorkYear', e.target.value ? Number(e.target.value) : '')}
                         placeholder={yearsToRetirement.toString()}
                         max={yearsToRetirement}
-                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        className={`w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                           errors[`${stream.id}-endWorkYear`] ? 'border-red-500' : 'border-gray-300'
                         }`}
                       />
                       {errors[`${stream.id}-endWorkYear`] && (
-                        <p className="mt-1 text-sm text-red-600">{errors[`${stream.id}-endWorkYear`]}</p>
+                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-endWorkYear`]}</p>
                       )}
                     </div>
                   </div>
 
                   {/* Income Jumps for this stream */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <div className="flex justify-between items-center mb-3">
-                      <h3 className="text-sm font-semibold text-gray-700">Income Jumps (Promotions/Raises)</h3>
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-xs font-semibold text-gray-700">Income Jumps</h3>
                       <button
                         onClick={() => addIncomeJump(stream.id)}
-                        className="text-sm text-blue-600 hover:text-blue-700"
+                        className="text-xs text-blue-600 hover:text-blue-700"
                       >
                         + Add Jump
                       </button>
                     </div>
 
                     {stream.jumps && stream.jumps.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {stream.jumps.map((jump) => (
-                          <div key={jump.id} className="bg-gray-50 rounded p-3">
-                            <div className="flex justify-between items-start mb-2">
+                          <div key={jump.id} className="bg-gray-50 rounded p-2">
+                            <div className="flex justify-between items-start mb-1">
                               <input
                                 type="text"
                                 value={jump.description}
                                 onChange={(e) => handleJumpChange(stream.id, jump.id, 'description', e.target.value)}
-                                className="text-sm font-medium bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
-                                placeholder="e.g., Promotion to Senior"
+                                className="text-xs font-medium bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
+                                placeholder="e.g., Promotion"
                               />
                               <button
                                 onClick={() => removeIncomeJump(stream.id, jump.id)}
@@ -393,7 +386,7 @@ function Income() {
                               </button>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-2">
                               <div>
                                 <label className="block text-xs text-gray-600 mb-1">Year</label>
                                 <input
@@ -401,7 +394,7 @@ function Income() {
                                   value={jump.year}
                                   onChange={(e) => handleJumpChange(stream.id, jump.id, 'year', e.target.value ? Number(e.target.value) : '')}
                                   placeholder="5"
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                               </div>
                               <div>
@@ -412,7 +405,7 @@ function Income() {
                                   value={jump.jumpPercent}
                                   onChange={(e) => handleJumpChange(stream.id, jump.id, 'jumpPercent', e.target.value ? Number(e.target.value) : '')}
                                   placeholder="7"
-                                  className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                               </div>
                             </div>
@@ -440,7 +433,7 @@ function Income() {
           {/* Continue Button */}
           <button
             onClick={handleContinue}
-            className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition"
+            className="w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 transition"
           >
             Calculate Income Projections →
           </button>

@@ -251,49 +251,35 @@ function InvestmentsDebt() {
   // Input View
   if (view === 'input') {
     return (
-      <div className="max-w-5xl mx-auto p-8">
-        <h1 className="text-3xl font-bold mb-2">Savings & Investments</h1>
-        <p className="text-gray-600 mb-4">
-          Manage your cash, 401k, and investments
-          <span className="ml-2 text-xs text-blue-600">(Synced with Personal Details)</span>
-        </p>
+      <div className="max-w-5xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-1">Savings & Investments</h1>
 
-        {/* Save Status Banner */}
+        {/* Save Status Banner - Compact */}
         {isSaved ? (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <span className="text-green-600 text-xl mr-3">✅</span>
-              <div>
-                <p className="text-green-900 font-medium">Data Saved</p>
-                <p className="text-green-700 text-sm">This section is ready for the Dashboard</p>
-              </div>
-            </div>
+          <div className="mb-4 bg-green-50 border border-green-200 rounded px-3 py-2 flex items-center text-sm">
+            <span className="text-green-600 mr-2">✅</span>
+            <span className="text-green-900 font-medium">Saved</span>
           </div>
         ) : (
-          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center">
-              <span className="text-yellow-600 text-xl mr-3">⚠️</span>
-              <div>
-                <p className="text-yellow-900 font-medium">Not Saved Yet</p>
-                <p className="text-yellow-700 text-sm">Fill out the form and click "Calculate Projections" to save</p>
-              </div>
-            </div>
+          <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 flex items-center text-sm">
+            <span className="text-yellow-600 mr-2">⚠️</span>
+            <span className="text-yellow-900 font-medium">Not saved</span>
           </div>
         )}
 
         {/* Total Savings & Investments Summary with Breakdown */}
-        <div className="bg-blue-50 border border-blue-300 rounded-lg p-6 mb-6">
-          <div className="mb-4">
-            <p className="text-sm text-blue-700 font-medium mb-1">Total Savings & Investments</p>
-            <p className="text-4xl font-bold text-blue-700">${Math.round(currentTotalSavings).toLocaleString()}</p>
+        <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 mb-4">
+          <div className="mb-3">
+            <p className="text-xs text-blue-700 font-medium mb-1">Total Savings & Investments</p>
+            <p className="text-3xl font-bold text-blue-700">${Math.round(currentTotalSavings).toLocaleString()}</p>
           </div>
 
           {/* Breakdown */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-blue-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3 pt-3 border-t border-blue-200">
             {/* Cash */}
-            <div className="bg-white rounded-lg p-3">
+            <div className="bg-white rounded-lg p-2">
               <p className="text-xs text-gray-600 mb-1">Cash</p>
-              <p className="text-lg font-bold text-blue-700">
+              <p className="text-base font-bold text-blue-700">
                 ${Math.round(Number(data.currentCash || 0)).toLocaleString()}
               </p>
               <p className="text-xs text-blue-600 mt-1">
@@ -302,9 +288,9 @@ function InvestmentsDebt() {
             </div>
 
             {/* 401k */}
-            <div className="bg-white rounded-lg p-3">
+            <div className="bg-white rounded-lg p-2">
               <p className="text-xs text-gray-600 mb-1">401k</p>
-              <p className="text-lg font-bold text-green-700">
+              <p className="text-base font-bold text-green-700">
                 ${Math.round(Number(data.retirement401k?.currentValue || 0)).toLocaleString()}
               </p>
               <p className="text-xs text-green-600 mt-1">
@@ -313,9 +299,9 @@ function InvestmentsDebt() {
             </div>
 
             {/* Investments */}
-            <div className="bg-white rounded-lg p-3">
+            <div className="bg-white rounded-lg p-2">
               <p className="text-xs text-gray-600 mb-1">Investments</p>
-              <p className="text-lg font-bold text-purple-700">
+              <p className="text-base font-bold text-purple-700">
                 ${Math.round(totalInvestments).toLocaleString()}
               </p>
               <p className="text-xs text-purple-600 mt-1">
@@ -326,7 +312,7 @@ function InvestmentsDebt() {
 
           {/* Individual Investment Breakdown */}
           {data.investments && data.investments.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-blue-200">
+            <div className="mt-3 pt-3 border-t border-blue-200">
               <p className="text-xs text-blue-700 font-medium mb-2">Investment Breakdown:</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 {data.investments.map((inv, index) => (
@@ -348,18 +334,18 @@ function InvestmentsDebt() {
         <div className="space-y-4">
           {/* Cash on Hand - Compact */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h2 className="text-lg font-semibold mb-3">Cash on Hand <span className="text-xs text-gray-500 font-normal">(Synced with Personal Details)</span></h2>
+            <h2 className="text-base font-semibold mb-2">Cash on Hand <span className="text-xs text-gray-500 font-normal">(Synced)</span></h2>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Current Cash</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-500 text-sm">$</span>
+                  <span className="absolute left-3 top-1.5 text-gray-500 text-sm">$</span>
                   <input
                     type="number"
                     value={data.currentCash}
                     onChange={(e) => handleCashChange('currentCash', e.target.value ? Number(e.target.value) : '')}
                     placeholder="50000"
-                    className={`w-full pl-8 pr-3 py-2 border rounded-md text-sm ${
+                    className={`w-full pl-8 pr-3 py-1.5 border rounded-md text-sm ${
                       errors.currentCash ? 'border-red-500' : 'border-gray-300'
                     }`}
                   />
@@ -369,13 +355,13 @@ function InvestmentsDebt() {
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Target Cash</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-500 text-sm">$</span>
+                  <span className="absolute left-3 top-1.5 text-gray-500 text-sm">$</span>
                   <input
                     type="number"
                     value={data.targetCash}
                     onChange={(e) => handleCashChange('targetCash', e.target.value ? Number(e.target.value) : '')}
                     placeholder="100000"
-                    className={`w-full pl-8 pr-3 py-2 border rounded-md text-sm ${
+                    className={`w-full pl-8 pr-3 py-1.5 border rounded-md text-sm ${
                       errors.targetCash ? 'border-red-500' : 'border-gray-300'
                     }`}
                   />
@@ -387,18 +373,18 @@ function InvestmentsDebt() {
 
           {/* 401k */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h2 className="text-lg font-semibold mb-3">401(k) Retirement Account</h2>
+            <h2 className="text-base font-semibold mb-2">401(k) Retirement Account</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Individual Limit (2025)</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-500 text-sm">$</span>
+                  <span className="absolute left-3 top-1.5 text-gray-500 text-sm">$</span>
                   <input
                     type="number"
                     value={data.retirement401k.individualLimit}
                     onChange={(e) => handle401kChange('individualLimit', e.target.value ? Number(e.target.value) : '')}
                     placeholder="23500"
-                    className={`w-full pl-8 pr-3 py-2 border rounded-md text-sm ${
+                    className={`w-full pl-8 pr-3 py-1.5 border rounded-md text-sm ${
                       errors['401k-individualLimit'] ? 'border-red-500' : 'border-gray-300'
                     }`}
                   />
@@ -413,7 +399,7 @@ function InvestmentsDebt() {
                   value={data.retirement401k.limitGrowth}
                   onChange={(e) => handle401kChange('limitGrowth', e.target.value ? Number(e.target.value) : '')}
                   placeholder="3.0"
-                  className={`w-full px-3 py-2 border rounded-md text-sm ${
+                  className={`w-full px-3 py-1.5 border rounded-md text-sm ${
                     errors['401k-limitGrowth'] ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -422,12 +408,12 @@ function InvestmentsDebt() {
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Company Match (Annual)</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-500 text-sm">$</span>
+                  <span className="absolute left-3 top-1.5 text-gray-500 text-sm">$</span>
                   <input
                     type="number"
                     value={data.retirement401k.companyContribution}
                     disabled
-                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-600"
+                    className="w-full pl-8 pr-3 py-1.5 border border-gray-300 rounded-md text-sm bg-gray-50 text-gray-600"
                   />
                 </div>
                 <p className="mt-1 text-xs text-gray-500">From Income</p>
@@ -435,13 +421,13 @@ function InvestmentsDebt() {
               <div>
                 <label className="block text-xs text-gray-600 mb-1">Current 401(k) Value</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-500 text-sm">$</span>
+                  <span className="absolute left-3 top-1.5 text-gray-500 text-sm">$</span>
                   <input
                     type="number"
                     value={data.retirement401k.currentValue}
                     onChange={(e) => handle401kChange('currentValue', e.target.value ? Number(e.target.value) : '')}
                     placeholder="250000"
-                    className={`w-full pl-8 pr-3 py-2 border rounded-md text-sm ${
+                    className={`w-full pl-8 pr-3 py-1.5 border rounded-md text-sm ${
                       errors['401k-currentValue'] ? 'border-red-500' : 'border-gray-300'
                     }`}
                   />
@@ -456,7 +442,7 @@ function InvestmentsDebt() {
                   value={data.retirement401k.growthRate}
                   onChange={(e) => handle401kChange('growthRate', e.target.value ? Number(e.target.value) : '')}
                   placeholder="7.0"
-                  className={`w-full px-3 py-2 border rounded-md text-sm ${
+                  className={`w-full px-3 py-1.5 border rounded-md text-sm ${
                     errors['401k-growthRate'] ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
@@ -467,21 +453,21 @@ function InvestmentsDebt() {
 
           {/* Investments - Compact Table */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-semibold">Investment Portfolio <span className="text-xs text-gray-500 font-normal">(max 3)</span></h2>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-base font-semibold">Investment Portfolio <span className="text-xs text-gray-500 font-normal">(max 3)</span></h2>
               {data.investments.length < 3 && (
                 <button
                   onClick={addInvestment}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-xs text-blue-600 hover:text-blue-700 font-medium"
                 >
-                  + Add Investment
+                  + Add
                 </button>
               )}
             </div>
 
             {/* Portfolio Allocation Warning */}
             {data.investments.length > 0 && (
-              <div className={`mb-3 p-2 rounded text-xs font-medium ${
+              <div className={`mb-2 p-2 rounded text-xs font-medium ${
                 totalPortfolioPercent === 100
                   ? 'bg-green-50 border border-green-200 text-green-800'
                   : totalPortfolioPercent > 100
@@ -578,14 +564,14 @@ function InvestmentsDebt() {
                 </table>
               </div>
             ) : (
-              <p className="text-sm text-gray-500 italic text-center py-4">No investments added yet</p>
+              <p className="text-xs text-gray-500 italic text-center py-4">No investments added yet</p>
             )}
           </div>
 
           {/* Calculate Button */}
           <button
             onClick={handleCalculate}
-            className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition"
+            className="w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 transition"
           >
             Calculate Projections →
           </button>
