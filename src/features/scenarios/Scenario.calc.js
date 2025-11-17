@@ -158,10 +158,10 @@ export function calculateScenarioSummary(projectionResults) {
   // Calculate average annual values across all years
   const totalYears = projections.length
   const totals = projections.reduce((acc, year) => ({
-    income: acc.income + year.annualIncome,
-    taxes: acc.taxes + year.totalTaxes,
-    expenses: acc.expenses + year.annualExpenses,
-    gap: acc.gap + year.gap
+    income: acc.income + (year.grossIncome || 0),
+    taxes: acc.taxes + (year.annualTaxes || 0),
+    expenses: acc.expenses + (year.annualExpenses || 0),
+    gap: acc.gap + (year.gap || 0)
   }), { income: 0, taxes: 0, expenses: 0, gap: 0 })
 
   const avgAnnualIncome = totals.income / totalYears
@@ -181,12 +181,12 @@ export function calculateScenarioSummary(projectionResults) {
     avgSavingsRate: Math.round(avgSavingsRate * 100) / 100,
 
     // First year values
-    firstYearIncome: Math.round(firstYear.annualIncome),
-    firstYearTaxes: Math.round(firstYear.totalTaxes),
-    firstYearExpenses: Math.round(firstYear.annualExpenses),
-    firstYearGap: Math.round(firstYear.gap),
-    firstYearSavingsRate: firstYear.annualIncome > 0
-      ? Math.round((firstYear.gap / firstYear.annualIncome) * 10000) / 100
+    firstYearIncome: Math.round(firstYear.grossIncome || 0),
+    firstYearTaxes: Math.round(firstYear.annualTaxes || 0),
+    firstYearExpenses: Math.round(firstYear.annualExpenses || 0),
+    firstYearGap: Math.round(firstYear.gap || 0),
+    firstYearSavingsRate: (firstYear.grossIncome || 0) > 0
+      ? Math.round((firstYear.gap / firstYear.grossIncome) * 10000) / 100
       : 0,
 
     // Retirement values (last year)
@@ -204,14 +204,14 @@ export function calculateScenarioSummary(projectionResults) {
     // Full projections for charting
     yearlyProjections: projections.map(p => ({
       year: p.year,
-      income: Math.round(p.annualIncome),
-      taxes: Math.round(p.totalTaxes),
-      expenses: Math.round(p.annualExpenses),
-      gap: Math.round(p.gap),
-      netWorth: Math.round(p.netWorth),
-      cash: Math.round(p.cash),
-      investments: Math.round(p.totalInvestmentValue),
-      retirement401k: Math.round(p.retirement401k)
+      income: Math.round(p.grossIncome || 0),
+      taxes: Math.round(p.annualTaxes || 0),
+      expenses: Math.round(p.annualExpenses || 0),
+      gap: Math.round(p.gap || 0),
+      netWorth: Math.round(p.netWorth || 0),
+      cash: Math.round(p.cash || 0),
+      investments: Math.round(p.totalInvestmentValue || 0),
+      retirement401k: Math.round(p.retirement401kValue || 0)
     }))
   }
 }
