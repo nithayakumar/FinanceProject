@@ -102,18 +102,23 @@ export function calculateScenarioProjections(scenarioData) {
   const data = scenarioData.data || scenarioData
 
   // Calculate income projections
-  const incomeData = calculateIncomeProjections(
+  const incomeProjectionResults = calculateIncomeProjections(
     data.income,
-    data.profile.yearsToRetirement || 30,
-    data.profile.inflationRate || 2.7
+    data.profile
   )
 
   // Calculate expense projections
   const expensesData = calculateExpenseProjections(
     data.expenses,
-    data.profile.yearsToRetirement || 30,
-    data.profile.inflationRate || 2.7
+    data.profile
   )
+
+  // Build incomeData object with both projections AND raw incomeStreams
+  // Gap.calc.js needs incomeStreams to calculate individual 401k contributions
+  const incomeData = {
+    ...incomeProjectionResults,
+    incomeStreams: data.income.incomeStreams || []
+  }
 
   // Calculate gap projections (includes net worth)
   const projections = calculateGapProjections(

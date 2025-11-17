@@ -103,11 +103,22 @@ function ScenarioCompare() {
 
     // Calculate current plan projections
     try {
+      console.log('📊 Attempting to calculate projections for active scenario')
+      console.log('📋 Current plan data:', currentPlan)
+      console.log('📋 Profile:', currentPlan.profile)
+      console.log('📋 Income streams:', currentPlan.income.incomeStreams)
+      console.log('📋 Expense categories:', currentPlan.expenses.expenseCategories)
+      console.log('📋 Investments:', currentPlan.investmentsDebt.investments)
+
       const baseProjectionResults = calculateScenarioProjections(currentPlan)
+      console.log('✅ Calculation successful:', baseProjectionResults)
       setBaseResults(baseProjectionResults)
       console.log('✅ Current Plan loaded from active scenario:', activeScenario.name)
     } catch (error) {
       console.error('❌ Error calculating current plan projections:', error)
+      console.error('❌ Error message:', error.message)
+      console.error('❌ Error stack:', error.stack)
+      console.error('❌ Current plan that failed:', currentPlan)
       setBaseResults(null)
     }
   }, [])
