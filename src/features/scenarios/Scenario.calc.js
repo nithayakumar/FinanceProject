@@ -121,20 +121,21 @@ export function calculateScenarioProjections(scenarioData) {
   }
 
   // Calculate gap projections (includes net worth)
-  const projections = calculateGapProjections(
+  const gapResults = calculateGapProjections(
     incomeData,
     expensesData,
     data.investmentsDebt,
     data.profile
   )
 
-  console.log('Scenario Projections:', projections)
+  console.log('Scenario Projections:', gapResults)
   console.groupEnd()
 
   return {
     incomeData,
     expensesData,
-    projections
+    projections: gapResults.projections,  // Extract the array from the result object
+    gapSummary: gapResults.summary
   }
 }
 
