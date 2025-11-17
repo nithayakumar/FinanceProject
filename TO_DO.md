@@ -1,8 +1,8 @@
 # CRITICAL ISSUES - SCENARIOS MODULE ⚠️
 
-**Status:** PARTIALLY FIXED - 2 of 7 critical issues resolved, 5 remaining
+**Status:** MOSTLY FIXED - 3 of 7 critical issues resolved, 4 remaining (all bugs fixed!)
 
-### Bugs (Blocking All Scenario Functionality)
+### Bugs (All Fixed! ✅)
 1. ✅ **FIXED: Delete scenario now works**
    - Fixed: Replaced window.confirm() with React modal (ScenarioManager.jsx)
    - Fixed: Added protection against deleting active scenario
@@ -14,10 +14,12 @@
    - Fixed: Promoted scenario removed from alternatives list
    - Status: Working as expected
 
-3. ❌ **CRITICAL: Compare scenarios still doesn't work**
-   - ScenarioCompare.jsx still showing errors
-   - Comparison mechanism broken
-   - Blocks: Core value prop of comparing scenarios side-by-side
+3. ✅ **FIXED: Compare scenarios now works**
+   - Fixed: Added incomeStreams to incomeData for Gap.calc.js
+   - Fixed: Extract projections array from Gap results object
+   - Fixed: Field name mismatches (grossIncome, annualTaxes, retirement401kValue)
+   - Fixed: Added proper defaults to active scenario data
+   - Status: Working as expected - comparison table and charts display correctly
 
 ### Module Constraint Violations (Data Integrity Issues)
 4. ❌ **NOT IMPLEMENTED: Income tab allows unlimited streams** (should max 3, min 1)
@@ -53,9 +55,17 @@
    - **Status: NOT IMPLEMENTED**
 
 ### Fix Priority
-**Phase 1 (Immediate):** ✅ Fix bugs #1-2 (delete, promote) - DONE | ❌ Fix bug #3 (compare) - TODO
+**Phase 1 (Immediate):** ✅ COMPLETE - All bugs #1-3 (delete, promote, compare) - DONE
 **Phase 2 (Next):** ❌ Fix constraints #4-6 (income, expenses, investments tabs) - NOT IMPLEMENTED
 **Phase 3 (Final):** ❌ Fix template #7 (blank scenario initialization) - NOT IMPLEMENTED
+
+### Summary of Fixes (This Session)
+All 3 critical bugs have been fixed:
+1. **Delete** - React modal instead of window.confirm()
+2. **Promote** - State tracking architecture with isActive flag (no data loss!)
+3. **Compare** - Fixed multiple calculation issues (incomeStreams, projections structure, field names)
+
+**Result:** Scenarios module core functionality is now working! Users can create, edit, delete, promote, and compare scenarios successfully.
 
 **See:** `SCENARIO_FIXES_NEEDED.md` for detailed implementation plan
 
