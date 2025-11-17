@@ -7,6 +7,7 @@ function ScenarioManager() {
   const navigate = useNavigate()
   const [scenarios, setScenarios] = useState([])
   const [currentPlan, setCurrentPlan] = useState(null)
+  const [confirmDialog, setConfirmDialog] = useState({ show: false, type: null, scenarioId: null, scenarioName: null })
 
   // Load scenarios and current plan
   useEffect(() => {
@@ -106,60 +107,62 @@ function ScenarioManager() {
     navigate(`/scenarios/${newScenario.id}/edit`)
   }
 
-  // Delete scenario
-  const handleDelete = (scenarioId) => {
-    console.log('🗑️ Delete requested for scenario:', scenarioId)
-    console.log('📋 Current scenarios:', scenarios)
+  // Request delete confirmation
+  const requestDelete = (scenarioId) => {
+    const scenario = scenarios.find(s => s.id === scenarioId)
+    setConfirmDialog({
+      show: true,
+      type: 'delete',
+      scenarioId,
+      scenarioName: scenario?.name || 'Unknown'
+    })
+  }
 
-    const confirmed = confirm('Are you sure you want to delete this scenario?')
-    console.log('❓ User confirmed deletion:', confirmed)
-
-    if (confirmed) {
-      const updated = scenarios.filter(s => s.id !== scenarioId)
-      console.log('✂️ Filtered scenarios:', updated)
-      console.log('📊 Original count:', scenarios.length, '→ New count:', updated.length)
-
-      try {
-        saveScenarios(updated)
-        console.log('✅ Delete successful!')
-      } catch (error) {
-        console.error('❌ Delete failed:', error)
-        alert(`Failed to delete scenario: ${error.message}`)
-      }
-    } else {
-      console.log('🚫 Delete cancelled by user')
+  // Actually delete scenario after confirmation
+  const executeDelete = () => {
+    console.log('🗑️ Executing delete for scenario:', confirmDialog.scenarioId)
+    try {
+      const updated = scenarios.filter(s => s.id !== confirmDialog.scenarioId)
+      console.log('✂️ Filtered scenarios - Original count:', scenarios.length, '→ New count:', updated.length)
+      saveScenarios(updated)
+      console.log('✅ Delete successful!')
+      setConfirmDialog({ show: false, type: null, scenarioId: null, scenarioName: null })
+    } catch (error) {
+      console.error('❌ Error deleting scenario:', error)
+      alert(`Failed to delete scenario: ${error.message}`)
     }
   }
 
-  // Promote scenario to Current Plan
-  const handlePromoteToCurrent = (scenarioId) => {
-    console.log('🚀 Promote requested for scenario:', scenarioId)
-
+  // Request promote confirmation
+  const requestPromote = (scenarioId) => {
     const scenario = scenarios.find(s => s.id === scenarioId)
-    console.log('📋 Found scenario:', scenario)
-
     if (!scenario) {
       console.error('❌ Scenario not found!')
       alert('Error: Scenario not found')
       return
     }
+    setConfirmDialog({
+      show: true,
+      type: 'promote',
+      scenarioId,
+      scenarioName: scenario.name
+    })
+  }
 
-    const confirmMessage = `Make "${scenario.name}" your active Current Plan?\n\nThis will replace your current financial data in all modules (Profile, Income, Expenses, Investments).\n\nYour current plan will be lost unless you save it as a scenario first.`
+  // Actually promote scenario after confirmation
+  const executePromote = () => {
+    console.log('🚀 Executing promote for scenario:', confirmDialog.scenarioId)
+    const scenario = scenarios.find(s => s.id === confirmDialog.scenarioId)
 
-    const confirmed = confirm(confirmMessage)
-    console.log('❓ User confirmed promotion:', confirmed)
-
-    if (!confirmed) {
-      console.log('🚫 Promotion cancelled by user')
+    if (!scenario) {
+      console.error('❌ Scenario not found!')
+      alert('Error: Scenario not found')
+      setConfirmDialog({ show: false, type: null, scenarioId: null, scenarioName: null })
       return
     }
 
     try {
       console.log('💾 Saving scenario data to localStorage modules...')
-      console.log('  - Profile:', scenario.data.profile)
-      console.log('  - Income:', scenario.data.income)
-      console.log('  - Expenses:', scenario.data.expenses)
-      console.log('  - InvestmentsDebt:', scenario.data.investmentsDebt)
 
       // Copy scenario data to localStorage (making it the active Current Plan)
       storage.save('profile', scenario.data.profile)
@@ -168,11 +171,15 @@ function ScenarioManager() {
       storage.save('investmentsDebt', scenario.data.investmentsDebt)
 
       console.log('✅ Promotion successful!')
+      setConfirmDialog({ show: false, type: null, scenarioId: null, scenarioName: null })
+
+      // Show success message and navigate
       alert(`"${scenario.name}" is now your active Current Plan!\n\nNavigating to Dashboard to view your new plan.`)
       navigate('/dashboard')
     } catch (error) {
       console.error('❌ Promotion failed:', error)
       alert(`Failed to promote scenario: ${error.message}`)
+      setConfirmDialog({ show: false, type: null, scenarioId: null, scenarioName: null })
     }
   }
 
@@ -361,7 +368,7 @@ function ScenarioManager() {
 
                     <div className="flex gap-2 ml-4">
                       <button
-                        onClick={() => handlePromoteToCurrent(scenario.id)}
+                        onClick={() => requestPromote(scenario.id)}
                         className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
                         title="Make this scenario your active Current Plan"
                       >
@@ -374,7 +381,7 @@ function ScenarioManager() {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(scenario.id)}
+                        onClick={() => requestDelete(scenario.id)}
                         className="px-3 py-1 text-sm bg-white border border-red-300 text-red-600 rounded hover:bg-red-50"
                       >
                         Delete
@@ -399,6 +406,67 @@ function ScenarioManager() {
           <li>• <strong>Compare</strong> scenarios side-by-side to see which option is financially better</li>
         </ul>
       </div>
+
+      {/* Confirmation Dialog Modal */}
+      {confirmDialog.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+            {confirmDialog.type === 'delete' && (
+              <>
+                <h3 className="text-xl font-bold mb-4 text-red-600">Delete Scenario?</h3>
+                <p className="text-gray-700 mb-6">
+                  Are you sure you want to delete <strong>"{confirmDialog.scenarioName}"</strong>?
+                  <br /><br />
+                  This action cannot be undone.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setConfirmDialog({ show: false, type: null, scenarioId: null, scenarioName: null })}
+                    className="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={executeDelete}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </>
+            )}
+
+            {confirmDialog.type === 'promote' && (
+              <>
+                <h3 className="text-xl font-bold mb-4 text-green-600">Make Active Plan?</h3>
+                <p className="text-gray-700 mb-6">
+                  Make <strong>"{confirmDialog.scenarioName}"</strong> your active Current Plan?
+                  <br /><br />
+                  This will replace your current financial data in all modules (Profile, Income, Expenses, Investments).
+                  <br /><br />
+                  <span className="text-red-600 font-medium">
+                    Your current plan will be lost unless you save it as a scenario first.
+                  </span>
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setConfirmDialog({ show: false, type: null, scenarioId: null, scenarioName: null })}
+                    className="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={executePromote}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    Make Active Plan
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
