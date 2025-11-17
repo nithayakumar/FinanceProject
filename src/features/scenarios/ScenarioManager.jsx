@@ -108,29 +108,72 @@ function ScenarioManager() {
 
   // Delete scenario
   const handleDelete = (scenarioId) => {
-    if (confirm('Are you sure you want to delete this scenario?')) {
+    console.log('🗑️ Delete requested for scenario:', scenarioId)
+    console.log('📋 Current scenarios:', scenarios)
+
+    const confirmed = confirm('Are you sure you want to delete this scenario?')
+    console.log('❓ User confirmed deletion:', confirmed)
+
+    if (confirmed) {
       const updated = scenarios.filter(s => s.id !== scenarioId)
-      saveScenarios(updated)
+      console.log('✂️ Filtered scenarios:', updated)
+      console.log('📊 Original count:', scenarios.length, '→ New count:', updated.length)
+
+      try {
+        saveScenarios(updated)
+        console.log('✅ Delete successful!')
+      } catch (error) {
+        console.error('❌ Delete failed:', error)
+        alert(`Failed to delete scenario: ${error.message}`)
+      }
+    } else {
+      console.log('🚫 Delete cancelled by user')
     }
   }
 
   // Promote scenario to Current Plan
   const handlePromoteToCurrent = (scenarioId) => {
+    console.log('🚀 Promote requested for scenario:', scenarioId)
+
     const scenario = scenarios.find(s => s.id === scenarioId)
-    if (!scenario) return
+    console.log('📋 Found scenario:', scenario)
+
+    if (!scenario) {
+      console.error('❌ Scenario not found!')
+      alert('Error: Scenario not found')
+      return
+    }
 
     const confirmMessage = `Make "${scenario.name}" your active Current Plan?\n\nThis will replace your current financial data in all modules (Profile, Income, Expenses, Investments).\n\nYour current plan will be lost unless you save it as a scenario first.`
 
-    if (!confirm(confirmMessage)) return
+    const confirmed = confirm(confirmMessage)
+    console.log('❓ User confirmed promotion:', confirmed)
 
-    // Copy scenario data to localStorage (making it the active Current Plan)
-    storage.save('profile', scenario.data.profile)
-    storage.save('income', scenario.data.income)
-    storage.save('expenses', scenario.data.expenses)
-    storage.save('investmentsDebt', scenario.data.investmentsDebt)
+    if (!confirmed) {
+      console.log('🚫 Promotion cancelled by user')
+      return
+    }
 
-    alert(`"${scenario.name}" is now your active Current Plan!\n\nNavigating to Dashboard to view your new plan.`)
-    navigate('/dashboard')
+    try {
+      console.log('💾 Saving scenario data to localStorage modules...')
+      console.log('  - Profile:', scenario.data.profile)
+      console.log('  - Income:', scenario.data.income)
+      console.log('  - Expenses:', scenario.data.expenses)
+      console.log('  - InvestmentsDebt:', scenario.data.investmentsDebt)
+
+      // Copy scenario data to localStorage (making it the active Current Plan)
+      storage.save('profile', scenario.data.profile)
+      storage.save('income', scenario.data.income)
+      storage.save('expenses', scenario.data.expenses)
+      storage.save('investmentsDebt', scenario.data.investmentsDebt)
+
+      console.log('✅ Promotion successful!')
+      alert(`"${scenario.name}" is now your active Current Plan!\n\nNavigating to Dashboard to view your new plan.`)
+      navigate('/dashboard')
+    } catch (error) {
+      console.error('❌ Promotion failed:', error)
+      alert(`Failed to promote scenario: ${error.message}`)
+    }
   }
 
   // Format date

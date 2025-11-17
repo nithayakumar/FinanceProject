@@ -63,12 +63,22 @@ function ScenarioCompare() {
 
   // Run comparison when scenarios are selected (NEW: scenarios have complete data)
   const handleCompare = () => {
+    console.group('📊 Scenario Comparison')
+    console.log('📋 Base results available:', !!baseResults)
+    console.log('📋 Selected scenario IDs:', selectedScenarioIds)
+    console.log('📋 Available scenarios:', scenarios)
+
     if (!baseResults) {
+      console.warn('⚠️ Base results not available - Current Plan not loaded')
+      console.log('Base data:', baseData)
+      console.groupEnd()
       alert('Current Plan is not set up yet.\n\nPlease complete your Current Plan first by:\n1. Setting up your Profile (age, retirement age, etc.)\n2. Adding Income streams\n3. Adding Expenses\n4. Adding Investments\n\nOr, promote one of your scenarios to become the Current Plan.')
       return
     }
 
     if (selectedScenarioIds.length === 0) {
+      console.warn('⚠️ No scenarios selected')
+      console.groupEnd()
       alert('Please select at least one scenario to compare')
       return
     }
@@ -84,29 +94,44 @@ function ScenarioCompare() {
           projectionResults: baseResults
         }
       ]
+      console.log('✅ Added Current Plan to comparison')
 
       // Add selected scenarios (NEW: each scenario has complete data in scenario.data)
       selectedScenarioIds.forEach(scenarioId => {
+        console.log(`🔍 Looking for scenario: ${scenarioId}`)
         const scenario = scenarios.find(s => s.id === scenarioId)
+
         if (scenario) {
+          console.log(`✅ Found scenario: ${scenario.name}`)
+          console.log('📋 Scenario data:', scenario.data)
+
           // Calculate projections using scenario's complete data
           const projectionResults = calculateScenarioProjections(scenario.data)
+          console.log('📊 Calculated projections for', scenario.name)
+
           scenariosToCompare.push({
             id: scenario.id,
             name: scenario.name,
             projectionResults
           })
+        } else {
+          console.error(`❌ Scenario not found: ${scenarioId}`)
         }
       })
 
+      console.log(`📊 Total scenarios to compare: ${scenariosToCompare.length}`)
+
       // Run comparison
       const comparison = compareScenarios(scenariosToCompare)
+      console.log('✅ Comparison complete:', comparison)
       setComparisonData(comparison)
     } catch (error) {
-      console.error('Error comparing scenarios:', error)
-      alert('Error comparing scenarios. Check console for details.')
+      console.error('❌ Error comparing scenarios:', error)
+      console.error('Error stack:', error.stack)
+      alert(`Error comparing scenarios: ${error.message}\n\nCheck console for details.`)
     } finally {
       setLoading(false)
+      console.groupEnd()
     }
   }
 
