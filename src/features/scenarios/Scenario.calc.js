@@ -1,91 +1,92 @@
 /**
  * Scenario Calculation Logic
  *
- * Core engine for comparing financial scenarios side-by-side
- * Enables "what-if" analysis for job changes, relocations, lifestyle changes
+ * NEW ARCHITECTURE: Everything is a scenario (complete data, not overrides)
+ * - "Current Plan" = localStorage data (profile, income, expenses, investmentsDebt)
+ * - Other scenarios = complete copies with modifications
+ * - Module-agnostic: works with ANY module structure
  */
 
 import { calculateGapProjections } from '../gap/Gap.calc'
 import { calculateIncomeProjections } from '../income/Income.calc'
 import { calculateExpenseProjections } from '../expenses/Expenses.calc'
+import { storage } from '../../shared/storage'
 
 /**
- * Deep merge utility - merges scenario overrides with base data
- * @param {Object} base - Base object
- * @param {Object} override - Override object
- * @returns {Object} Merged object
+ * Get current plan data from localStorage
+ * This is the user's active financial plan
+ * @returns {Object} Complete scenario data
  */
-function deepMerge(base, override) {
-  if (!override) return base
-  if (!base) return override
-
-  const result = { ...base }
-
-  for (const key in override) {
-    if (override[key] && typeof override[key] === 'object' && !Array.isArray(override[key])) {
-      result[key] = deepMerge(base[key], override[key])
-    } else {
-      result[key] = override[key]
-    }
+export function getCurrentPlanData() {
+  return {
+    profile: storage.load('profile') || {},
+    income: storage.load('income') || {},
+    expenses: storage.load('expenses') || {},
+    investmentsDebt: storage.load('investmentsDebt') || {}
   }
-
-  return result
 }
 
 /**
- * Merge scenario overrides with base data from localStorage
- * @param {Object} baseData - Base financial data from localStorage
- * @param {Object} scenarioOverrides - Scenario-specific overrides
- * @returns {Object} Merged data ready for projection calculations
+ * Load all scenarios (including current plan as special scenario)
+ * @returns {Array} Array of scenario objects
  */
-export function mergeScenarioData(baseData, scenarioOverrides) {
-  console.group('🔀 Merging Scenario Data')
-  console.log('Base Data:', baseData)
-  console.log('Scenario Overrides:', scenarioOverrides)
+export function loadAllScenariosWithCurrent() {
+  const currentPlan = getCurrentPlanData()
+  const savedScenarios = storage.load('scenarios') || []
 
-  const merged = {
-    profile: deepMerge(baseData.profile, scenarioOverrides.profile),
-    income: deepMerge(baseData.income, scenarioOverrides.income),
-    expenses: deepMerge(baseData.expenses, scenarioOverrides.expenses),
-    investmentsDebt: deepMerge(baseData.investmentsDebt, scenarioOverrides.investmentsDebt),
-    taxes: deepMerge(baseData.taxes, scenarioOverrides.taxes)
-  }
+  return [
+    {
+      id: 'current',
+      name: 'Current Plan',
+      description: 'Your active financial plan',
+      isCurrent: true,
+      data: currentPlan,
+      createdAt: Date.now(),
+      modifiedAt: Date.now()
+    },
+    ...savedScenarios
+  ]
+}
 
-  console.log('Merged Data:', merged)
-  console.groupEnd()
-
-  return merged
+// Keep for backward compatibility, but now it's just a pass-through
+export function mergeScenarioData(baseData, scenarioData) {
+  // In new architecture, scenarioData IS complete data, not overrides
+  // If scenarioData has a 'data' property, use it; otherwise assume scenarioData IS the data
+  return scenarioData.data || scenarioData
 }
 
 /**
  * Calculate full financial projections for a scenario
- * Reuses existing Gap.calc.js projection engine with merged data
- * @param {Object} scenarioData - Merged scenario data
+ * NEW: Works with complete scenario data (not base + overrides)
+ * @param {Object} scenarioData - Complete scenario data OR scenario object with .data property
  * @returns {Object} Full projection results
  */
 export function calculateScenarioProjections(scenarioData) {
   console.group('📊 Calculating Scenario Projections')
 
+  // Handle both formats: complete data OR scenario object with .data
+  const data = scenarioData.data || scenarioData
+
   // Calculate income projections
   const incomeData = calculateIncomeProjections(
-    scenarioData.income,
-    scenarioData.profile.yearsToRetirement || 30,
-    scenarioData.profile.inflationRate || 2.7
+    data.income,
+    data.profile.yearsToRetirement || 30,
+    data.profile.inflationRate || 2.7
   )
 
   // Calculate expense projections
   const expensesData = calculateExpenseProjections(
-    scenarioData.expenses,
-    scenarioData.profile.yearsToRetirement || 30,
-    scenarioData.profile.inflationRate || 2.7
+    data.expenses,
+    data.profile.yearsToRetirement || 30,
+    data.profile.inflationRate || 2.7
   )
 
   // Calculate gap projections (includes net worth)
   const projections = calculateGapProjections(
     incomeData,
     expensesData,
-    scenarioData.investmentsDebt,
-    scenarioData.profile
+    data.investmentsDebt,
+    data.profile
   )
 
   console.log('Scenario Projections:', projections)
@@ -265,27 +266,29 @@ export function compareScenarios(scenarios) {
 
 /**
  * Validate scenario data before calculation
- * @param {Object} scenarioData - Scenario data to validate
+ * NEW: Works with complete scenario data
+ * @param {Object} scenarioData - Complete scenario data OR scenario object with .data
  * @returns {Object} { valid: boolean, errors: Array }
  */
 export function validateScenarioData(scenarioData) {
   const errors = []
+  const data = scenarioData.data || scenarioData
 
   // Validate profile
-  if (scenarioData.profile) {
-    if (scenarioData.profile.age && (scenarioData.profile.age < 18 || scenarioData.profile.age > 100)) {
+  if (data.profile) {
+    if (data.profile.age && (data.profile.age < 18 || data.profile.age > 100)) {
       errors.push('Age must be between 18 and 100')
     }
-    if (scenarioData.profile.inflationRate && (scenarioData.profile.inflationRate < 0 || scenarioData.profile.inflationRate > 20)) {
+    if (data.profile.inflationRate && (data.profile.inflationRate < 0 || data.profile.inflationRate > 20)) {
       errors.push('Inflation rate must be between 0% and 20%')
     }
   }
 
   // Validate income
-  if (scenarioData.income && scenarioData.income.incomeStreams) {
-    scenarioData.income.incomeStreams.forEach((stream, index) => {
-      if (stream.salary && stream.salary < 0) {
-        errors.push(`Income stream ${index + 1}: Salary cannot be negative`)
+  if (data.income && data.income.incomeStreams) {
+    data.income.incomeStreams.forEach((stream, index) => {
+      if (stream.annualIncome && stream.annualIncome < 0) {
+        errors.push(`Income stream ${index + 1}: Annual income cannot be negative`)
       }
       if (stream.growthRate && (stream.growthRate < -50 || stream.growthRate > 50)) {
         errors.push(`Income stream ${index + 1}: Growth rate must be between -50% and 50%`)
@@ -294,8 +297,8 @@ export function validateScenarioData(scenarioData) {
   }
 
   // Validate expenses
-  if (scenarioData.expenses && scenarioData.expenses.recurring) {
-    const totalExpenses = Object.values(scenarioData.expenses.recurring).reduce((sum, val) => sum + (Number(val) || 0), 0)
+  if (data.expenses && data.expenses.expenseCategories) {
+    const totalExpenses = data.expenses.expenseCategories.reduce((sum, cat) => sum + (Number(cat.annualAmount) || 0), 0)
     if (totalExpenses < 0) {
       errors.push('Total expenses cannot be negative')
     }

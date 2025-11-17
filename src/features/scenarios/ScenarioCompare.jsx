@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../../shared/storage'
 import {
-  mergeScenarioData,
+  getCurrentPlanData,
   calculateScenarioProjections,
   calculateScenarioSummary,
   compareScenarios
@@ -29,33 +29,28 @@ function ScenarioCompare() {
   const [baseData, setBaseData] = useState(null)
   const [baseResults, setBaseResults] = useState(null)
 
-  // Load scenarios and base data
+  // Load scenarios and current plan (NEW: current plan is complete data, not special)
   useEffect(() => {
     const saved = storage.load('scenarios') || []
     setScenarios(saved)
 
-    // Load base profile data
-    const profile = storage.load('profile') || {}
-    const income = storage.load('income') || {}
-    const expenses = storage.load('expenses') || {}
-    const investmentsDebt = storage.load('investmentsDebt') || {}
+    // Load current plan data (complete data, not special)
+    const currentPlan = getCurrentPlanData()
+    setBaseData(currentPlan)
 
-    const base = { profile, income, expenses, investmentsDebt }
-    setBaseData(base)
-
-    // Calculate base profile projections
+    // Calculate current plan projections
     try {
-      const baseProjectionResults = calculateScenarioProjections(base)
+      const baseProjectionResults = calculateScenarioProjections(currentPlan)
       setBaseResults(baseProjectionResults)
     } catch (error) {
-      console.error('Error calculating base projections:', error)
+      console.error('Error calculating current plan projections:', error)
     }
   }, [])
 
-  // Run comparison when scenarios are selected
+  // Run comparison when scenarios are selected (NEW: scenarios have complete data)
   const handleCompare = () => {
     if (!baseResults) {
-      alert('Base profile data not loaded')
+      alert('Current plan data not loaded')
       return
     }
 
@@ -67,23 +62,21 @@ function ScenarioCompare() {
     setLoading(true)
 
     try {
-      // Build comparison array starting with base profile
+      // Build comparison array starting with current plan
       const scenariosToCompare = [
         {
-          id: 'base',
-          name: 'Current Plan (Base)',
+          id: 'current',
+          name: 'Current Plan',
           projectionResults: baseResults
         }
       ]
 
-      // Add selected scenarios
+      // Add selected scenarios (NEW: each scenario has complete data in scenario.data)
       selectedScenarioIds.forEach(scenarioId => {
         const scenario = scenarios.find(s => s.id === scenarioId)
         if (scenario) {
-          // Merge scenario with base data
-          const mergedData = mergeScenarioData(baseData, scenario.overrides || {})
-          // Calculate projections
-          const projectionResults = calculateScenarioProjections(mergedData)
+          // Calculate projections using scenario's complete data
+          const projectionResults = calculateScenarioProjections(scenario.data)
           scenariosToCompare.push({
             id: scenario.id,
             name: scenario.name,
