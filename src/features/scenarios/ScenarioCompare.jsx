@@ -47,8 +47,46 @@ function ScenarioCompare() {
       return
     }
 
-    // Use active scenario data as base
-    const currentPlan = activeScenario.data
+    // Use active scenario data as base, but ensure it has proper defaults
+    // Pass through getCurrentPlanData to normalize and add defaults
+    const rawData = activeScenario.data
+
+    // Apply defaults using the same logic as getCurrentPlanData
+    const currentPlan = {
+      profile: {
+        age: 30,
+        retirementAge: 65,
+        inflationRate: 2.7,
+        currentCash: 0,
+        targetCash: 0,
+        currentSavings: 0,
+        ...(rawData.profile || {})
+      },
+      income: {
+        incomeStreams: rawData.income?.incomeStreams || [],
+        ...(rawData.income || {})
+      },
+      expenses: {
+        expenseCategories: rawData.expenses?.expenseCategories || [],
+        oneTimeExpenses: rawData.expenses?.oneTimeExpenses || [],
+        ...(rawData.expenses || {})
+      },
+      investmentsDebt: {
+        currentCash: 0,
+        targetCash: 0,
+        retirement401k: {
+          individualLimit: 23500,
+          limitGrowth: 3,
+          currentValue: 0,
+          growthRate: 7,
+          companyContribution: 0,
+          ...(rawData.investmentsDebt?.retirement401k || {})
+        },
+        investments: rawData.investmentsDebt?.investments || [],
+        ...(rawData.investmentsDebt || {})
+      }
+    }
+
     setBaseData(currentPlan)
 
     // Validate current plan has data
