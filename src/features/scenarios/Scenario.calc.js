@@ -15,14 +15,48 @@ import { storage } from '../../shared/storage'
 /**
  * Get current plan data from localStorage
  * This is the user's active financial plan
- * @returns {Object} Complete scenario data
+ * @returns {Object} Complete scenario data with proper defaults
  */
 export function getCurrentPlanData() {
+  const profile = storage.load('profile') || {}
+  const income = storage.load('income') || {}
+  const expenses = storage.load('expenses') || {}
+  const investmentsDebt = storage.load('investmentsDebt') || {}
+
+  // Ensure required arrays exist to prevent .reduce() errors in Gap.calc.js
   return {
-    profile: storage.load('profile') || {},
-    income: storage.load('income') || {},
-    expenses: storage.load('expenses') || {},
-    investmentsDebt: storage.load('investmentsDebt') || {}
+    profile: {
+      age: 30,
+      retirementAge: 65,
+      inflationRate: 2.7,
+      currentCash: 0,
+      targetCash: 0,
+      currentSavings: 0,
+      ...profile
+    },
+    income: {
+      incomeStreams: income.incomeStreams || [],
+      ...income
+    },
+    expenses: {
+      expenseCategories: expenses.expenseCategories || [],
+      oneTimeExpenses: expenses.oneTimeExpenses || [],
+      ...expenses
+    },
+    investmentsDebt: {
+      currentCash: 0,
+      targetCash: 0,
+      retirement401k: {
+        individualLimit: 23500,
+        limitGrowth: 3,
+        currentValue: 0,
+        growthRate: 7,
+        companyContribution: 0,
+        ...(investmentsDebt.retirement401k || {})
+      },
+      investments: investmentsDebt.investments || [],
+      ...investmentsDebt
+    }
   }
 }
 
