@@ -32,7 +32,9 @@ function ScenarioCompare() {
   // Load scenarios and current plan (NEW: current plan is complete data, not special)
   useEffect(() => {
     const saved = storage.load('scenarios') || []
-    setScenarios(saved)
+    // Filter out active scenario - it's already included as baseline
+    const alternativeScenarios = saved.filter(s => !s.isActive)
+    setScenarios(alternativeScenarios)
 
     // Load current plan data (complete data, not special)
     const currentPlan = getCurrentPlanData()

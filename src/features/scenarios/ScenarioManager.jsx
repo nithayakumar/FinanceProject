@@ -12,13 +12,48 @@ function ScenarioManager() {
   // Load scenarios and current plan
   useEffect(() => {
     const saved = storage.load('scenarios') || []
-    setScenarios(saved)
-
     const current = getCurrentPlanData()
-    setCurrentPlan(current)
 
-    console.log('📋 Loaded scenarios:', saved)
-    console.log('📋 Current plan:', current)
+    // Ensure Current Plan is represented in scenarios array with isActive flag
+    let activeScenario = saved.find(s => s.isActive)
+
+    if (!activeScenario) {
+      // Create active scenario entry for Current Plan if it doesn't exist
+      activeScenario = {
+        id: 'active-current-plan',
+        name: 'Current Plan',
+        description: 'Your active financial plan',
+        isActive: true,
+        createdAt: Date.now(),
+        modifiedAt: Date.now(),
+        data: {
+          profile: JSON.parse(JSON.stringify(current.profile)),
+          income: JSON.parse(JSON.stringify(current.income)),
+          expenses: JSON.parse(JSON.stringify(current.expenses)),
+          investmentsDebt: JSON.parse(JSON.stringify(current.investmentsDebt))
+        }
+      }
+      const updated = [...saved, activeScenario]
+      storage.save('scenarios', updated)
+      setScenarios(updated)
+      console.log('✨ Created active scenario entry for Current Plan')
+    } else {
+      // Sync localStorage data to active scenario
+      activeScenario.data = {
+        profile: JSON.parse(JSON.stringify(current.profile)),
+        income: JSON.parse(JSON.stringify(current.income)),
+        expenses: JSON.parse(JSON.stringify(current.expenses)),
+        investmentsDebt: JSON.parse(JSON.stringify(current.investmentsDebt))
+      }
+      activeScenario.modifiedAt = Date.now()
+      const updated = saved.map(s => s.id === activeScenario.id ? activeScenario : s)
+      storage.save('scenarios', updated)
+      setScenarios(updated)
+      console.log('🔄 Synced Current Plan to active scenario')
+    }
+
+    setCurrentPlan(current)
+    console.log('📋 Loaded scenarios with active tracking')
   }, [])
 
   // Save scenarios to localStorage
@@ -110,6 +145,13 @@ function ScenarioManager() {
   // Request delete confirmation
   const requestDelete = (scenarioId) => {
     const scenario = scenarios.find(s => s.id === scenarioId)
+
+    // Prevent deleting active scenario
+    if (scenario?.isActive) {
+      alert('Cannot delete the active Current Plan.\n\nTo remove this plan, first promote a different scenario to make it active.')
+      return
+    }
+
     setConfirmDialog({
       show: true,
       type: 'delete',
@@ -122,6 +164,15 @@ function ScenarioManager() {
   const executeDelete = () => {
     console.log('🗑️ Executing delete for scenario:', confirmDialog.scenarioId)
     try {
+      const scenario = scenarios.find(s => s.id === confirmDialog.scenarioId)
+
+      // Safety check: don't delete active scenario
+      if (scenario?.isActive) {
+        alert('Cannot delete the active scenario')
+        setConfirmDialog({ show: false, type: null, scenarioId: null, scenarioName: null })
+        return
+      }
+
       const updated = scenarios.filter(s => s.id !== confirmDialog.scenarioId)
       console.log('✂️ Filtered scenarios - Original count:', scenarios.length, '→ New count:', updated.length)
       saveScenarios(updated)
@@ -152,9 +203,10 @@ function ScenarioManager() {
   // Actually promote scenario after confirmation
   const executePromote = () => {
     console.log('🚀 Executing promote for scenario:', confirmDialog.scenarioId)
-    const scenario = scenarios.find(s => s.id === confirmDialog.scenarioId)
+    const scenarioToPromote = scenarios.find(s => s.id === confirmDialog.scenarioId)
+    const currentActive = scenarios.find(s => s.isActive)
 
-    if (!scenario) {
+    if (!scenarioToPromote) {
       console.error('❌ Scenario not found!')
       alert('Error: Scenario not found')
       setConfirmDialog({ show: false, type: null, scenarioId: null, scenarioName: null })
@@ -162,19 +214,38 @@ function ScenarioManager() {
     }
 
     try {
-      console.log('💾 Saving scenario data to localStorage modules...')
+      console.log('💾 Swapping active flags...')
+      console.log('  Previous active:', currentActive?.name)
+      console.log('  New active:', scenarioToPromote.name)
 
-      // Copy scenario data to localStorage (making it the active Current Plan)
-      storage.save('profile', scenario.data.profile)
-      storage.save('income', scenario.data.income)
-      storage.save('expenses', scenario.data.expenses)
-      storage.save('investmentsDebt', scenario.data.investmentsDebt)
+      // Update scenarios array: swap isActive flags
+      const updated = scenarios.map(s => {
+        if (s.id === scenarioToPromote.id) {
+          // Make this scenario active
+          return { ...s, isActive: true, modifiedAt: Date.now() }
+        } else if (s.isActive) {
+          // Deactivate previous active scenario (keep it in alternatives)
+          return { ...s, isActive: false }
+        }
+        return s
+      })
+
+      // Save updated scenarios array
+      saveScenarios(updated)
+
+      // Copy promoted scenario data to localStorage (so modules can read it)
+      storage.save('profile', scenarioToPromote.data.profile)
+      storage.save('income', scenarioToPromote.data.income)
+      storage.save('expenses', scenarioToPromote.data.expenses)
+      storage.save('investmentsDebt', scenarioToPromote.data.investmentsDebt)
 
       console.log('✅ Promotion successful!')
+      console.log('  Previous plan saved as alternative scenario')
+      console.log('  New plan is now active')
       setConfirmDialog({ show: false, type: null, scenarioId: null, scenarioName: null })
 
       // Show success message and navigate
-      alert(`"${scenario.name}" is now your active Current Plan!\n\nNavigating to Dashboard to view your new plan.`)
+      alert(`"${scenarioToPromote.name}" is now your active Current Plan!\n\nYour previous plan has been saved as an alternative scenario.\n\nNavigating to Dashboard...`)
       navigate('/dashboard')
     } catch (error) {
       console.error('❌ Promotion failed:', error)
@@ -194,8 +265,8 @@ function ScenarioManager() {
 
   // Navigate to comparison view
   const handleCompare = () => {
-    if (scenarios.length < 1) {
-      alert('You need at least 1 scenario to compare with your current plan.')
+    if (alternativeScenarios.length < 1) {
+      alert('You need at least 1 alternative scenario to compare with your current plan.')
       return
     }
     navigate('/scenarios/compare')
@@ -217,6 +288,10 @@ function ScenarioManager() {
       gap: totalIncome - totalExpenses
     }
   }
+
+  // Separate active and alternative scenarios
+  const activeScenario = scenarios.find(s => s.isActive)
+  const alternativeScenarios = scenarios.filter(s => !s.isActive)
 
   const summary = getCurrentPlanSummary()
 
@@ -244,7 +319,7 @@ function ScenarioManager() {
         >
           Create Blank Scenario
         </button>
-        {scenarios.length >= 1 && (
+        {alternativeScenarios.length >= 1 && (
           <button
             onClick={handleCompare}
             className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
@@ -298,10 +373,10 @@ function ScenarioManager() {
       {/* Scenarios List */}
       <div>
         <h2 className="text-xl font-semibold mb-3">
-          Alternative Scenarios ({scenarios.length})
+          Alternative Scenarios ({alternativeScenarios.length})
         </h2>
 
-        {scenarios.length === 0 ? (
+        {alternativeScenarios.length === 0 ? (
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
             <p className="text-gray-600 mb-4">
               No alternative scenarios yet. Create your first scenario to start comparing options.
@@ -323,7 +398,7 @@ function ScenarioManager() {
           </div>
         ) : (
           <div className="space-y-3">
-            {scenarios.map((scenario) => {
+            {alternativeScenarios.map((scenario) => {
               // Get quick summary of scenario
               const scenarioIncome = scenario.data?.income?.incomeStreams?.reduce((sum, stream) =>
                 sum + (Number(stream.annualIncome) || 0), 0) || 0
@@ -444,8 +519,8 @@ function ScenarioManager() {
                   <br /><br />
                   This will replace your current financial data in all modules (Profile, Income, Expenses, Investments).
                   <br /><br />
-                  <span className="text-red-600 font-medium">
-                    Your current plan will be lost unless you save it as a scenario first.
+                  <span className="text-green-600 font-medium">
+                    ✓ Your current plan will automatically be saved as an alternative scenario.
                   </span>
                 </p>
                 <div className="flex gap-3 justify-end">
