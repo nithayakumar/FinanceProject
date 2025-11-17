@@ -18,6 +18,7 @@ function ScenarioEditor() {
   const [scenario, setScenario] = useState(null)
   const [activeTab, setActiveTab] = useState('basic')
   const [hasChanges, setHasChanges] = useState(false)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
 
   // Load scenario
   useEffect(() => {
@@ -75,13 +76,18 @@ function ScenarioEditor() {
     navigate('/scenarios')
   }
 
-  // Cancel (with confirmation if changes)
-  const handleCancel = () => {
+  // Request cancel
+  const requestCancel = () => {
     if (hasChanges) {
-      if (!confirm('You have unsaved changes. Are you sure you want to leave?')) {
-        return
-      }
+      setShowCancelConfirm(true)
+    } else {
+      navigate('/scenarios')
     }
+  }
+
+  // Execute cancel after confirmation
+  const executeCancel = () => {
+    setShowCancelConfirm(false)
     navigate('/scenarios')
   }
 
@@ -754,7 +760,7 @@ function ScenarioEditor() {
           Save & Exit
         </button>
         <button
-          onClick={handleCancel}
+          onClick={requestCancel}
           className="px-6 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50"
         >
           Cancel
@@ -765,6 +771,34 @@ function ScenarioEditor() {
           </span>
         )}
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+            <h3 className="text-xl font-bold mb-4 text-amber-600">Unsaved Changes</h3>
+            <p className="text-gray-700 mb-6">
+              You have unsaved changes. Are you sure you want to leave without saving?
+              <br /><br />
+              Your changes will be lost.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="px-4 py-2 bg-white border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Keep Editing
+              </button>
+              <button
+                onClick={executeCancel}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Discard Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

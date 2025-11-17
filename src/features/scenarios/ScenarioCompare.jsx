@@ -29,15 +29,26 @@ function ScenarioCompare() {
   const [baseData, setBaseData] = useState(null)
   const [baseResults, setBaseResults] = useState(null)
 
-  // Load scenarios and current plan (NEW: current plan is complete data, not special)
+  // Load scenarios and current plan (NEW: uses active scenario from scenarios array)
   useEffect(() => {
     const saved = storage.load('scenarios') || []
-    // Filter out active scenario - it's already included as baseline
+
+    // Find active scenario
+    const activeScenario = saved.find(s => s.isActive)
+
+    // Filter out active scenario from alternatives list
     const alternativeScenarios = saved.filter(s => !s.isActive)
     setScenarios(alternativeScenarios)
 
-    // Load current plan data (complete data, not special)
-    const currentPlan = getCurrentPlanData()
+    if (!activeScenario) {
+      console.warn('⚠️ No active scenario found - user needs to set up their plan or promote a scenario')
+      setBaseData(null)
+      setBaseResults(null)
+      return
+    }
+
+    // Use active scenario data as base
+    const currentPlan = activeScenario.data
     setBaseData(currentPlan)
 
     // Validate current plan has data
@@ -56,7 +67,7 @@ function ScenarioCompare() {
     try {
       const baseProjectionResults = calculateScenarioProjections(currentPlan)
       setBaseResults(baseProjectionResults)
-      console.log('✅ Current Plan loaded successfully')
+      console.log('✅ Current Plan loaded from active scenario:', activeScenario.name)
     } catch (error) {
       console.error('❌ Error calculating current plan projections:', error)
       setBaseResults(null)
