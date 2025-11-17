@@ -38,19 +38,33 @@ function ScenarioCompare() {
     const currentPlan = getCurrentPlanData()
     setBaseData(currentPlan)
 
+    // Validate current plan has data
+    const hasProfile = currentPlan.profile && Object.keys(currentPlan.profile).length > 0
+    const hasIncome = currentPlan.income && currentPlan.income.incomeStreams && currentPlan.income.incomeStreams.length > 0
+    const hasExpenses = currentPlan.expenses && Object.keys(currentPlan.expenses).length > 0
+    const hasInvestments = currentPlan.investmentsDebt && Object.keys(currentPlan.investmentsDebt).length > 0
+
+    if (!hasProfile && !hasIncome && !hasExpenses && !hasInvestments) {
+      console.warn('⚠️ Current Plan is empty - user needs to set up their plan first')
+      setBaseResults(null)
+      return
+    }
+
     // Calculate current plan projections
     try {
       const baseProjectionResults = calculateScenarioProjections(currentPlan)
       setBaseResults(baseProjectionResults)
+      console.log('✅ Current Plan loaded successfully')
     } catch (error) {
-      console.error('Error calculating current plan projections:', error)
+      console.error('❌ Error calculating current plan projections:', error)
+      setBaseResults(null)
     }
   }, [])
 
   // Run comparison when scenarios are selected (NEW: scenarios have complete data)
   const handleCompare = () => {
     if (!baseResults) {
-      alert('Current plan data not loaded')
+      alert('Current Plan is not set up yet.\n\nPlease complete your Current Plan first by:\n1. Setting up your Profile (age, retirement age, etc.)\n2. Adding Income streams\n3. Adding Expenses\n4. Adding Investments\n\nOr, promote one of your scenarios to become the Current Plan.')
       return
     }
 

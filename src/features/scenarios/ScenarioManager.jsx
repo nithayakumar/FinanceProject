@@ -114,6 +114,25 @@ function ScenarioManager() {
     }
   }
 
+  // Promote scenario to Current Plan
+  const handlePromoteToCurrent = (scenarioId) => {
+    const scenario = scenarios.find(s => s.id === scenarioId)
+    if (!scenario) return
+
+    const confirmMessage = `Make "${scenario.name}" your active Current Plan?\n\nThis will replace your current financial data in all modules (Profile, Income, Expenses, Investments).\n\nYour current plan will be lost unless you save it as a scenario first.`
+
+    if (!confirm(confirmMessage)) return
+
+    // Copy scenario data to localStorage (making it the active Current Plan)
+    storage.save('profile', scenario.data.profile)
+    storage.save('income', scenario.data.income)
+    storage.save('expenses', scenario.data.expenses)
+    storage.save('investmentsDebt', scenario.data.investmentsDebt)
+
+    alert(`"${scenario.name}" is now your active Current Plan!\n\nNavigating to Dashboard to view your new plan.`)
+    navigate('/dashboard')
+  }
+
   // Format date
   const formatDate = (timestamp) => {
     return new Date(timestamp).toLocaleDateString('en-US', {
@@ -298,6 +317,13 @@ function ScenarioManager() {
                     </div>
 
                     <div className="flex gap-2 ml-4">
+                      <button
+                        onClick={() => handlePromoteToCurrent(scenario.id)}
+                        className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700"
+                        title="Make this scenario your active Current Plan"
+                      >
+                        Make Active Plan
+                      </button>
                       <button
                         onClick={() => navigate(`/scenarios/${scenario.id}/edit`)}
                         className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50"
