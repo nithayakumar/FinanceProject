@@ -118,10 +118,12 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
           const changeThisYear = category.jumps.find(j => j.year === year)
           if (changeThisYear && changeThisYear.changeValue !== undefined && changeThisYear.changeValue !== '') {
             const delta = Number(changeThisYear.changeValue) || 0
+            const yearsFromStart = year - 1
+            const inflationMultiplier = Math.pow(1 + inflationRate / 100, yearsFromStart)
 
             if (changeThisYear.changeType === 'dollar') {
-              // Dollar-based change: add to annual amount
-              categoryDollarAdditions[category.id] += delta
+              // Dollar-based change: add to annual amount (entered in today's dollars; inflate to nominal)
+              categoryDollarAdditions[category.id] += delta * inflationMultiplier
             } else if (changeThisYear.changeType === 'percentOfIncome') {
               // Track percent of gross income additions separately
               categoryPercentIncomeRates[category.id] += delta
@@ -164,7 +166,7 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
       const incomeLinkedAddition = grossMonthlyIncome * 12 * ((categoryPercentIncomeRates[category.id] || 0) / 100)
 
       // Apply percentage changes, then dollar adjustments
-      const annualExpense = (baseAnnual * jumpMultiplier) + dollarAddition + incomeLinkedAddition
+      const annualExpense = (baseAnnual * jumpMultiplier) + incomeLinkedAddition + dollarAddition
       const monthlyExpense = annualExpense / 12
 
       categoryBreakdown[category.category] = monthlyExpense
