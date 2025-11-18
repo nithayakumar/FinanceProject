@@ -27,6 +27,7 @@ function ScenarioEditor() {
   const [activeTab, setActiveTab] = useState('basic')
   const [hasChanges, setHasChanges] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [isNeverSaved, setIsNeverSaved] = useState(false)  // Track if user ever saved
 
   // Load scenario
   useEffect(() => {
@@ -35,6 +36,8 @@ function ScenarioEditor() {
 
     if (found) {
       setScenario(found)
+      // If modifiedAt equals createdAt, this is a newly created scenario that was never saved
+      setIsNeverSaved(found.modifiedAt === found.createdAt)
       console.log('📋 Loaded scenario for editing:', found)
     } else {
       alert('Scenario not found')
@@ -74,6 +77,7 @@ function ScenarioEditor() {
 
     storage.save('scenarios', updated)
     setHasChanges(false)
+    setIsNeverSaved(false)  // User has now saved at least once
     console.log('💾 Saved scenario:', scenario)
     alert('Scenario saved successfully!')
   }
@@ -84,9 +88,19 @@ function ScenarioEditor() {
     navigate('/scenarios')
   }
 
+  // Delete scenario if it was never saved
+  const deleteUnsavedScenario = () => {
+    if (isNeverSaved) {
+      const scenarios = storage.load('scenarios') || []
+      const updated = scenarios.filter(s => s.id !== id)
+      storage.save('scenarios', updated)
+      console.log('🗑️ Deleted unsaved scenario:', id)
+    }
+  }
+
   // Request cancel
   const requestCancel = () => {
-    if (hasChanges) {
+    if (hasChanges || isNeverSaved) {
       setShowCancelConfirm(true)
     } else {
       navigate('/scenarios')
@@ -96,6 +110,7 @@ function ScenarioEditor() {
   // Execute cancel after confirmation
   const executeCancel = () => {
     setShowCancelConfirm(false)
+    deleteUnsavedScenario()  // Delete if never saved
     navigate('/scenarios')
   }
 
@@ -797,11 +812,19 @@ function ScenarioEditor() {
       {showCancelConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
-            <h3 className="text-xl font-bold mb-4 text-amber-600">Unsaved Changes</h3>
+            <h3 className="text-xl font-bold mb-4 text-amber-600">
+              {isNeverSaved ? 'Discard New Scenario?' : 'Unsaved Changes'}
+            </h3>
             <p className="text-gray-700 mb-6">
-              You have unsaved changes. Are you sure you want to leave without saving?
+              {isNeverSaved
+                ? 'This scenario has never been saved. Are you sure you want to discard it?'
+                : 'You have unsaved changes. Are you sure you want to leave without saving?'
+              }
               <br /><br />
-              Your changes will be lost.
+              {isNeverSaved
+                ? 'The scenario will be permanently deleted.'
+                : 'Your changes will be lost.'
+              }
             </p>
             <div className="flex gap-3 justify-end">
               <button

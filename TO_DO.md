@@ -1,6 +1,6 @@
 # CRITICAL ISSUES - SCENARIOS MODULE ⚠️
 
-**Status:** MOSTLY FIXED - 3 of 7 critical issues resolved, 4 remaining (all bugs fixed!)
+**Status:** ✅ ALL 7 CRITICAL ISSUES RESOLVED!
 
 ### Bugs (All Fixed! ✅)
 1. ✅ **FIXED: Delete scenario now works**
@@ -21,53 +21,43 @@
    - Fixed: Added proper defaults to active scenario data
    - Status: Working as expected - comparison table and charts display correctly
 
-### Module Constraint Violations (Data Integrity Issues)
-4. ❌ **NOT IMPLEMENTED: Income tab allows unlimited streams** (should max 3, min 1)
-   - Current: Can add unlimited income streams
-   - Current: Can delete all streams (no minimum)
-   - Should: Max 3 streams (Income.jsx line 85), Min 1 stream (Income.jsx line 106)
-   - Location: ScenarioEditor.jsx Income tab
-   - Blocks: Consistent data structure between scenarios and main modules
-   - **Status: NOT IMPLEMENTED**
+### Module Constraint Violations (All Fixed! ✅)
+4. ✅ **FIXED: Income tab constraints implemented** (max 3, min 1)
+   - Created: src/shared/moduleConfig.js - Single source of truth
+   - Updated: ScenarioEditor.jsx Income tab
+   - Now: Max 3 streams enforced, min 1 stream enforced (delete button hidden)
+   - Future-proof: Change INCOME_CONFIG.MAX_STREAMS in one place
 
-5. ❌ **NOT IMPLEMENTED: Expenses tab has wrong structure** (should be FIXED 9 categories)
-   - Current: Free-form categories (user can name anything), can add/delete freely
-   - Current: No one-time expenses section
-   - Should: FIXED 9 categories that cannot be added/deleted (Expenses.jsx lines 7-17)
-   - Should: Unlimited one-time expenses with add/delete (Expenses.jsx lines 144-165)
-   - Location: ScenarioEditor.jsx Expenses tab
-   - Blocks: Consistent expense structure, comparison accuracy
-   - **Status: NOT IMPLEMENTED**
+5. ✅ **FIXED: Expenses tab has correct structure** (fixed 9 categories)
+   - Updated: ScenarioEditor.jsx Expenses tab
+   - Now: Fixed 9 categories (Housing, Utilities, Transportation, Medical, Childcare, Education, Food, Entertainment, Other)
+   - Categories cannot be added or removed, only amounts can be edited
+   - Future-proof: Uses EXPENSE_CONFIG.CATEGORIES from moduleConfig
 
-6. ❌ **NOT IMPLEMENTED: Investments tab missing portfolioPercent** (should max 3 accounts)
-   - Current: Can add unlimited accounts, missing portfolioPercent field
-   - Should: Max 3 accounts (InvestmentsDebt.jsx line 145), include portfolioPercent field
-   - Location: ScenarioEditor.jsx Investments tab
-   - Blocks: Investment calculations, portfolio rebalancing
-   - **Status: NOT IMPLEMENTED**
+6. ✅ **FIXED: Investments tab has portfolioPercent** (max 3 accounts)
+   - Updated: ScenarioEditor.jsx Investments tab
+   - Now: Max 3 accounts enforced, portfolioPercent field added
+   - Future-proof: Uses INVESTMENTS_CONFIG.MAX_INVESTMENTS from moduleConfig
 
-7. ❌ **NOT IMPLEMENTED: Blank scenario template doesn't match module structure**
-   - ScenarioManager.jsx:61-101 creates wrong structure
-   - Creates empty expense categories array (should have 9 fixed categories)
-   - Creates empty investments array (should match main module preloading)
-   - Location: ScenarioManager.jsx handleCreateBlank()
-   - Blocks: Creating scenarios from scratch
-   - **Status: NOT IMPLEMENTED**
+7. ✅ **FIXED: Blank scenario template matches module structure**
+   - Updated: ScenarioManager.jsx handleCreateBlank()
+   - Now: Uses createDefaultIncomeStream(), createDefaultExpenseCategories(), createDefault401k()
+   - Blank scenarios have all 9 expense categories pre-populated
+   - Future-proof: Uses helper functions from moduleConfig
 
 ### Fix Priority
-**Phase 1 (Immediate):** ✅ COMPLETE - All bugs #1-3 (delete, promote, compare) - DONE
-**Phase 2 (Next):** ❌ Fix constraints #4-6 (income, expenses, investments tabs) - NOT IMPLEMENTED
-**Phase 3 (Final):** ❌ Fix template #7 (blank scenario initialization) - NOT IMPLEMENTED
+**Phase 1 (Immediate):** ✅ COMPLETE - All bugs #1-3 (delete, promote, compare)
+**Phase 2 (Next):** ✅ COMPLETE - All constraints #4-6 (income, expenses, investments tabs)
+**Phase 3 (Final):** ✅ COMPLETE - Template #7 (blank scenario initialization)
 
-### Summary of Fixes (This Session)
-All 3 critical bugs have been fixed:
-1. **Delete** - React modal instead of window.confirm()
-2. **Promote** - State tracking architecture with isActive flag (no data loss!)
-3. **Compare** - Fixed multiple calculation issues (incomeStreams, projections structure, field names)
+### Summary of All Fixes
+**Session 1:** Bugs #1-3 fixed (delete modal, promote state tracking, compare calculations)
+**Session 2:** Constraints #4-7 fixed with centralized moduleConfig
 
-**Result:** Scenarios module core functionality is now working! Users can create, edit, delete, promote, and compare scenarios successfully.
+**Key Architecture Change:** Created `src/shared/moduleConfig.js` as single source of truth.
+To change limits (e.g., max income streams from 3 to 5), edit ONE file only.
 
-**See:** `SCENARIO_FIXES_NEEDED.md` for detailed implementation plan
+**Result:** Scenarios module is fully functional! All constraints match main modules.
 
 ---
 
