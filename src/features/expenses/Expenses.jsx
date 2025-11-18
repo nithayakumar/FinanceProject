@@ -9,14 +9,26 @@ import { EXPENSE_CONFIG, createDefaultExpenseCategories } from '../../core'
 // Use centralized config
 const EXPENSE_CATEGORIES = EXPENSE_CONFIG.CATEGORIES
 
-function Expenses() {
+/**
+ * Expenses Component - supports both controlled and uncontrolled modes
+ *
+ * Props (all optional):
+ * - value: expenses data object (controlled mode)
+ * - onChange: callback when data changes (controlled mode)
+ * - embedded: hide navigation/save buttons (for embedding in other views)
+ * - profileData: profile data to use instead of loading from storage
+ */
+function Expenses({ value, onChange, embedded = false, profileData }) {
   const navigate = useNavigate()
   const [view, setView] = useState('input')
   const [errors, setErrors] = useState({})
   const [isSaved, setIsSaved] = useState(false)
 
+  // Determine if we're in controlled mode
+  const isControlled = value !== undefined && onChange !== undefined
+
   // Load profile for retirement year
-  const profile = storage.load('profile') || {}
+  const profile = profileData || storage.load('profile') || {}
   const yearsToRetirement = profile.retirementAge && profile.age
     ? profile.retirementAge - profile.age
     : 30
@@ -24,10 +36,19 @@ function Expenses() {
   // Initialize with all categories using centralized config
   const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : EXPENSE_CONFIG.DEFAULT_GROWTH_RATE
 
-  const [data, setData] = useState({
+  const [internalData, setInternalData] = useState({
     expenseCategories: createDefaultExpenseCategories(inflationRate),
     oneTimeExpenses: []
   })
+
+  // Use controlled value or internal state
+  const data = isControlled ? value : internalData
+  const setData = isControlled
+    ? (updater) => {
+        const newData = typeof updater === 'function' ? updater(value) : updater
+        onChange(newData)
+      }
+    : setInternalData
 
   const [projections, setProjections] = useState(null)
 
@@ -45,18 +66,20 @@ function Expenses() {
     }))
   }
 
-  // Load saved data on mount
+  // Load saved data on mount (only in uncontrolled mode)
   useEffect(() => {
-    const saved = storage.load('expenses')
-    if (saved) {
-      setData({
-        ...saved,
-        expenseCategories: normalizeCategories(saved.expenseCategories)
-      })
-      setIsSaved(true)
-      console.log('📋 Loaded saved expenses:', saved)
+    if (!isControlled) {
+      const saved = storage.load('expenses')
+      if (saved) {
+        setInternalData({
+          ...saved,
+          expenseCategories: normalizeCategories(saved.expenseCategories)
+        })
+        setIsSaved(true)
+        console.log('📋 Loaded saved expenses:', saved)
+      }
     }
-  }, [])
+  }, [isControlled])
 
   const handleCategoryChange = (categoryId, field, value) => {
     setIsSaved(false)
@@ -197,6 +220,13 @@ function Expenses() {
       return
     }
 
+    // In controlled/embedded mode, don't save to localStorage or switch views
+    if (isControlled || embedded) {
+      console.log('✅ Validation passed (controlled mode)')
+      console.groupEnd()
+      return
+    }
+
     // Save to localStorage
     storage.save('expenses', data)
     setIsSaved(true)
@@ -222,18 +252,18 @@ function Expenses() {
   }
 
   // Input View
-  if (view === 'input') {
+  if (view === 'input' || embedded) {
     // Get all expense changes across all categories
-    const allExpenseChanges = data.expenseCategories.flatMap(category =>
-      category.jumps.map(jump => ({ ...jump, categoryId: category.id, categoryName: category.category }))
-    )
+    const allExpenseChanges = data.expenseCategories?.flatMap(category =>
+      (category.jumps || []).map(jump => ({ ...jump, categoryId: category.id, categoryName: category.category }))
+    ) || []
 
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-1">Expenses</h1>
+      <div className={embedded ? "" : "max-w-4xl mx-auto p-6"}>
+        {!embedded && <h1 className="text-2xl font-bold mb-1">Expenses</h1>}
 
-        {/* Save Status Banner - Compact */}
-        {isSaved ? (
+        {/* Save Status Banner - Compact (hidden in embedded mode) */}
+        {!embedded && (isSaved ? (
           <div className="mb-4 bg-green-50 border border-green-200 rounded px-3 py-2 flex items-center text-sm">
             <span className="text-green-600 mr-2">✅</span>
             <span className="text-green-900 font-medium">Saved</span>
@@ -243,7 +273,7 @@ function Expenses() {
             <span className="text-yellow-600 mr-2">⚠️</span>
             <span className="text-yellow-900 font-medium">Not saved</span>
           </div>
-        )}
+        ))}
 
         <div className="space-y-4">
           {/* Expense Categories - Table Format */}
@@ -538,13 +568,15 @@ function Expenses() {
             )}
           </div>
 
-          {/* Continue Button */}
-          <button
-            onClick={handleContinue}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 transition"
-          >
-            Calculate Expense Projections →
-          </button>
+          {/* Continue Button (hidden in embedded mode) */}
+          {!embedded && (
+            <button
+              onClick={handleContinue}
+              className="w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 transition"
+            >
+              Calculate Expense Projections →
+            </button>
+          )}
         </div>
       </div>
     )

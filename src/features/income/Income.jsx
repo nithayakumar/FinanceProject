@@ -5,45 +5,68 @@ import { validateIncome, calculateIncomeProjections } from './Income.calc'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { INCOME_CONFIG, createDefaultIncomeStream } from '../../core'
 
-function Income() {
+/**
+ * Income Component - supports both controlled and uncontrolled modes
+ *
+ * Props (all optional):
+ * - value: income data object (controlled mode)
+ * - onChange: callback when data changes (controlled mode)
+ * - embedded: hide navigation/save buttons (for embedding in other views)
+ * - profileData: profile data to use instead of loading from storage
+ */
+function Income({ value, onChange, embedded = false, profileData }) {
   const navigate = useNavigate()
   const [view, setView] = useState('input')
   const [errors, setErrors] = useState({})
   const [isSaved, setIsSaved] = useState(false)
 
+  // Determine if we're in controlled mode
+  const isControlled = value !== undefined && onChange !== undefined
+
   // Load profile for retirement year and inflation rate
-  const profile = storage.load('profile') || {}
+  const profile = profileData || storage.load('profile') || {}
   const yearsToRetirement = profile.retirementAge && profile.age
     ? profile.retirementAge - profile.age
     : 30  // Default to 30 if profile not set
   const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
 
-  const [data, setData] = useState({
+  const [internalData, setInternalData] = useState({
     incomeStreams: [
       createDefaultIncomeStream(1, yearsToRetirement, inflationRate)
     ]
   })
 
+  // Use controlled value or internal state
+  const data = isControlled ? value : internalData
+  const setData = isControlled
+    ? (updater) => {
+        const newData = typeof updater === 'function' ? updater(value) : updater
+        onChange(newData)
+      }
+    : setInternalData
+
   const [projections, setProjections] = useState(null)
   const [activeTab, setActiveTab] = useState('all')
 
-  // Load saved data on mount
+  // Load saved data on mount (only in uncontrolled mode)
   useEffect(() => {
-    const saved = storage.load('income')
-    if (saved) {
-      setData(saved)
-      setIsSaved(saved.incomeStreams && saved.incomeStreams.length > 0)
-      console.log('📋 Loaded saved income:', saved)
+    if (!isControlled) {
+      const saved = storage.load('income')
+      if (saved) {
+        setInternalData(saved)
+        setIsSaved(saved.incomeStreams && saved.incomeStreams.length > 0)
+        console.log('📋 Loaded saved income:', saved)
+      }
     }
-  }, [])
+  }, [isControlled])
 
-  const handleStreamChange = (streamId, field, value) => {
+  const handleStreamChange = (streamId, field, fieldValue) => {
     setIsSaved(false)
     setData(prev => ({
       ...prev,
       incomeStreams: prev.incomeStreams.map(stream =>
         stream.id === streamId
-          ? { ...stream, [field]: value }
+          ? { ...stream, [field]: fieldValue }
           : stream
       )
     }))
@@ -138,6 +161,13 @@ function Income() {
       return
     }
 
+    // In controlled/embedded mode, don't save to localStorage or switch views
+    if (isControlled || embedded) {
+      console.log('✅ Validation passed (controlled mode)')
+      console.groupEnd()
+      return
+    }
+
     // Save to localStorage
     storage.save('income', data)
     setIsSaved(true)
@@ -163,13 +193,13 @@ function Income() {
   }
 
   // Input View
-  if (view === 'input') {
+  if (view === 'input' || embedded) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-1">Income</h1>
+      <div className={embedded ? "" : "max-w-4xl mx-auto p-6"}>
+        {!embedded && <h1 className="text-2xl font-bold mb-1">Income</h1>}
 
-        {/* Save Status Banner - Compact */}
-        {isSaved ? (
+        {/* Save Status Banner - Compact (hidden in embedded mode) */}
+        {!embedded && (isSaved ? (
           <div className="mb-4 bg-green-50 border border-green-200 rounded px-3 py-2 flex items-center text-sm">
             <span className="text-green-600 mr-2">✅</span>
             <span className="text-green-900 font-medium">Saved</span>
@@ -179,7 +209,7 @@ function Income() {
             <span className="text-yellow-600 mr-2">⚠️</span>
             <span className="text-yellow-900 font-medium">Not saved</span>
           </div>
-        )}
+        ))}
 
         <div className="space-y-4">
           {/* Income Streams */}
@@ -415,13 +445,15 @@ function Income() {
             </div>
           </div>
 
-          {/* Continue Button */}
-          <button
-            onClick={handleContinue}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 transition"
-          >
-            Calculate Income Projections →
-          </button>
+          {/* Continue Button (hidden in embedded mode) */}
+          {!embedded && (
+            <button
+              onClick={handleContinue}
+              className="w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 transition"
+            >
+              Calculate Income Projections →
+            </button>
+          )}
         </div>
       </div>
     )

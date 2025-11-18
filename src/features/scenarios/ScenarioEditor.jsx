@@ -9,6 +9,8 @@ import {
   createDefaultExpenseCategories,
   createDefaultInvestment
 } from '../../core'
+import Income from '../income/Income'
+import Expenses from '../expenses/Expenses'
 
 /**
  * ScenarioEditor - Comprehensive scenario editor with tabbed interface
@@ -298,245 +300,22 @@ function ScenarioEditor() {
 
           {/* Income Tab */}
           {activeTab === 'income' && (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Income Streams <span className="text-sm text-gray-500 font-normal">(max {INCOME_CONFIG.MAX_STREAMS}, min {INCOME_CONFIG.MIN_STREAMS})</span></h3>
-                {(data.income?.incomeStreams?.length || 0) < INCOME_CONFIG.MAX_STREAMS && (
-                  <button
-                    onClick={() => {
-                      const currentStreams = data.income?.incomeStreams || []
-                      const newStream = createDefaultIncomeStream(
-                        currentStreams.length + 1,
-                        data.profile?.retirementAge && data.profile?.age ? data.profile.retirementAge - data.profile.age : 30,
-                        data.profile?.inflationRate || INCOME_CONFIG.DEFAULT_GROWTH_RATE
-                      )
-                      const updated = [...currentStreams, newStream]
-                      handleDataChange('income', { incomeStreams: updated })
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                  >
-                    + Add Income Stream
-                  </button>
-                )}
-              </div>
-
-              {(!data.income?.incomeStreams || data.income.incomeStreams.length === 0) ? (
-                <div className="text-center py-8 text-gray-500">
-                  No income streams yet. Click "Add Income Stream" to create one.
-                </div>
-              ) : (
-                data.income.incomeStreams.map((stream, index) => (
-                  <div key={stream.id || index} className="mb-6 p-4 border border-gray-200 rounded relative">
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="flex-1">
-                        <label className="block text-sm font-medium mb-1">Stream Name</label>
-                        <input
-                          type="text"
-                          value={stream.name || ''}
-                          onChange={(e) => {
-                            const updated = [...(data.income?.incomeStreams || [])]
-                            updated[index] = { ...updated[index], name: e.target.value }
-                            handleDataChange('income', { incomeStreams: updated })
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded"
-                          placeholder={`Income Stream ${index + 1}`}
-                        />
-                      </div>
-                      {(data.income?.incomeStreams?.length || 0) > INCOME_CONFIG.MIN_STREAMS && (
-                        <button
-                          onClick={() => {
-                            if (confirm('Delete this income stream?')) {
-                              const updated = data.income.incomeStreams.filter((_, i) => i !== index)
-                              handleDataChange('income', { incomeStreams: updated })
-                            }
-                          }}
-                          className="ml-3 mt-6 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Annual Salary ($)</label>
-                        <input
-                          type="number"
-                          value={stream.annualIncome || ''}
-                          onChange={(e) => {
-                            const updated = [...(data.income?.incomeStreams || [])]
-                            updated[index] = { ...updated[index], annualIncome: Number(e.target.value) }
-                            handleDataChange('income', { incomeStreams: updated })
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Equity ($)</label>
-                        <input
-                          type="number"
-                          value={stream.equity || 0}
-                          onChange={(e) => {
-                            const updated = [...(data.income?.incomeStreams || [])]
-                            updated[index] = { ...updated[index], equity: Number(e.target.value) }
-                            handleDataChange('income', { incomeStreams: updated })
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Growth Rate (%)</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={stream.growthRate || 0}
-                          onChange={(e) => {
-                            const updated = [...(data.income?.incomeStreams || [])]
-                            updated[index] = { ...updated[index], growthRate: Number(e.target.value) }
-                            handleDataChange('income', { incomeStreams: updated })
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Individual 401k ($)</label>
-                        <input
-                          type="number"
-                          value={stream.individual401k || 0}
-                          onChange={(e) => {
-                            const updated = [...(data.income?.incomeStreams || [])]
-                            updated[index] = { ...updated[index], individual401k: Number(e.target.value) }
-                            handleDataChange('income', { incomeStreams: updated })
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Company 401k ($)</label>
-                        <input
-                          type="number"
-                          value={stream.company401k || 0}
-                          onChange={(e) => {
-                            const updated = [...(data.income?.incomeStreams || [])]
-                            updated[index] = { ...updated[index], company401k: Number(e.target.value) }
-                            handleDataChange('income', { incomeStreams: updated })
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">End Work Year</label>
-                        <input
-                          type="number"
-                          value={stream.endWorkYear || 30}
-                          onChange={(e) => {
-                            const updated = [...(data.income?.incomeStreams || [])]
-                            updated[index] = { ...updated[index], endWorkYear: Number(e.target.value) }
-                            handleDataChange('income', { incomeStreams: updated })
-                          }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-              <p className="text-xs text-gray-500 mt-2">
-                Tip: For advanced editing (jumps, multi-year changes), use the JSON tab
-              </p>
-            </div>
+            <Income
+              embedded
+              value={data.income}
+              onChange={(newData) => handleDataChange('income', newData)}
+              profileData={data.profile}
+            />
           )}
 
           {/* Expenses Tab */}
           {activeTab === 'expenses' && (
-            <div>
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold">Expense Categories <span className="text-sm text-gray-500 font-normal">(fixed {EXPENSE_CONFIG.CATEGORIES.length} categories)</span></h3>
-                <p className="text-xs text-gray-500 mt-1">These categories are fixed and cannot be added or removed</p>
-              </div>
-
-              <div className="space-y-2">
-                {EXPENSE_CONFIG.CATEGORIES.map((categoryName) => {
-                  // Find existing category data or create default
-                  const existingCategory = data.expenses?.expenseCategories?.find(c => c.category === categoryName)
-                  const categoryData = existingCategory || {
-                    id: `category-${categoryName.toLowerCase()}`,
-                    category: categoryName,
-                    annualAmount: 0,
-                    growthRate: data.profile?.inflationRate || EXPENSE_CONFIG.DEFAULT_GROWTH_RATE,
-                    jumps: []
-                  }
-                  const categoryIndex = data.expenses?.expenseCategories?.findIndex(c => c.category === categoryName) ?? -1
-
-                  return (
-                    <div key={categoryName} className="p-3 border border-gray-200 rounded bg-white">
-                      <div className="grid grid-cols-3 gap-4 items-center">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700">{categoryName}</label>
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-600 mb-1">Annual Amount ($)</label>
-                          <input
-                            type="number"
-                            value={categoryData.annualAmount || ''}
-                            onChange={(e) => {
-                              const currentCategories = data.expenses?.expenseCategories || []
-                              let updated
-
-                              if (categoryIndex >= 0) {
-                                // Update existing category
-                                updated = [...currentCategories]
-                                updated[categoryIndex] = { ...updated[categoryIndex], annualAmount: Number(e.target.value) }
-                              } else {
-                                // Add new category
-                                updated = [...currentCategories, { ...categoryData, annualAmount: Number(e.target.value) }]
-                              }
-
-                              handleDataChange('expenses', {
-                                expenseCategories: updated,
-                                oneTimeExpenses: data.expenses?.oneTimeExpenses || []
-                              })
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                            placeholder="0"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-600 mb-1">Growth Rate (%)</label>
-                          <input
-                            type="number"
-                            step="0.1"
-                            value={categoryData.growthRate || ''}
-                            onChange={(e) => {
-                              const currentCategories = data.expenses?.expenseCategories || []
-                              let updated
-
-                              if (categoryIndex >= 0) {
-                                // Update existing category
-                                updated = [...currentCategories]
-                                updated[categoryIndex] = { ...updated[categoryIndex], growthRate: Number(e.target.value) }
-                              } else {
-                                // Add new category
-                                updated = [...currentCategories, { ...categoryData, growthRate: Number(e.target.value) }]
-                              }
-
-                              handleDataChange('expenses', {
-                                expenseCategories: updated,
-                                oneTimeExpenses: data.expenses?.oneTimeExpenses || []
-                              })
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                            placeholder="2.7"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-              <p className="text-xs text-gray-500 mt-4">
-                Tip: For advanced expense editing (jumps, one-time expenses), use the JSON tab
-              </p>
-            </div>
+            <Expenses
+              embedded
+              value={data.expenses}
+              onChange={(newData) => handleDataChange('expenses', newData)}
+              profileData={data.profile}
+            />
           )}
 
           {/* Investments Tab */}
