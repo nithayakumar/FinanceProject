@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../../shared/storage'
 import { validateExpenses, calculateExpenseProjections } from './Expenses.calc'
+import { calculateIncomeProjections } from '../income/Income.calc'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { EXPENSE_CONFIG, createDefaultExpenseCategories } from '../../shared/moduleConfig'
 
@@ -30,11 +31,25 @@ function Expenses() {
 
   const [projections, setProjections] = useState(null)
 
+  // Normalize categories to ensure new fields exist
+  const normalizeCategories = (categories = []) => {
+    return categories.map((cat) => ({
+      ...cat,
+      amountType: cat.amountType || 'dollar',
+      percentOfIncome: cat.percentOfIncome !== undefined ? cat.percentOfIncome : '',
+      growthRate: cat.growthRate !== undefined ? cat.growthRate : inflationRate,
+      jumps: cat.jumps || []
+    }))
+  }
+
   // Load saved data on mount
   useEffect(() => {
     const saved = storage.load('expenses')
     if (saved) {
-      setData(saved)
+      setData({
+        ...saved,
+        expenseCategories: normalizeCategories(saved.expenseCategories)
+      })
       setIsSaved(true)
       console.log('📋 Loaded saved expenses:', saved)
     }
@@ -152,6 +167,10 @@ function Expenses() {
     console.group('💾 Saving Expenses')
     console.log('Data:', data)
 
+    // Pull income projections (used when categories are % of income)
+    const incomeData = storage.load('income') || { incomeStreams: [] }
+    const incomeProjectionResults = calculateIncomeProjections(incomeData, profile)
+
     // Validate
     const validationErrors = validateExpenses(data, yearsToRetirement)
     if (Object.keys(validationErrors).length > 0) {
@@ -167,7 +186,7 @@ function Expenses() {
 
     // Calculate projections
     console.log('📊 Calculating expense projections...')
-    const calculated = calculateExpenseProjections(data, profile)
+    const calculated = calculateExpenseProjections(data, profile, incomeProjectionResults.projections)
     setProjections(calculated)
     console.log('Projections calculated:', calculated.summary)
 
@@ -219,48 +238,91 @@ function Expenses() {
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Category</th>
-                    <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Annual Amount</th>
+                    <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Amount</th>
+                    <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Type</th>
                     <th className="text-left py-2 px-3 text-sm font-semibold text-gray-700">Growth Rate (%)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.expenseCategories.map((category, index) => (
-                    <tr key={category.id} className={index !== data.expenseCategories.length - 1 ? 'border-b border-gray-100' : ''}>
-                      <td className="py-2 px-3 font-medium text-gray-900">{category.category}</td>
-                      <td className="py-2 px-3">
-                        <div className="relative max-w-xs">
-                          <span className="absolute left-3 top-1.5 text-gray-500">$</span>
-                          <input
-                            type="number"
-                            value={category.annualAmount}
-                            onChange={(e) => handleCategoryChange(category.id, 'annualAmount', e.target.value ? Number(e.target.value) : '')}
-                            placeholder="0"
-                            className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                              errors[`${category.id}-annualAmount`] ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                          />
-                        </div>
-                        {errors[`${category.id}-annualAmount`] && (
-                          <p className="mt-1 text-xs text-red-600">{errors[`${category.id}-annualAmount`]}</p>
-                        )}
-                      </td>
-                      <td className="py-2 px-3">
-                        <input
-                          type="number"
-                          step="0.1"
-                          value={category.growthRate}
-                          onChange={(e) => handleCategoryChange(category.id, 'growthRate', e.target.value ? Number(e.target.value) : '')}
-                          placeholder="2.7"
-                          className={`max-w-xs w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            errors[`${category.id}-growthRate`] ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                        />
-                        {errors[`${category.id}-growthRate`] && (
-                          <p className="mt-1 text-xs text-red-600">{errors[`${category.id}-growthRate`]}</p>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {data.expenseCategories.map((category, index) => {
+                    const isPercent = category.amountType === 'percentOfIncome'
+                    return (
+                      <tr key={category.id} className={index !== data.expenseCategories.length - 1 ? 'border-b border-gray-100' : ''}>
+                        <td className="py-2 px-3 font-medium text-gray-900">{category.category}</td>
+                        <td className="py-2 px-3">
+                          <div className="relative max-w-xs">
+                            {isPercent ? (
+                              <>
+                                <input
+                                  type="number"
+                                  value={category.percentOfIncome}
+                                  onChange={(e) => handleCategoryChange(category.id, 'percentOfIncome', e.target.value ? Number(e.target.value) : '')}
+                                  placeholder="0"
+                                  className={`w-full pr-8 pl-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                    errors[`${category.id}-percentOfIncome`] ? 'border-red-500' : 'border-gray-300'
+                                  }`}
+                                />
+                                <span className="absolute right-3 top-1.5 text-gray-500">%</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="absolute left-3 top-1.5 text-gray-500">$</span>
+                                <input
+                                  type="number"
+                                  value={category.annualAmount}
+                                  onChange={(e) => handleCategoryChange(category.id, 'annualAmount', e.target.value ? Number(e.target.value) : '')}
+                                  placeholder="0"
+                                  className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                    errors[`${category.id}-annualAmount`] ? 'border-red-500' : 'border-gray-300'
+                                  }`}
+                                />
+                              </>
+                            )}
+                          </div>
+                          {errors[`${category.id}-annualAmount`] && (
+                            <p className="mt-1 text-xs text-red-600">{errors[`${category.id}-annualAmount`]}</p>
+                          )}
+                          {errors[`${category.id}-percentOfIncome`] && (
+                            <p className="mt-1 text-xs text-red-600">{errors[`${category.id}-percentOfIncome`]}</p>
+                          )}
+                          {isPercent && (
+                            <p className="mt-1 text-xs text-gray-500">Percent of gross income (auto-scales with income)</p>
+                          )}
+                        </td>
+                        <td className="py-2 px-3">
+                          <select
+                            value={category.amountType}
+                            onChange={(e) => handleCategoryChange(category.id, 'amountType', e.target.value)}
+                            className="max-w-xs w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 border-gray-300 text-sm"
+                          >
+                            <option value="dollar">$ Amount</option>
+                            <option value="percentOfIncome">% of gross income</option>
+                          </select>
+                        </td>
+                        <td className="py-2 px-3">
+                          {isPercent ? (
+                            <div className="text-sm text-gray-500">N/A (tied to income)</div>
+                          ) : (
+                            <>
+                              <input
+                                type="number"
+                                step="0.1"
+                                value={category.growthRate}
+                                onChange={(e) => handleCategoryChange(category.id, 'growthRate', e.target.value ? Number(e.target.value) : '')}
+                                placeholder="2.7"
+                                className={`max-w-xs w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                  errors[`${category.id}-growthRate`] ? 'border-red-500' : 'border-gray-300'
+                                }`}
+                              />
+                              {errors[`${category.id}-growthRate`] && (
+                                <p className="mt-1 text-xs text-red-600">{errors[`${category.id}-growthRate`]}</p>
+                              )}
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

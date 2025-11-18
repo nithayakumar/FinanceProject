@@ -98,7 +98,7 @@ function Dashboard() {
       const incomeProjections = calculateIncomeProjections(incomeData, enrichedProfile)
 
       console.log('Calculating expense projections...')
-      const expenseProjections = calculateExpenseProjections(expensesData, enrichedProfile)
+      const expenseProjections = calculateExpenseProjections(expensesData, enrichedProfile, incomeProjections.projections)
 
       console.log('Calculating gap projections...')
       // Gap needs both raw data (for incomeStreams) and projections (for monthly data)

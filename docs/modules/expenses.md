@@ -8,6 +8,7 @@ The Expenses module tracks recurring annual expenses across 9 predefined categor
 - **Components:** `src/features/expenses/Expenses.jsx` renders inputs/outputs; `Expenses.calc.js` provides validation and projection helpers.
 - **Storage:** Persists under the `expenses` key with `expenseCategories` and `oneTimeExpenses`; projections are recalculated when the user saves/calculates.
 - **Consumer:** Gap/Net Worth ingests monthly projections (nominal and PV) to compute overall cash flow and net worth impacts.
+- **Amount Modes:** Each category can be a fixed `$` amount (with growth rate) or `% of gross income` (auto-scales with income projections and ignores growth rate). Percent mode still honors expense change jumps.
 
 ## Field Reference
 

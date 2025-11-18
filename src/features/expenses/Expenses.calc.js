@@ -18,16 +18,26 @@ export function validateExpenses(data, yearsToRetirement) {
 
   // Validate each expense category
   data.expenseCategories.forEach((category) => {
+    const amountType = category.amountType || 'dollar'
+
     // Annual Amount
-    if (category.annualAmount === '' || category.annualAmount < 0) {
-      errors[`${category.id}-annualAmount`] = 'Annual amount must be a positive number or 0'
+    if (amountType === 'dollar') {
+      if (category.annualAmount === '' || category.annualAmount < 0) {
+        errors[`${category.id}-annualAmount`] = 'Annual amount must be a positive number or 0'
+      }
+    } else {
+      if (category.percentOfIncome === '' || category.percentOfIncome < 0) {
+        errors[`${category.id}-percentOfIncome`] = 'Percent of income must be 0 or greater'
+      }
     }
 
     // Growth Rate
-    if (category.growthRate === '' || category.growthRate < 0) {
-      errors[`${category.id}-growthRate`] = 'Growth rate must be a positive number'
-    } else if (category.growthRate > 50) {
-      errors[`${category.id}-growthRate`] = 'Growth rate seems unrealistic (> 50%)'
+    if (amountType === 'dollar') {
+      if (category.growthRate === '' || category.growthRate < 0) {
+        errors[`${category.id}-growthRate`] = 'Growth rate must be a positive number'
+      } else if (category.growthRate > 50) {
+        errors[`${category.id}-growthRate`] = 'Growth rate seems unrealistic (> 50%)'
+      }
     }
 
     // Validate jumps for this category
@@ -69,8 +79,9 @@ export function validateExpenses(data, yearsToRetirement) {
 /**
  * Calculate comprehensive expense projections for 100 years (1,200 months)
  * Returns one unified table with nominal and present value columns
+ * @param {Object} incomeProjectionData Optional income projection results to support % of income expenses
  */
-export function calculateExpenseProjections(data, profile) {
+export function calculateExpenseProjections(data, profile, incomeProjectionData) {
   console.group('📊 Calculating Expense Projections')
 
   const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
@@ -78,6 +89,7 @@ export function calculateExpenseProjections(data, profile) {
     ? profile.retirementAge - profile.age
     : 30
   const currentYear = new Date().getFullYear()
+  const incomeProjections = incomeProjectionData?.projections || incomeProjectionData || null
 
   console.log('Inflation Rate:', inflationRate + '%')
   console.log('Years to Retirement:', yearsToRetirement)
@@ -123,14 +135,25 @@ export function calculateExpenseProjections(data, profile) {
     const categoryBreakdown = {}
 
     data.expenseCategories.forEach(category => {
+      const amountType = category.amountType || 'dollar'
+
       // Calculate annual values with growth and changes
       const yearsOfGrowth = year - 1
-      const growthMultiplier = Math.pow(1 + category.growthRate / 100, yearsOfGrowth)
+      const growthMultiplier = amountType === 'percentOfIncome'
+        ? 1 // Growth derives from income, so no explicit growth applied
+        : Math.pow(1 + category.growthRate / 100, yearsOfGrowth)
       const jumpMultiplier = categoryMultipliers[category.id]
       const dollarAddition = categoryDollarAdditions[category.id]
 
-      // Apply growth and percentage changes to base amount, then add dollar changes
-      const annualExpense = (category.annualAmount * growthMultiplier * jumpMultiplier) + dollarAddition
+      // Base amount can be dollar or % of gross income
+      const incomeRow = incomeProjections ? incomeProjections[monthIndex] : null
+      const grossMonthlyIncome = incomeRow ? incomeRow.totalCompNominal : 0
+      const baseAnnual = amountType === 'percentOfIncome'
+        ? grossMonthlyIncome * 12 * ((category.percentOfIncome || 0) / 100)
+        : category.annualAmount * growthMultiplier
+
+      // Apply percentage changes, then dollar adjustments
+      const annualExpense = (baseAnnual * jumpMultiplier) + dollarAddition
       const monthlyExpense = annualExpense / 12
 
       categoryBreakdown[category.category] = monthlyExpense

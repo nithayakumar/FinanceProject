@@ -81,6 +81,8 @@ export function createDefaultExpenseCategories(inflationRate = 2.7) {
     id: `category-${category.toLowerCase()}`,
     category,
     annualAmount: '',
+    amountType: 'dollar',      // 'dollar' | 'percentOfIncome'
+    percentOfIncome: '',
     growthRate: inflationRate,
     jumps: []
   }))

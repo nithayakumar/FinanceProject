@@ -110,7 +110,8 @@ export function calculateScenarioProjections(scenarioData) {
   // Calculate expense projections
   const expensesData = calculateExpenseProjections(
     data.expenses,
-    data.profile
+    data.profile,
+    incomeProjectionResults.projections
   )
 
   // Build incomeData object with both projections AND raw incomeStreams
