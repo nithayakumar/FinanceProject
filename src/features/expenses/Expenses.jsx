@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { storage } from '../../shared/storage'
+import { storage } from '../../core'
 import { validateExpenses, calculateExpenseProjections } from './Expenses.calc'
 import { calculateIncomeProjections } from '../income/Income.calc'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { EXPENSE_CONFIG, createDefaultExpenseCategories } from '../../shared/moduleConfig'
+import { EXPENSE_CONFIG, createDefaultExpenseCategories } from '../../core'
 
 // Use centralized config
 const EXPENSE_CATEGORIES = EXPENSE_CONFIG.CATEGORIES
@@ -38,7 +38,10 @@ function Expenses() {
       amountType: cat.amountType || 'dollar',
       percentOfIncome: cat.percentOfIncome !== undefined ? cat.percentOfIncome : '',
       growthRate: cat.growthRate !== undefined ? cat.growthRate : inflationRate,
-      jumps: cat.jumps || []
+      jumps: (cat.jumps || []).map((jump) => ({
+        ...jump,
+        changeType: jump.changeType || 'percent'
+      }))
     }))
   }
 
@@ -169,7 +172,21 @@ function Expenses() {
 
     // Pull income projections (used when categories are % of income)
     const incomeData = storage.load('income') || { incomeStreams: [] }
-    const incomeProjectionResults = calculateIncomeProjections(incomeData, profile)
+    const incomeProjectionResults =
+      incomeData?.incomeStreams?.length > 0
+        ? calculateIncomeProjections(incomeData, profile)
+        : {
+            // Fallback so % of income categories can still calculate as $0
+            projections: Array.from({ length: yearsToRetirement * 12 }, (_, idx) => {
+              const year = Math.floor(idx / 12) + 1
+              const month = (idx % 12) + 1
+              return {
+                year,
+                month,
+                totalCompNominal: 0
+              }
+            })
+          }
 
     // Validate
     const validationErrors = validateExpenses(data, yearsToRetirement)
@@ -387,6 +404,7 @@ function Expenses() {
                             >
                               <option value="percent">%</option>
                               <option value="dollar">$</option>
+                              <option value="percentOfIncome">% of income</option>
                             </select>
                           </div>
                           <div>
@@ -403,8 +421,14 @@ function Expenses() {
                                 value={change.changeValue !== undefined ? change.changeValue : (change.jumpPercent || '')}
                                 onChange={(e) => handleJumpChange(change.categoryId, change.id, 'changeValue', e.target.value ? Number(e.target.value) : '')}
                                 placeholder={change.changeType === 'dollar' ? '5000' : '-20'}
-                                className={`w-full ${change.changeType === 'dollar' ? 'pl-6' : 'pl-2'} pr-2 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                className={`w-full ${change.changeType === 'dollar' ? 'pl-6' : 'pl-2'} pr-8 py-1.5 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                               />
+                              {change.changeType === 'percent' && (
+                                <span className="absolute right-2 top-1.5 text-gray-500 text-xs">%</span>
+                              )}
+                              {change.changeType === 'percentOfIncome' && (
+                                <span className="absolute right-2 top-1.5 text-gray-500 text-[10px]">% of income</span>
+                              )}
                             </div>
                           </div>
                         </div>

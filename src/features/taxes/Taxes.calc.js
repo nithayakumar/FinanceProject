@@ -2,7 +2,7 @@
  * Tax Calculation Logic
  */
 
-import { storage } from '../../shared/storage'
+import { storage } from '../../core'
 
 /**
  * Helper function for 5 decimal place rounding

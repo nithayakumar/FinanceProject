@@ -10,7 +10,7 @@
 import { calculateGapProjections } from '../gap/Gap.calc'
 import { calculateIncomeProjections } from '../income/Income.calc'
 import { calculateExpenseProjections } from '../expenses/Expenses.calc'
-import { storage } from '../../shared/storage'
+import { storage } from '../../core'
 
 /**
  * Get current plan data from localStorage

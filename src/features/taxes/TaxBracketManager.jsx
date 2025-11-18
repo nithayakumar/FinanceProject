@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { storage } from '../../shared/storage'
+import { storage } from '../../core'
 
 // Default tax ladders
 const DEFAULT_TAX_LADDERS = {

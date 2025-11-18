@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { storage } from '../../shared/storage'
+import { storage } from '../../core'
 import { calculateIncomeProjections } from '../income/Income.calc'
 import { calculateExpenseProjections } from '../expenses/Expenses.calc'
 import { calculateGapProjections } from '../gap/Gap.calc'

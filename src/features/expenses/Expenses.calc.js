@@ -22,20 +22,18 @@ export function validateExpenses(data, yearsToRetirement) {
 
     // Annual Amount
     if (amountType === 'dollar') {
-      if (category.annualAmount === '' || category.annualAmount < 0) {
+      if (category.annualAmount < 0) {
         errors[`${category.id}-annualAmount`] = 'Annual amount must be a positive number or 0'
       }
-    } else {
-      if (category.percentOfIncome === '' || category.percentOfIncome < 0) {
-        errors[`${category.id}-percentOfIncome`] = 'Percent of income must be 0 or greater'
-      }
+    } else if (category.percentOfIncome < 0) {
+      errors[`${category.id}-percentOfIncome`] = 'Percent of income must be 0 or greater'
     }
 
     // Growth Rate
     if (amountType === 'dollar') {
-      if (category.growthRate === '' || category.growthRate < 0) {
+      if (category.growthRate !== '' && category.growthRate < 0) {
         errors[`${category.id}-growthRate`] = 'Growth rate must be a positive number'
-      } else if (category.growthRate > 50) {
+      } else if (category.growthRate !== '' && category.growthRate > 50) {
         errors[`${category.id}-growthRate`] = 'Growth rate seems unrealistic (> 50%)'
       }
     }
@@ -100,9 +98,11 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
   // Track cumulative changes for each category (multipliers for %, additions for $)
   const categoryMultipliers = {}
   const categoryDollarAdditions = {}
+  const categoryPercentIncomeRates = {}
   data.expenseCategories.forEach(category => {
     categoryMultipliers[category.id] = 1.0
     categoryDollarAdditions[category.id] = 0
+    categoryPercentIncomeRates[category.id] = 0
   })
 
   // Generate 1,200 monthly rows
@@ -117,12 +117,17 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
         if (category.jumps && category.jumps.length > 0) {
           const changeThisYear = category.jumps.find(j => j.year === year)
           if (changeThisYear && changeThisYear.changeValue !== undefined && changeThisYear.changeValue !== '') {
+            const delta = Number(changeThisYear.changeValue) || 0
+
             if (changeThisYear.changeType === 'dollar') {
               // Dollar-based change: add to annual amount
-              categoryDollarAdditions[category.id] += changeThisYear.changeValue
+              categoryDollarAdditions[category.id] += delta
+            } else if (changeThisYear.changeType === 'percentOfIncome') {
+              // Track percent of gross income additions separately
+              categoryPercentIncomeRates[category.id] += delta
             } else {
               // Percentage-based change: multiply
-              const jumpMultiplier = 1 + (changeThisYear.changeValue / 100)
+              const jumpMultiplier = 1 + (delta / 100)
               categoryMultipliers[category.id] *= jumpMultiplier
             }
           }
@@ -139,9 +144,12 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
 
       // Calculate annual values with growth and changes
       const yearsOfGrowth = year - 1
+      const growthRate = category.growthRate !== '' && category.growthRate !== undefined
+        ? category.growthRate
+        : inflationRate
       const growthMultiplier = amountType === 'percentOfIncome'
         ? 1 // Growth derives from income, so no explicit growth applied
-        : Math.pow(1 + category.growthRate / 100, yearsOfGrowth)
+        : Math.pow(1 + growthRate / 100, yearsOfGrowth)
       const jumpMultiplier = categoryMultipliers[category.id]
       const dollarAddition = categoryDollarAdditions[category.id]
 
@@ -150,10 +158,13 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
       const grossMonthlyIncome = incomeRow ? incomeRow.totalCompNominal : 0
       const baseAnnual = amountType === 'percentOfIncome'
         ? grossMonthlyIncome * 12 * ((category.percentOfIncome || 0) / 100)
-        : category.annualAmount * growthMultiplier
+        : (category.annualAmount || 0) * growthMultiplier
+
+      // Additional scaling tied to income (from change cards)
+      const incomeLinkedAddition = grossMonthlyIncome * 12 * ((categoryPercentIncomeRates[category.id] || 0) / 100)
 
       // Apply percentage changes, then dollar adjustments
-      const annualExpense = (baseAnnual * jumpMultiplier) + dollarAddition
+      const annualExpense = (baseAnnual * jumpMultiplier) + dollarAddition + incomeLinkedAddition
       const monthlyExpense = annualExpense / 12
 
       categoryBreakdown[category.category] = monthlyExpense

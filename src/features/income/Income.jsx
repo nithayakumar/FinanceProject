@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { storage } from '../../shared/storage'
+import { storage } from '../../core'
 import { validateIncome, calculateIncomeProjections } from './Income.calc'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { INCOME_CONFIG, createDefaultIncomeStream } from '../../shared/moduleConfig'
+import { INCOME_CONFIG, createDefaultIncomeStream } from '../../core'
 
 function Income() {
   const navigate = useNavigate()

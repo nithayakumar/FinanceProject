@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { storage } from '../../shared/storage'
+import { storage } from '../../core'
 import {
   INCOME_CONFIG,
   EXPENSE_CONFIG,
@@ -8,7 +8,7 @@ import {
   createDefaultIncomeStream,
   createDefaultExpenseCategories,
   createDefaultInvestment
-} from '../../shared/moduleConfig'
+} from '../../core'
 
 /**
  * ScenarioEditor - Comprehensive scenario editor with tabbed interface

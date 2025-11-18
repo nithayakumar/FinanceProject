@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { storage } from '../../shared/storage'
+import { storage } from '../../core'
 import { validatePersonalDetails } from './PersonalDetails.calc'
 
 function PersonalDetails() {

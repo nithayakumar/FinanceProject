@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { storage } from '../../shared/storage'
+import { storage } from '../../core'
 import { getCurrentPlanData } from './Scenario.calc'
 import {
   INCOME_CONFIG,
@@ -8,7 +8,7 @@ import {
   createDefaultIncomeStream,
   createDefaultExpenseCategories,
   createDefault401k
-} from '../../shared/moduleConfig'
+} from '../../core'
 
 function ScenarioManager() {
   const navigate = useNavigate()

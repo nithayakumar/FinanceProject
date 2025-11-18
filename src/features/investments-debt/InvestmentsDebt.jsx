@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { storage } from '../../shared/storage'
+import { storage } from '../../core'
 import { validateInvestments, calculateInvestmentProjections } from './InvestmentsDebt.calc'
 import {
   BarChart,
@@ -16,7 +16,7 @@ import {
   Area,
   AreaChart
 } from 'recharts'
-import { INVESTMENTS_CONFIG, createDefaultInvestment, createDefault401k } from '../../shared/moduleConfig'
+import { INVESTMENTS_CONFIG, createDefaultInvestment, createDefault401k } from '../../core'
 
 function InvestmentsDebt() {
   const navigate = useNavigate()
