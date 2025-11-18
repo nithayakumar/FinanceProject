@@ -179,8 +179,9 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
         baseAnnual = (category.annualAmount || 0) * growthMultiplier
       }
 
-      // Apply percentage changes, then dollar adjustments
-      const annualExpense = (baseAnnual * jumpMultiplier) + dollarAddition
+      // Apply dollar adjustments first, then percentage changes to the whole
+      const annualWithDollars = baseAnnual + dollarAddition
+      const annualExpense = annualWithDollars * jumpMultiplier
       const monthlyExpense = annualExpense / 12
 
       categoryBreakdown[category.category] = monthlyExpense
