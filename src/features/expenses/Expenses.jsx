@@ -3,18 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { storage } from '../../shared/storage'
 import { validateExpenses, calculateExpenseProjections } from './Expenses.calc'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { EXPENSE_CONFIG, createDefaultExpenseCategories } from '../../shared/moduleConfig'
 
-const EXPENSE_CATEGORIES = [
-  'Housing',
-  'Utilities',
-  'Transportation',
-  'Medical',
-  'Childcare',
-  'Education',
-  'Food',
-  'Entertainment',
-  'Other'
-]
+// Use centralized config
+const EXPENSE_CATEGORIES = EXPENSE_CONFIG.CATEGORIES
 
 function Expenses() {
   const navigate = useNavigate()
@@ -28,19 +20,11 @@ function Expenses() {
     ? profile.retirementAge - profile.age
     : 30
 
-  // Initialize with all categories
-  const initializeCategories = () => {
-    return EXPENSE_CATEGORIES.map(category => ({
-      id: `category-${category.toLowerCase()}`,
-      category,
-      annualAmount: '',
-      growthRate: profile.inflationRate !== undefined ? profile.inflationRate : 2.7,  // Default to inflation rate
-      jumps: []
-    }))
-  }
+  // Initialize with all categories using centralized config
+  const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : EXPENSE_CONFIG.DEFAULT_GROWTH_RATE
 
   const [data, setData] = useState({
-    expenseCategories: initializeCategories(),
+    expenseCategories: createDefaultExpenseCategories(inflationRate),
     oneTimeExpenses: []
   })
 

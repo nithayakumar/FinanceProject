@@ -4,6 +4,11 @@
 
 The Expenses module tracks recurring annual expenses across 9 predefined categories and allows for one-time expense events. Each category has its own growth rate (typically matching inflation) and can have expense changes (jumps) applied at specific years. The module generates comprehensive projections over 100 years (1,200 months) with both nominal and present value calculations.
 
+## Module Architecture & References
+- **Components:** `src/features/expenses/Expenses.jsx` renders inputs/outputs; `Expenses.calc.js` provides validation and projection helpers.
+- **Storage:** Persists under the `expenses` key with `expenseCategories` and `oneTimeExpenses`; projections are recalculated when the user saves/calculates.
+- **Consumer:** Gap/Net Worth ingests monthly projections (nominal and PV) to compute overall cash flow and net worth impacts.
+
 ## Field Reference
 
 ### Expense Categories

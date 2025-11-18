@@ -4,6 +4,11 @@
 
 The Income module manages multiple income streams with independent growth rates, one-time jumps (promotions/raises), and equity compensation. It generates comprehensive projections over 100 years (1,200 months) with both nominal and present value calculations. The module supports up to 3 concurrent income streams, each with configurable end dates and contribution rates.
 
+## Module Architecture & References
+- **Components:** `src/features/income/Income.jsx` renders the input/output views; `Income.calc.js` contains all validation and projection logic.
+- **Storage:** Persists under the `income` key; projections are computed on-demand and not stored.
+- **Consumers:** Gap/Net Worth uses `projections` and raw `incomeStreams` to calculate gap, taxes, and 401k contributions; Taxes uses taxable income after individual 401k deductions; Investments reads company 401k totals.
+
 ## Field Reference
 
 ### Income Stream Fields

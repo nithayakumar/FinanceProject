@@ -4,6 +4,11 @@
 
 The Personal Details module captures the core user profile information that drives all other calculations in the Finance Project. It establishes the foundation for retirement planning by defining the user's age, retirement timeline, tax filing status, and inflation assumptions.
 
+## Module Architecture & References
+- **Components:** `src/features/personal-details/PersonalDetails.jsx` renders the form; `PersonalDetails.calc.js` contains helper calculations and validation.
+- **Storage:** Persists profile data under the `profile` key via the shared storage helper; initializes defaults on first load.
+- **Consumers:** All calculators read `age`, `retirementAge`, `inflationRate`, `filingStatus`, and cash targets. Income/Expense modules use `yearsToRetirement`; Taxes inflates brackets with `inflationRate`; Gap allocates cash with `currentCash`/`targetCash`.
+
 ## Field Reference
 
 ### Location

@@ -16,6 +16,7 @@ import {
   Area,
   AreaChart
 } from 'recharts'
+import { INVESTMENTS_CONFIG, createDefaultInvestment, createDefault401k } from '../../shared/moduleConfig'
 
 function InvestmentsDebt() {
   const navigate = useNavigate()
@@ -26,13 +27,7 @@ function InvestmentsDebt() {
   const [data, setData] = useState({
     currentCash: '',
     targetCash: '',
-    retirement401k: {
-      individualLimit: 23500,
-      limitGrowth: 3,
-      currentValue: '',
-      growthRate: '',
-      companyContribution: 0
-    },
+    retirement401k: createDefault401k(0),
     investments: []
   })
 
@@ -76,39 +71,15 @@ function InvestmentsDebt() {
       const investmentValue = Math.round(totalSavings / 3)
 
       const preloadedInvestments = [
-        {
-          id: 'investment-1',
-          currentValue: investmentValue,
-          costBasis: investmentValue,
-          growthRate: 7,
-          portfolioPercent: 33.33
-        },
-        {
-          id: 'investment-2',
-          currentValue: investmentValue,
-          costBasis: investmentValue,
-          growthRate: 7,
-          portfolioPercent: 33.33
-        },
-        {
-          id: 'investment-3',
-          currentValue: investmentValue,
-          costBasis: investmentValue,
-          growthRate: 7,
-          portfolioPercent: 33.34
-        }
+        createDefaultInvestment(1, investmentValue, 33.33),
+        createDefaultInvestment(2, investmentValue, 33.33),
+        createDefaultInvestment(3, investmentValue, 33.34)
       ]
 
       setData({
         currentCash: currentCash,
         targetCash: targetCash,
-        retirement401k: {
-          individualLimit: 23500,
-          limitGrowth: 3,
-          currentValue: '',
-          growthRate: 7,
-          companyContribution: totalCompany401k
-        },
+        retirement401k: createDefault401k(totalCompany401k),
         investments: totalSavings > 0 ? preloadedInvestments : []
       })
     }
@@ -142,15 +113,9 @@ function InvestmentsDebt() {
   }
 
   const addInvestment = () => {
-    if (data.investments.length >= 3) return
+    if (data.investments.length >= INVESTMENTS_CONFIG.MAX_INVESTMENTS) return
 
-    const newInvestment = {
-      id: `investment-${Date.now()}`,
-      currentValue: '',
-      costBasis: '',
-      growthRate: '',
-      portfolioPercent: ''
-    }
+    const newInvestment = createDefaultInvestment(data.investments.length + 1, 0, 0)
 
     setData(prev => ({
       ...prev,
@@ -454,8 +419,8 @@ function InvestmentsDebt() {
           {/* Investments - Compact Table */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-base font-semibold">Investment Portfolio <span className="text-xs text-gray-500 font-normal">(max 3)</span></h2>
-              {data.investments.length < 3 && (
+              <h2 className="text-base font-semibold">Investment Portfolio <span className="text-xs text-gray-500 font-normal">(max {INVESTMENTS_CONFIG.MAX_INVESTMENTS})</span></h2>
+              {data.investments.length < INVESTMENTS_CONFIG.MAX_INVESTMENTS && (
                 <button
                   onClick={addInvestment}
                   className="text-xs text-blue-600 hover:text-blue-700 font-medium"

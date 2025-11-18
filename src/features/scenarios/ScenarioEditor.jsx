@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { storage } from '../../shared/storage'
+import {
+  INCOME_CONFIG,
+  EXPENSE_CONFIG,
+  INVESTMENTS_CONFIG,
+  createDefaultIncomeStream,
+  createDefaultExpenseCategories,
+  createDefaultInvestment
+} from '../../shared/moduleConfig'
 
 /**
  * ScenarioEditor - Comprehensive scenario editor with tabbed interface
@@ -277,27 +285,24 @@ function ScenarioEditor() {
           {activeTab === 'income' && (
             <div>
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Income Streams</h3>
-                <button
-                  onClick={() => {
-                    const newStream = {
-                      id: `stream-${Date.now()}`,
-                      name: `Income Stream ${(data.income?.incomeStreams?.length || 0) + 1}`,
-                      annualIncome: 0,
-                      company401k: 0,
-                      individual401k: 0,
-                      equity: 0,
-                      growthRate: 2.7,
-                      endWorkYear: 30,
-                      jumps: []
-                    }
-                    const updated = [...(data.income?.incomeStreams || []), newStream]
-                    handleDataChange('income', { incomeStreams: updated })
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                >
-                  + Add Income Stream
-                </button>
+                <h3 className="text-lg font-semibold">Income Streams <span className="text-sm text-gray-500 font-normal">(max {INCOME_CONFIG.MAX_STREAMS}, min {INCOME_CONFIG.MIN_STREAMS})</span></h3>
+                {(data.income?.incomeStreams?.length || 0) < INCOME_CONFIG.MAX_STREAMS && (
+                  <button
+                    onClick={() => {
+                      const currentStreams = data.income?.incomeStreams || []
+                      const newStream = createDefaultIncomeStream(
+                        currentStreams.length + 1,
+                        data.profile?.retirementAge && data.profile?.age ? data.profile.retirementAge - data.profile.age : 30,
+                        data.profile?.inflationRate || INCOME_CONFIG.DEFAULT_GROWTH_RATE
+                      )
+                      const updated = [...currentStreams, newStream]
+                      handleDataChange('income', { incomeStreams: updated })
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                  >
+                    + Add Income Stream
+                  </button>
+                )}
               </div>
 
               {(!data.income?.incomeStreams || data.income.incomeStreams.length === 0) ? (
@@ -322,17 +327,19 @@ function ScenarioEditor() {
                           placeholder={`Income Stream ${index + 1}`}
                         />
                       </div>
-                      <button
-                        onClick={() => {
-                          if (confirm('Delete this income stream?')) {
-                            const updated = data.income.incomeStreams.filter((_, i) => i !== index)
-                            handleDataChange('income', { incomeStreams: updated })
-                          }
-                        }}
-                        className="ml-3 mt-6 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-                      >
-                        Delete
-                      </button>
+                      {(data.income?.incomeStreams?.length || 0) > INCOME_CONFIG.MIN_STREAMS && (
+                        <button
+                          onClick={() => {
+                            if (confirm('Delete this income stream?')) {
+                              const updated = data.income.incomeStreams.filter((_, i) => i !== index)
+                              handleDataChange('income', { incomeStreams: updated })
+                            }
+                          }}
+                          className="ml-3 mt-6 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                     <div className="grid grid-cols-3 gap-4">
                       <div>
@@ -427,94 +434,92 @@ function ScenarioEditor() {
           {/* Expenses Tab */}
           {activeTab === 'expenses' && (
             <div>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Expense Categories</h3>
-                <button
-                  onClick={() => {
-                    const newCategory = {
-                      id: `expense-${Date.now()}`,
-                      category: `New Expense Category`,
-                      annualAmount: 0,
-                      growthRate: 2.7,
-                      jumps: []
-                    }
-                    const updated = [...(data.expenses?.expenseCategories || []), newCategory]
-                    handleDataChange('expenses', {
-                      expenseCategories: updated,
-                      oneTimeExpenses: data.expenses?.oneTimeExpenses || []
-                    })
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                >
-                  + Add Expense Category
-                </button>
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold">Expense Categories <span className="text-sm text-gray-500 font-normal">(fixed {EXPENSE_CONFIG.CATEGORIES.length} categories)</span></h3>
+                <p className="text-xs text-gray-500 mt-1">These categories are fixed and cannot be added or removed</p>
               </div>
 
-              {(!data.expenses?.expenseCategories || data.expenses.expenseCategories.length === 0) ? (
-                <div className="text-center py-8 text-gray-500">
-                  No expense categories yet. Click "Add Expense Category" to create one.
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {data.expenses.expenseCategories.map((category, index) => (
-                    <div key={category.id || index} className="p-4 border border-gray-200 rounded">
-                      <div className="grid grid-cols-4 gap-4 items-end">
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium mb-1">Category Name</label>
-                          <input
-                            type="text"
-                            value={category.category || ''}
-                            onChange={(e) => {
-                              const updated = [...(data.expenses?.expenseCategories || [])]
-                              updated[index] = { ...updated[index], category: e.target.value }
-                              handleDataChange('expenses', {
-                                expenseCategories: updated,
-                                oneTimeExpenses: data.expenses?.oneTimeExpenses || []
-                              })
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded"
-                            placeholder="e.g., Housing, Food, Transportation"
-                          />
+              <div className="space-y-2">
+                {EXPENSE_CONFIG.CATEGORIES.map((categoryName) => {
+                  // Find existing category data or create default
+                  const existingCategory = data.expenses?.expenseCategories?.find(c => c.category === categoryName)
+                  const categoryData = existingCategory || {
+                    id: `category-${categoryName.toLowerCase()}`,
+                    category: categoryName,
+                    annualAmount: 0,
+                    growthRate: data.profile?.inflationRate || EXPENSE_CONFIG.DEFAULT_GROWTH_RATE,
+                    jumps: []
+                  }
+                  const categoryIndex = data.expenses?.expenseCategories?.findIndex(c => c.category === categoryName) ?? -1
+
+                  return (
+                    <div key={categoryName} className="p-3 border border-gray-200 rounded bg-white">
+                      <div className="grid grid-cols-3 gap-4 items-center">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">{categoryName}</label>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">Annual Amount ($)</label>
+                          <label className="block text-xs text-gray-600 mb-1">Annual Amount ($)</label>
                           <input
                             type="number"
-                            value={category.annualAmount || ''}
+                            value={categoryData.annualAmount || ''}
                             onChange={(e) => {
-                              const updated = [...(data.expenses?.expenseCategories || [])]
-                              updated[index] = { ...updated[index], annualAmount: Number(e.target.value) }
+                              const currentCategories = data.expenses?.expenseCategories || []
+                              let updated
+
+                              if (categoryIndex >= 0) {
+                                // Update existing category
+                                updated = [...currentCategories]
+                                updated[categoryIndex] = { ...updated[categoryIndex], annualAmount: Number(e.target.value) }
+                              } else {
+                                // Add new category
+                                updated = [...currentCategories, { ...categoryData, annualAmount: Number(e.target.value) }]
+                              }
+
                               handleDataChange('expenses', {
                                 expenseCategories: updated,
                                 oneTimeExpenses: data.expenses?.oneTimeExpenses || []
                               })
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded"
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            placeholder="0"
                           />
                         </div>
                         <div>
-                          <button
-                            onClick={() => {
-                              if (confirm(`Delete "${category.category}" expense category?`)) {
-                                const updated = data.expenses.expenseCategories.filter((_, i) => i !== index)
-                                handleDataChange('expenses', {
-                                  expenseCategories: updated,
-                                  oneTimeExpenses: data.expenses?.oneTimeExpenses || []
-                                })
+                          <label className="block text-xs text-gray-600 mb-1">Growth Rate (%)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={categoryData.growthRate || ''}
+                            onChange={(e) => {
+                              const currentCategories = data.expenses?.expenseCategories || []
+                              let updated
+
+                              if (categoryIndex >= 0) {
+                                // Update existing category
+                                updated = [...currentCategories]
+                                updated[categoryIndex] = { ...updated[categoryIndex], growthRate: Number(e.target.value) }
+                              } else {
+                                // Add new category
+                                updated = [...currentCategories, { ...categoryData, growthRate: Number(e.target.value) }]
                               }
+
+                              handleDataChange('expenses', {
+                                expenseCategories: updated,
+                                oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                              })
                             }}
-                            className="w-full px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-                          >
-                            Delete
-                          </button>
+                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            placeholder="2.7"
+                          />
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                  )
+                })}
+              </div>
               <p className="text-xs text-gray-500 mt-4">
-                Tip: For advanced expense editing (growth rate, jumps, one-time expenses), use the JSON tab
+                Tip: For advanced expense editing (jumps, one-time expenses), use the JSON tab
               </p>
             </div>
           )}
@@ -608,25 +613,23 @@ function ScenarioEditor() {
 
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-medium">Investment Accounts</h4>
-                  <button
-                    onClick={() => {
-                      const newInvestment = {
-                        id: `investment-${Date.now()}`,
-                        currentValue: 0,
-                        costBasis: 0,
-                        growthRate: 7
-                      }
-                      const updated = [...(data.investmentsDebt?.investments || []), newInvestment]
-                      handleDataChange('investmentsDebt', {
-                        ...data.investmentsDebt,
-                        investments: updated
-                      })
-                    }}
-                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                  >
-                    + Add Investment Account
-                  </button>
+                  <h4 className="font-medium">Investment Accounts <span className="text-sm text-gray-500 font-normal">(max {INVESTMENTS_CONFIG.MAX_INVESTMENTS})</span></h4>
+                  {(data.investmentsDebt?.investments?.length || 0) < INVESTMENTS_CONFIG.MAX_INVESTMENTS && (
+                    <button
+                      onClick={() => {
+                        const currentInvestments = data.investmentsDebt?.investments || []
+                        const newInvestment = createDefaultInvestment(currentInvestments.length + 1, 0, 0)
+                        const updated = [...currentInvestments, newInvestment]
+                        handleDataChange('investmentsDebt', {
+                          ...data.investmentsDebt,
+                          investments: updated
+                        })
+                      }}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                    >
+                      + Add Investment Account
+                    </button>
+                  )}
                 </div>
 
                 {(!data.investmentsDebt?.investments || data.investmentsDebt.investments.length === 0) ? (
@@ -637,7 +640,7 @@ function ScenarioEditor() {
                   <div className="space-y-3">
                     {data.investmentsDebt.investments.map((investment, index) => (
                       <div key={investment.id || index} className="p-4 border border-gray-200 rounded">
-                        <div className="grid grid-cols-4 gap-4 items-end">
+                        <div className="grid grid-cols-5 gap-4 items-end">
                           <div>
                             <label className="block text-sm font-medium mb-1">Current Value ($)</label>
                             <input
@@ -651,7 +654,7 @@ function ScenarioEditor() {
                                   investments: updated
                                 })
                               }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded"
+                              className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
                             />
                           </div>
                           <div>
@@ -667,7 +670,7 @@ function ScenarioEditor() {
                                   investments: updated
                                 })
                               }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded"
+                              className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
                             />
                           </div>
                           <div>
@@ -675,7 +678,7 @@ function ScenarioEditor() {
                             <input
                               type="number"
                               step="0.1"
-                              value={investment.growthRate || 7}
+                              value={investment.growthRate || INVESTMENTS_CONFIG.DEFAULT_GROWTH_RATE}
                               onChange={(e) => {
                                 const updated = [...(data.investmentsDebt?.investments || [])]
                                 updated[index] = { ...updated[index], growthRate: Number(e.target.value) }
@@ -684,7 +687,25 @@ function ScenarioEditor() {
                                   investments: updated
                                 })
                               }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded"
+                              className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Portfolio %</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={investment.portfolioPercent || 0}
+                              onChange={(e) => {
+                                const updated = [...(data.investmentsDebt?.investments || [])]
+                                updated[index] = { ...updated[index], portfolioPercent: Number(e.target.value) }
+                                handleDataChange('investmentsDebt', {
+                                  ...data.investmentsDebt,
+                                  investments: updated
+                                })
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                              placeholder="33.33"
                             />
                           </div>
                           <div>

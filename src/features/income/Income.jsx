@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { storage } from '../../shared/storage'
 import { validateIncome, calculateIncomeProjections } from './Income.calc'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { INCOME_CONFIG, createDefaultIncomeStream } from '../../shared/moduleConfig'
 
 function Income() {
   const navigate = useNavigate()
@@ -19,17 +20,7 @@ function Income() {
 
   const [data, setData] = useState({
     incomeStreams: [
-      {
-        id: 'stream-1',
-        name: 'Income Stream 1',
-        annualIncome: '',
-        company401k: '',
-        individual401k: '',
-        equity: '',
-        growthRate: inflationRate,  // Default to inflation rate
-        endWorkYear: yearsToRetirement,
-        jumps: []
-      }
+      createDefaultIncomeStream(1, yearsToRetirement, inflationRate)
     ]
   })
 
@@ -82,19 +73,13 @@ function Income() {
   }
 
   const addIncomeStream = () => {
-    if (data.incomeStreams.length >= 3) return
+    if (data.incomeStreams.length >= INCOME_CONFIG.MAX_STREAMS) return
 
-    const newStream = {
-      id: `stream-${Date.now()}`,
-      name: `Income Stream ${data.incomeStreams.length + 1}`,
-      annualIncome: '',
-      company401k: '',
-      individual401k: '',
-      equity: '',
-      growthRate: inflationRate,  // Default to inflation rate
-      endWorkYear: yearsToRetirement,
-      jumps: []
-    }
+    const newStream = createDefaultIncomeStream(
+      data.incomeStreams.length + 1,
+      yearsToRetirement,
+      inflationRate
+    )
 
     setData(prev => ({
       ...prev,
@@ -103,7 +88,7 @@ function Income() {
   }
 
   const removeIncomeStream = (streamId) => {
-    if (data.incomeStreams.length <= 1) return  // Keep at least one
+    if (data.incomeStreams.length <= INCOME_CONFIG.MIN_STREAMS) return
 
     setData(prev => ({
       ...prev,
@@ -200,7 +185,7 @@ function Income() {
           {/* Income Streams */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <h2 className="text-lg font-semibold mb-2">Income Streams</h2>
-            <p className="text-xs text-gray-600 mb-3">Add up to 3 income streams</p>
+            <p className="text-xs text-gray-600 mb-3">Add up to {INCOME_CONFIG.MAX_STREAMS} income streams</p>
 
             <div className="space-y-4">
               {data.incomeStreams.map((stream, index) => (
@@ -419,7 +404,7 @@ function Income() {
                 </div>
               ))}
 
-              {data.incomeStreams.length < 3 && (
+              {data.incomeStreams.length < INCOME_CONFIG.MAX_STREAMS && (
                 <button
                   onClick={addIncomeStream}
                   className="w-full py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-600 transition"

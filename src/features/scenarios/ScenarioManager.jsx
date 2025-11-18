@@ -2,6 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../../shared/storage'
 import { getCurrentPlanData } from './Scenario.calc'
+import {
+  INCOME_CONFIG,
+  EXPENSE_CONFIG,
+  createDefaultIncomeStream,
+  createDefaultExpenseCategories,
+  createDefault401k
+} from '../../shared/moduleConfig'
 
 function ScenarioManager() {
   const navigate = useNavigate()
@@ -88,6 +95,9 @@ function ScenarioManager() {
 
   // Create blank scenario
   const handleCreateBlank = () => {
+    const defaultYearsToRetirement = 35  // 65 - 30
+    const defaultInflationRate = EXPENSE_CONFIG.DEFAULT_GROWTH_RATE
+
     const newScenario = {
       id: `scenario-${Date.now()}`,
       name: 'New Scenario',
@@ -100,38 +110,24 @@ function ScenarioManager() {
           filingStatus: 'Single',
           age: 30,
           retirementAge: 65,
-          inflationRate: 2.7,
+          inflationRate: defaultInflationRate,
           currentCash: 0,
           targetCash: 0,
           currentSavings: 0
         },
         income: {
-          incomeStreams: [{
-            id: 'stream-1',
-            name: 'Income Stream 1',
-            annualIncome: 0,
-            company401k: 0,
-            individual401k: 0,
-            equity: 0,
-            growthRate: 2.7,
-            endWorkYear: 35,
-            jumps: []
-          }]
+          incomeStreams: [
+            createDefaultIncomeStream(1, defaultYearsToRetirement, defaultInflationRate)
+          ]
         },
         expenses: {
-          expenseCategories: [],
+          expenseCategories: createDefaultExpenseCategories(defaultInflationRate),
           oneTimeExpenses: []
         },
         investmentsDebt: {
           currentCash: 0,
           targetCash: 0,
-          retirement401k: {
-            individualLimit: 23500,
-            limitGrowth: 3,
-            currentValue: 0,
-            growthRate: 7,
-            companyContribution: 0
-          },
+          retirement401k: createDefault401k(0),
           investments: []
         }
       }

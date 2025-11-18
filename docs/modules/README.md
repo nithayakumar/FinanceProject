@@ -4,7 +4,7 @@ This directory contains detailed reference documentation for each module in the 
 
 ## Module Overview
 
-The Finance Project is organized into six main modules:
+The Finance Project is organized into feature modules plus cross-cutting orchestration layers:
 
 1. **Personal Details** - Core user profile information including age, retirement planning, and tax filing status
 2. **Income** - Multiple income streams with growth rates, jumps, and equity compensation
@@ -12,6 +12,9 @@ The Finance Project is organized into six main modules:
 4. **Taxes** - Federal, state, and FICA tax calculations with automatic bracket inflation
 5. **Investments & Debt** - 401k, investment accounts with growth rates and portfolio allocation
 6. **Gap/Net Worth** - Integrated cash flow analysis and net worth projections over time
+7. **Dashboard** - Runs all calculators and renders summary tabs for projections
+8. **Scenarios** - Clones/edits full plans and compares projection outcomes
+9. **Export** - Generates CSV output from the same projection data the dashboard uses
 
 ## Documentation Structure
 
@@ -28,6 +31,9 @@ Each module has documentation in two locations:
 - [Taxes](./taxes.md) - Federal, state, FICA calculations with bracket inflation
 - [Investments & Debt](./investments-debt.md) - 401k, investment accounts, portfolio allocation
 - [Gap/Net Worth](./gap-networth.md) - Cash flow analysis, net worth projections, allocation logic
+- [Dashboard](./dashboard.md) - Projection orchestration and tab visualizations
+- [Scenarios](./scenarios.md) - Plan cloning, editing, and comparison flow
+- [Export](./export.md) - CSV generation pipeline and transformers
 
 ## Key Concepts
 

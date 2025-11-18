@@ -4,6 +4,11 @@
 
 The Investments & Debt module manages cash holdings, 401(k) retirement accounts, and up to 3 taxable investment accounts. It tracks current balances and projects growth over time based on contribution rates and market returns. Cash values are synced with Personal Details, and company 401(k) match is automatically pulled from Income streams.
 
+## Module Architecture & References
+- **Components:** `src/features/investments-debt/InvestmentsDebt.jsx` renders inputs; `InvestmentsDebt.calc.js` houses growth/validation helpers.
+- **Storage:** Saves data under `investmentsDebt` and mirrors `currentCash`/`targetCash` into the `profile` entry for cross-module consistency.
+- **Dependencies:** Consumes company 401k totals calculated in the Income module; Gap/Net Worth uses cash/portfolio settings to allocate positive or negative gap each year.
+
 ## Field Reference
 
 ### Cash on Hand (Synced with Personal Details)
