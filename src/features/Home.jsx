@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { storage } from '../shared/storage'
+import { storage } from '../core'
 
 function Home() {
   // Load data for financial snapshot
