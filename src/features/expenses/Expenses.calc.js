@@ -95,14 +95,16 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
   // Generate monthly projections (1,200 months = 100 years)
   const projections = []
 
-  // Track cumulative changes for each category (multipliers for %, additions for $)
+  // Track cumulative changes for each category (multipliers for %, additions/overrides for $)
   const categoryMultipliers = {}
   const categoryDollarAdditions = {}
-  const categoryPercentIncomeRates = {}
+  const categoryPercentOverrides = {}
+  const categoryAmountOverrides = {}
   data.expenseCategories.forEach(category => {
     categoryMultipliers[category.id] = 1.0
     categoryDollarAdditions[category.id] = 0
-    categoryPercentIncomeRates[category.id] = 0
+    categoryPercentOverrides[category.id] = null
+    categoryAmountOverrides[category.id] = null
   })
 
   // Generate 1,200 monthly rows
@@ -125,8 +127,14 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
               // Dollar-based change: add to annual amount (entered in today's dollars; inflate to nominal)
               categoryDollarAdditions[category.id] += delta * inflationMultiplier
             } else if (changeThisYear.changeType === 'percentOfIncome') {
-              // Track percent of gross income additions separately
-              categoryPercentIncomeRates[category.id] += delta
+              // Override percent of income for this category from this year onward
+              categoryPercentOverrides[category.id] = delta
+            } else if (changeThisYear.changeType === 'setAmountPV') {
+              // Override base amount (entered in today's dollars; inflate to nominal for this year onward)
+              categoryAmountOverrides[category.id] = delta * inflationMultiplier
+              // Reset prior adjustments when setting a new absolute amount
+              categoryMultipliers[category.id] = 1.0
+              categoryDollarAdditions[category.id] = 0
             } else {
               // Percentage-based change: multiply
               const jumpMultiplier = 1 + (delta / 100)
@@ -155,18 +163,24 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
       const jumpMultiplier = categoryMultipliers[category.id]
       const dollarAddition = categoryDollarAdditions[category.id]
 
-      // Base amount can be dollar or % of gross income
+      // Base amount can be dollar or % of gross income, or overridden by setAmountPV
       const incomeRow = incomeProjections ? incomeProjections[monthIndex] : null
       const grossMonthlyIncome = incomeRow ? incomeRow.totalCompNominal : 0
-      const baseAnnual = amountType === 'percentOfIncome'
-        ? grossMonthlyIncome * 12 * ((category.percentOfIncome || 0) / 100)
-        : (category.annualAmount || 0) * growthMultiplier
+      const effectivePercentOfIncome = categoryPercentOverrides[category.id] !== null
+        ? categoryPercentOverrides[category.id]
+        : (category.percentOfIncome || 0)
 
-      // Additional scaling tied to income (from change cards)
-      const incomeLinkedAddition = grossMonthlyIncome * 12 * ((categoryPercentIncomeRates[category.id] || 0) / 100)
+      let baseAnnual
+      if (categoryAmountOverrides[category.id] !== null) {
+        baseAnnual = categoryAmountOverrides[category.id]
+      } else if (amountType === 'percentOfIncome') {
+        baseAnnual = grossMonthlyIncome * 12 * (effectivePercentOfIncome / 100)
+      } else {
+        baseAnnual = (category.annualAmount || 0) * growthMultiplier
+      }
 
       // Apply percentage changes, then dollar adjustments
-      const annualExpense = (baseAnnual * jumpMultiplier) + incomeLinkedAddition + dollarAddition
+      const annualExpense = (baseAnnual * jumpMultiplier) + dollarAddition
       const monthlyExpense = annualExpense / 12
 
       categoryBreakdown[category.category] = monthlyExpense

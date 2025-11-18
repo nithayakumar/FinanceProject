@@ -404,15 +404,25 @@ function Expenses() {
                             >
                               <option value="percent">%</option>
                               <option value="dollar">$</option>
+                              <option value="setAmountPV">Set $ (PV)</option>
                               <option value="percentOfIncome">% of income</option>
                             </select>
                           </div>
                           <div>
                             <label className="block text-xs text-gray-600 mb-1">
-                              {change.changeType === 'dollar' ? 'Amount' : 'Change'}
+                              {change.changeType === 'dollar'
+                                ? 'Amount Change'
+                                : change.changeType === 'percentOfIncome'
+                                  ? 'New % of income'
+                                  : change.changeType === 'setAmountPV'
+                                    ? 'New amount (present value)'
+                                    : 'Change'}
                             </label>
                             <div className="relative">
                               {change.changeType === 'dollar' && (
+                                <span className="absolute left-2 top-1.5 text-gray-500 text-xs">$</span>
+                              )}
+                              {change.changeType === 'setAmountPV' && (
                                 <span className="absolute left-2 top-1.5 text-gray-500 text-xs">$</span>
                               )}
                               <input
