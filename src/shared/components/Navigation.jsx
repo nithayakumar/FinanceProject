@@ -6,12 +6,11 @@ function Navigation() {
   const navItems = [
     { path: '/', label: 'Home' },
     { path: '/dashboard', label: 'Dashboard' },
-    { path: '/personal-details', label: 'Personal Details' },
+    { path: '/personal-details', label: 'Personal' },
     { path: '/income', label: 'Income' },
     { path: '/expenses', label: 'Expenses' },
     { path: '/taxes', label: 'Taxes' },
-    { path: '/investments-debt', label: 'Savings & Investments' },
-    { path: '/gap', label: 'Gap' },
+    { path: '/investments-debt', label: 'Investments' },
     { path: '/scenarios', label: 'Scenarios' },
   ]
 
@@ -39,9 +38,7 @@ function Navigation() {
             ))}
           </div>
 
-          <button className="text-sm text-gray-600 hover:text-gray-900">
-            Export Data
-          </button>
+          <div />
         </div>
       </div>
     </nav>

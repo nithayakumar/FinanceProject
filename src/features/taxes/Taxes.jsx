@@ -1,15 +1,63 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { storage } from '../../shared/storage'
-import { calculateTaxes } from './Taxes.calc'
+import { calculateTaxesCSV } from './csvTaxCalculator'
+import {
+  initializeTaxLadders,
+  getCountryForState,
+  getFilingStatusesForTaxType,
+  mapFilingStatusToCSV,
+  getStateTaxLadder,
+  getFederalTaxLadder
+} from './csvTaxLadders'
+
+const FILING_STATUS_OPTIONS = [
+  { value: 'Single', label: 'Single' },
+  { value: 'Married', label: 'Married Filing Jointly' },
+  { value: 'Separate', label: 'Married Filing Separately' },
+  { value: 'Head_of_Household', label: 'Head of Household' }
+]
+
+const getFilingStatusLabel = (value) => {
+  return FILING_STATUS_OPTIONS.find(option => option.value === value)?.label || value
+}
+
+const formatFilingTypeLabel = (type) => {
+  switch (type) {
+    case 'married':
+      return 'Married Filing Jointly'
+    case 'separate':
+      return 'Married Filing Separately'
+    case 'head':
+      return 'Head of Household'
+    default:
+      return 'Single'
+  }
+}
+
+const deriveFallbackStatus = (scope, location, csvStatus) => {
+  const ladder = scope === 'state'
+    ? getStateTaxLadder(location, 'Income', csvStatus)
+    : getFederalTaxLadder(location, 'Income', csvStatus)
+
+  if (ladder && ladder.filingStatus && ladder.filingStatus !== csvStatus) {
+    return ladder.filingStatus
+  }
+  return null
+}
 
 function Taxes() {
   const navigate = useNavigate()
   const [calculations, setCalculations] = useState(null)
   const [isSaved, setIsSaved] = useState(false)
+  const [showReview, setShowReview] = useState(true)
+  const [filingStatusRemap, setFilingStatusRemap] = useState('')
+  const [missingFilingStatus, setMissingFilingStatus] = useState(null) // { status, state, country }
   const [data, setData] = useState({
     filingType: 'single',
-    state: 'california',
+    filingStatus: 'Single',
+    state: 'California',
+    country: 'USA',
     incomes: []
   })
 
@@ -24,10 +72,22 @@ function Taxes() {
     return mapping[status] || 'single'
   }
 
+  const currentCsvStatus = mapFilingStatusToCSV(data.filingStatus || 'Single')
+  const remapOptions = FILING_STATUS_OPTIONS.filter(option => option.value !== currentCsvStatus)
+
   // Load profile and income data on mount, then auto-calculate
   useEffect(() => {
+    initializeTaxLadders()
+
     const profile = storage.load('profile') || {}
     const incomeData = storage.load('income') || { incomeStreams: [] }
+
+    // Get state and country from profile
+    const userState = profile.location || 'California'
+    const userCountry = profile.country || getCountryForState(userState) || 'USA'
+    const userInflationRate = (profile.inflationRate || 2.7) / 100
+    const currentYear = new Date().getFullYear()
+    const csvFilingStatus = mapFilingStatusToCSV(profile.filingStatus || 'Single')
 
     // Calculate total income excluding 401k contributions
     const totalSalary = incomeData.incomeStreams.reduce((sum, stream) => {
@@ -39,7 +99,9 @@ function Taxes() {
     // Auto-populate with data from profile and income
     const taxData = {
       filingType: mapFilingStatus(profile.filingStatus),
-      state: 'california',
+      filingStatus: profile.filingStatus || 'Single',
+      state: userState,
+      country: userCountry,
       incomes: totalSalary > 0 ? [{
         id: 'salary-income',
         description: 'Total Annual Income (excl. 401k)',
@@ -53,8 +115,40 @@ function Taxes() {
     console.log('📋 Auto-loaded from profile and income:', {
       filingStatus: profile.filingStatus,
       mappedFilingType: mapFilingStatus(profile.filingStatus),
+      state: userState,
+      country: userCountry,
       totalSalary
     })
+
+    // Check filing status availability for the user's jurisdiction
+    const stateFilingStatuses = getFilingStatusesForTaxType('State_Province', userState, 'Income')
+    const federalFilingStatuses = getFilingStatusesForTaxType('Federal', userCountry, 'Income')
+
+    const stateHasAll = stateFilingStatuses.includes('All')
+    const federalHasAll = federalFilingStatuses.includes('All')
+    const stateHasStatus = stateFilingStatuses.includes(csvFilingStatus) || stateHasAll || stateFilingStatuses.length === 0
+    const federalHasStatus = federalFilingStatuses.includes(csvFilingStatus) || federalHasAll
+
+    if (!stateHasStatus || !federalHasStatus) {
+      const scope = !stateHasStatus ? 'state' : 'federal'
+      const location = scope === 'state' ? userState : userCountry
+      const availableStatuses = scope === 'state' ? stateFilingStatuses : federalFilingStatuses
+      const fallback = deriveFallbackStatus(scope === 'state' ? 'state' : 'federal', location, csvFilingStatus) || availableStatuses[0] || null
+
+      setMissingFilingStatus({
+        status: profile.filingStatus || 'Single',
+        csvStatus: csvFilingStatus,
+        location,
+        country: userCountry,
+        availableStatuses: availableStatuses || [],
+        scope,
+        suggestedStatus: fallback,
+        suggestedLabel: fallback ? getFilingStatusLabel(fallback) : null
+      })
+      console.warn(`Filing status "${csvFilingStatus}" not available for ${location}`)
+    } else {
+      setMissingFilingStatus(null)
+    }
 
     // Auto-calculate taxes
     if (taxData.incomes.length > 0) {
@@ -64,10 +158,37 @@ function Taxes() {
       storage.save('taxes', taxData)
       setIsSaved(true)
 
-      // Calculate taxes for each income source
-      const taxCalculations = taxData.incomes.map(income =>
-        calculateTaxes(income.amount, income.incomeType, taxData.filingType, taxData.state)
-      )
+      const taxCalculations = taxData.incomes.map(income => {
+        const csvResult = calculateTaxesCSV(
+          income.amount,
+          income.incomeType,
+          taxData.filingStatus,
+          taxData.state,
+          currentYear,
+          userInflationRate
+        )
+        // Transform result to match legacy format for display
+        return {
+          income: csvResult.grossIncome,
+          stateTax: csvResult.stateTax.amount,
+          federalTax: csvResult.federalTax.amount,
+          fica: {
+            socialSecurity: csvResult.payrollTaxes.socialSecurity,
+            medicare: csvResult.payrollTaxes.medicare,
+            additionalMedicare: csvResult.payrollTaxes.additionalMedicare,
+            cpp: csvResult.payrollTaxes.cpp,
+            ei: csvResult.payrollTaxes.ei,
+            total: csvResult.payrollTaxes.total
+          },
+          totalTax: csvResult.totalTax,
+          effectiveRate: csvResult.effectiveRate,
+          stateTaxBreakdown: csvResult.stateTax.breakdown || [],
+          federalTaxBreakdown: csvResult.federalTax.breakdown || [],
+          actualStateFilingType: taxData.filingType,
+          actualFederalFilingType: taxData.filingType,
+          country: csvResult.country
+        }
+      })
 
       // Calculate totals
       const totals = {
@@ -87,14 +208,81 @@ function Taxes() {
       console.log('✅ Taxes auto-calculated')
       console.groupEnd()
     }
+
+    // Load filing status remapping for this state
+    const remapping = storage.load('filingStatusRemapping') || {}
+    const storedRemap = remapping[userState]?.[profile.filingStatus]
+    if (storedRemap && storedRemap !== csvFilingStatus) {
+      setFilingStatusRemap(storedRemap)
+    } else {
+      setFilingStatusRemap('')
+    }
   }, [])
+
+  // Handle filing status remapping change
+  const handleRemapChange = (targetStatus) => {
+    const normalizedTarget = targetStatus || ''
+    setFilingStatusRemap(normalizedTarget)
+
+    // Save to storage
+    const remapping = storage.load('filingStatusRemapping') || {}
+    const stateKey = data.state
+    const profileStatusKey = data.filingStatus || 'Single'
+
+    if (!remapping[stateKey]) {
+      remapping[stateKey] = {}
+    }
+
+    const currentCsvStatus = mapFilingStatusToCSV(profileStatusKey)
+
+    if (!normalizedTarget || normalizedTarget === currentCsvStatus) {
+      delete remapping[stateKey][profileStatusKey]
+      if (Object.keys(remapping[stateKey]).length === 0) {
+        delete remapping[stateKey]
+      }
+    } else {
+      remapping[stateKey][profileStatusKey] = normalizedTarget
+    }
+
+    storage.save('filingStatusRemapping', remapping)
+    console.log('📋 Saved filing status remapping:', remapping)
+
+    // Trigger recalculation by reloading
+    window.location.reload()
+  }
 
   if (!calculations) {
     return (
       <div className="max-w-6xl mx-auto p-8">
         <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-          <p className="text-gray-600">Loading tax calculations...</p>
+          <h1 className="text-2xl font-bold mb-4">Tax Summary</h1>
+          <p className="text-gray-600 mb-6">No income data found. Please add income in the Income section first.</p>
+
+          <div className="max-w-md mx-auto text-left border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium mb-3">Filing Status Review</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              Choose the brackets we should use if your filing status isn't supported in {data.state}.
+            </p>
+            <select
+              value={filingStatusRemap}
+              onChange={(e) => handleRemapChange(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            >
+              <option value="">Not remapped</option>
+              {remapOptions.map(status => (
+                <option key={status.value} value={status.value}>
+                  Use {status.label} brackets
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={() => navigate('/income')}
+            className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Go to Income →
+          </button>
         </div>
       </div>
     )
@@ -108,13 +296,17 @@ function Taxes() {
           <p className="text-gray-600">
             Filing as: <span className="font-medium">{data.filingType === 'married' ? 'Married Filing Jointly' : data.filingType === 'separate' ? 'Married Filing Separately' : data.filingType === 'head' ? 'Head of Household' : 'Single'}</span>
             {' • '}
-            <span className="font-medium">{data.state === 'california' ? 'California' : data.state}</span>
+            <span className="font-medium">{data.state} ({data.country})</span>
           </p>
-          <p className="text-sm text-gray-500 mt-1">
-            Auto-loaded from Personal Details and Income
-          </p>
+          <p className="text-sm text-gray-500 mt-1">Auto-loaded from Personal Details and Income</p>
         </div>
-        <div>
+        <div className="flex gap-2">
+          <Link
+            to="/custom-ladder"
+            className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 transition"
+          >
+            Custom Ladder
+          </Link>
           <button
             onClick={() => navigate('/tax-brackets')}
             className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
@@ -123,6 +315,36 @@ function Taxes() {
           </button>
         </div>
       </div>
+
+      {/* Filing Status Warning */}
+      {missingFilingStatus && !filingStatusRemap && (
+        <div className="mb-6 bg-amber-50 border border-amber-300 rounded-lg p-4">
+          <div className="flex items-start">
+            <span className="text-amber-600 text-xl mr-3">⚠️</span>
+            <div className="flex-1">
+              <p className="text-amber-900 font-medium mb-2">
+                "{missingFilingStatus.status}" isn't available for {missingFilingStatus.location}.
+              </p>
+              <p className="text-amber-800 text-sm mb-3">
+                We'll temporarily use {missingFilingStatus.suggestedLabel || 'the closest available'} brackets until you confirm your preference below.
+              </p>
+              {missingFilingStatus.suggestedStatus && (
+                <button
+                  onClick={() => handleRemapChange(missingFilingStatus.suggestedStatus)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-md transition"
+                >
+                  Accept & use {missingFilingStatus.suggestedLabel} brackets
+                </button>
+              )}
+              {missingFilingStatus.availableStatuses.length > 0 && (
+                <p className="mt-2 text-xs text-amber-700">
+                  Available filing statuses: {missingFilingStatus.availableStatuses.map(getFilingStatusLabel).join(', ')}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Save Status Banner */}
       {isSaved && (
@@ -135,6 +357,60 @@ function Taxes() {
         </div>
       )}
 
+      {/* Filing Status Review */}
+      <div className="mb-6 border border-gray-200 rounded-lg">
+        <button
+          type="button"
+          onClick={() => setShowReview(!showReview)}
+          className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+        >
+          <span className="font-medium">Filing Status Review</span>
+          <span className="text-xs">{showReview ? '▲' : '▼'}</span>
+        </button>
+
+        {showReview && (
+          <div className="px-4 pb-4 border-t border-gray-100">
+            <div className="mt-3">
+              <p className="text-sm text-gray-600 mb-3">
+                Confirm which brackets we should use if {data.filingStatus} isn't supported in {data.state}.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Your Filing Status
+                  </label>
+                  <div className="px-3 py-2 bg-gray-100 rounded text-sm">
+                    {data.filingStatus || formatFilingTypeLabel(data.filingType)}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Use Instead
+                  </label>
+                  <select
+                    value={filingStatusRemap}
+                    onChange={(e) => handleRemapChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                  >
+                    <option value="">Not remapped</option>
+                    {remapOptions.map(status => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {filingStatusRemap && (
+                <p className="mt-2 text-xs text-blue-600">
+                  Tax calculations will use {getFilingStatusLabel(filingStatusRemap)} brackets for {data.state}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Total Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <SummaryCard
@@ -143,16 +419,17 @@ function Taxes() {
         />
         <SummaryCard
           title="State Tax"
-          subtitle="California"
+          subtitle={data.state}
           value={`$${Math.round(calculations.totals.totalStateTax).toLocaleString()}`}
         />
         <SummaryCard
           title="Federal Tax"
+          subtitle={data.country}
           value={`$${Math.round(calculations.totals.totalFederalTax).toLocaleString()}`}
         />
         <SummaryCard
-          title="FICA Tax"
-          subtitle="Soc Sec + Medicare"
+          title={data.country === 'Canada' ? 'Payroll Tax' : 'FICA Tax'}
+          subtitle={data.country === 'Canada' ? 'CPP + EI' : 'Soc Sec + Medicare'}
           value={`$${Math.round(calculations.totals.totalFICA).toLocaleString()}`}
         />
         <SummaryCard
@@ -298,33 +575,55 @@ function Taxes() {
                   </div>
                 )}
 
-                {/* FICA Breakdown (Salary only) */}
+                {/* Payroll Tax Breakdown (Salary only) */}
                 {income.incomeType === 'salary' && calc.fica.total > 0 && (
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-700 mb-2">FICA Tax Breakdown</h4>
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">
+                      {calc.country === 'Canada' ? 'Canadian Payroll Tax Breakdown' : 'FICA Tax Breakdown'}
+                    </h4>
                     <div className="bg-gray-50 rounded-lg p-3">
                       <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-700">Social Security (6.2% up to $168,600):</span>
-                          <span className="font-medium">${Math.round(calc.fica.socialSecurity).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-700">Medicare (1.45%):</span>
-                          <span className="font-medium">${Math.round(calc.fica.medicare).toLocaleString()}</span>
-                        </div>
+                        {/* US FICA Taxes */}
+                        {calc.fica.socialSecurity > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-700">Social Security (6.2% up to $168,600):</span>
+                            <span className="font-medium">${Math.round(calc.fica.socialSecurity).toLocaleString()}</span>
+                          </div>
+                        )}
+                        {calc.fica.medicare > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-700">Medicare (1.45%):</span>
+                            <span className="font-medium">${Math.round(calc.fica.medicare).toLocaleString()}</span>
+                          </div>
+                        )}
                         {calc.fica.additionalMedicare > 0 && (
                           <div className="flex justify-between">
                             <span className="text-gray-700">Additional Medicare (0.9% over threshold):</span>
                             <span className="font-medium">${Math.round(calc.fica.additionalMedicare).toLocaleString()}</span>
                           </div>
                         )}
+                        {/* Canadian Payroll Taxes */}
+                        {calc.fica.cpp > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-700">CPP (Canada Pension Plan):</span>
+                            <span className="font-medium">${Math.round(calc.fica.cpp).toLocaleString()}</span>
+                          </div>
+                        )}
+                        {calc.fica.ei > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-700">EI (Employment Insurance):</span>
+                            <span className="font-medium">${Math.round(calc.fica.ei).toLocaleString()}</span>
+                          </div>
+                        )}
                         <div className="flex justify-between pt-2 border-t border-gray-200 font-semibold">
-                          <span>Total FICA:</span>
+                          <span>Total {calc.country === 'Canada' ? 'Payroll Tax' : 'FICA'}:</span>
                           <span>${Math.round(calc.fica.total).toLocaleString()}</span>
                         </div>
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
-                        Note: Your employer also pays matching FICA taxes
+                        {calc.country === 'Canada'
+                          ? 'Note: Your employer also pays matching CPP and 1.4x EI contributions'
+                          : 'Note: Your employer also pays matching FICA taxes'}
                       </p>
                     </div>
                   </div>

@@ -7,6 +7,7 @@ import Income from './features/income/Income'
 import Expenses from './features/expenses/Expenses'
 import Taxes from './features/taxes/Taxes'
 import TaxBracketManager from './features/taxes/TaxBracketManager'
+import CustomLadderEditor from './features/taxes/CustomLadderEditor'
 import InvestmentsDebt from './features/investments-debt/InvestmentsDebt'
 import Gap from './features/gap/Gap'
 import Scenarios from './features/scenarios/Scenarios'
@@ -26,6 +27,7 @@ function App() {
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/taxes" element={<Taxes />} />
           <Route path="/tax-brackets" element={<TaxBracketManager />} />
+          <Route path="/custom-ladder" element={<CustomLadderEditor />} />
           <Route path="/investments-debt" element={<InvestmentsDebt />} />
           <Route path="/gap" element={<Gap />} />
           <Route path="/scenarios/compare" element={<ScenarioCompare />} />
