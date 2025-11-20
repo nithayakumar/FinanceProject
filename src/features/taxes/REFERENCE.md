@@ -30,7 +30,7 @@ The primary export function that calculates all taxes.
 
 2. **incomeType** (string)
    - `'salary'`: W-2 wages, subject to FICA and ordinary income tax
-   - `'investment'`: Capital gains, subject to capital gains tax rates, no FICA
+   - `'investment'`: Capital gains (temporarily disabled until investment withdrawals are tracked)
 
 3. **filingType** (string)
    - `'single'`: Single filer
@@ -525,16 +525,7 @@ calculateTaxes(197000, 'salary', 'married', 'california', 'usa', 10, 2.7)
 ```
 
 ### Investment Income (Capital Gains)
-```javascript
-// $100k long-term capital gains, single filer
-calculateTaxes(100000, 'investment', 'single', 'california', 'usa', 1, 2.7)
-
-// Returns:
-// - California tax (same rates as ordinary income)
-// - Federal capital gains tax (preferential rates: 0%, 15%, 20%)
-// - No FICA
-// Lower total tax than equivalent salary income
-```
+> Temporarily disabled. `calculateTaxesCSV` skips capital gains until investment withdrawal flows are implemented.
 
 ### High Earner with Additional Medicare Tax
 ```javascript
@@ -585,3 +576,8 @@ Potential improvements for the Taxes module:
 6. **Alternative Minimum Tax (AMT)**: Parallel tax calculation
 7. **State Capital Gains**: Some states have preferential capital gains rates
 8. **Tax Credits**: Child tax credit, earned income credit, etc.
+
+## Temporary Limitations
+
+- **Capital Gains Tax Disabled**  
+  `csvTaxCalculator.js` has `APPLY_CAPITAL_GAINS = false` so investment income currently returns zero tax. Re-enable once investment withdrawals are modeled.
