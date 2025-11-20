@@ -17,7 +17,23 @@
  * - Draw from cash (no new investments)
  */
 
-import { calculateTaxes } from '../taxes/Taxes.calc'
+import { calculateTaxesCSV } from '../taxes/csvTaxCalculator'
+import { initializeTaxLadders } from '../taxes/csvTaxLadders'
+
+const STATE_ABBREVIATIONS = {
+  CA: 'California',
+  TX: 'Texas',
+  NY: 'New York',
+  FL: 'Florida',
+  WA: 'Washington'
+}
+
+const normalizeLocation = (value) => {
+  if (!value) return ''
+  const trimmed = String(value).trim()
+  const upper = trimmed.toUpperCase()
+  return STATE_ABBREVIATIONS[upper] || trimmed
+}
 
 /**
  * Helper function for 5 decimal place rounding
@@ -30,8 +46,14 @@ const round5 = (value) => Math.round(value * 100000) / 100000
 export function calculateGapProjections(incomeData, expensesData, investmentsData, profile) {
   console.group('📊 Calculating Gap Projections')
 
+  initializeTaxLadders()
+
   const yearsToRetirement = profile.yearsToRetirement || 30
   const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
+  const inflationRateDecimal = (Number(inflationRate) || 0) / 100
+  const profileLocation = normalizeLocation(profile.location || profile.state || 'California')
+  const filingStatus = profile.filingStatus || 'Single'
+  const startYear = new Date().getFullYear()
 
   console.log('Years to Retirement:', yearsToRetirement)
   console.log('Inflation Rate:', inflationRate + '%')
@@ -98,18 +120,26 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     // Tax brackets are now automatically inflated within calculateTaxes
     const taxableIncome = annualIncome - totalIndividual401k
 
-    const filingType = profile.filingStatus === 'Married Filing Jointly' ? 'married' :
-                       profile.filingStatus === 'Married Filing Separately' ? 'separate' :
-                       profile.filingStatus === 'Head of Household' ? 'head' : 'single'
-    const taxCalc = calculateTaxes(taxableIncome, 'salary', filingType, 'california', 'usa', year, inflationRate)
+    const taxYear = startYear + (year - 1)
+    const taxCalc = calculateTaxesCSV(
+      taxableIncome,
+      'salary',
+      filingStatus,
+      profileLocation,
+      taxYear,
+      inflationRateDecimal
+    )
     const annualTaxes = taxCalc.totalTax
 
     // Store tax breakdown for export
+    const payroll = taxCalc.payrollTaxes || {}
+    const socialSecurityTax = payroll.socialSecurity || payroll.cpp || 0
+    const medicareTax = (payroll.medicare || 0) + (payroll.additionalMedicare || 0) + (payroll.ei || 0)
     const taxBreakdown = {
-      federal: taxCalc.federalTax,
-      state: taxCalc.stateTax,
-      socialSecurity: taxCalc.fica.socialSecurity,
-      medicare: taxCalc.fica.medicare + taxCalc.fica.additionalMedicare
+      federal: taxCalc.federalTax?.amount || 0,
+      state: taxCalc.stateTax?.amount || 0,
+      socialSecurity: socialSecurityTax,
+      medicare: medicareTax
     }
 
     // Diagnostic logging for tax % changes
