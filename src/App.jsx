@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom'
 import Navigation from './shared/components/Navigation'
+import ShareLinkLoader from './shared/components/ShareLinkLoader'
 import Home from './features/Home'
 
 // Import feature routes
@@ -28,6 +29,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
+      <ShareLinkLoader />
       <main className="container mx-auto">
         <Routes>
           <Route path="/" element={<Home />} />

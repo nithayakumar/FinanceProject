@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../../core'
 import { validatePersonalDetails } from './PersonalDetails.calc'
+import { getAvailableStates, getCountryForState, initializeTaxLadders } from '../taxes/csvTaxLadders'
 
 function PersonalDetails() {
   const navigate = useNavigate()
   const [view, setView] = useState('input') // 'input' or 'output'
+  const [availableStates, setAvailableStates] = useState(['California'])
   const [data, setData] = useState({
     location: 'California',
+    country: 'USA',
     filingStatus: 'Single',
     age: '',
     retirementAge: '',
@@ -19,15 +22,43 @@ function PersonalDetails() {
   const [errors, setErrors] = useState({})
   const [isSaved, setIsSaved] = useState(false)
 
-  // Load saved data on mount
+  // Filing status options
+  const filingStatusOptions = [
+    'Single',
+    'Married Filing Jointly',
+    'Married Filing Separately',
+    'Head of Household'
+  ]
+
+  // Load saved data and available states on mount
   useEffect(() => {
+    // Initialize tax ladders and get available states
+    initializeTaxLadders()
+    const states = getAvailableStates()
+    setAvailableStates(states)
+
     const saved = storage.load('profile')
     if (saved) {
+      // Ensure country is set if not already
+      if (!saved.country && saved.location) {
+        saved.country = getCountryForState(saved.location) || 'USA'
+      }
       setData(saved)
       setIsSaved(true)
       console.log('📋 Loaded saved profile:', saved)
     }
   }, [])
+
+  // Update country when location changes
+  const handleLocationChange = (newLocation) => {
+    const country = getCountryForState(newLocation) || 'USA'
+    setData(prev => ({
+      ...prev,
+      location: newLocation,
+      country: country
+    }))
+    setIsSaved(false)
+  }
 
   const handleChange = (field, value) => {
     setData(prev => ({
@@ -144,10 +175,14 @@ function PersonalDetails() {
               </label>
               <select
                 value={data.location}
-                onChange={(e) => handleChange('location', e.target.value)}
+                onChange={(e) => handleLocationChange(e.target.value)}
                 className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="California">California</option>
+                {availableStates.map(state => (
+                  <option key={state} value={state}>
+                    {state} ({getCountryForState(state)})
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -160,10 +195,9 @@ function PersonalDetails() {
                 onChange={(e) => handleChange('filingStatus', e.target.value)}
                 className="w-full px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="Single">Single</option>
-                <option value="Married Filing Jointly">Married Filing Jointly</option>
-                <option value="Married Filing Separately">Married Filing Separately</option>
-                <option value="Head of Household">Head of Household</option>
+                {filingStatusOptions.map(status => (
+                  <option key={status} value={status}>{status}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -326,7 +360,7 @@ function PersonalDetails() {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
-        <SummaryRow label="Location" value={data.location} />
+        <SummaryRow label="Location" value={`${data.location} (${data.country || getCountryForState(data.location)})`} />
         <SummaryRow label="Filing Status" value={data.filingStatus} />
         <SummaryRow label="Age" value={data.age} />
         <SummaryRow label="Retirement Age" value={data.retirementAge} />

@@ -655,6 +655,7 @@ To change limits (e.g., max income streams from 3 to 5), edit ONE file only.
     - Tax pension as ordinary income
     - Tax Roth withdrawals at 0%
     - Tax investment withdrawals as capital gains
+  - Capital gains tax is currently disabled until we model withdrawals (see APPLY_CAPITAL_GAINS in csvTaxCalculator.js)
     - Handle RMDs (forced ordinary income)
   - Return detailed tax breakdown by source
 

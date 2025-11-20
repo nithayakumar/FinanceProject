@@ -1,16 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { storage } from '../../core'
-import {
-  INCOME_CONFIG,
-  EXPENSE_CONFIG,
-  INVESTMENTS_CONFIG,
-  createDefaultIncomeStream,
-  createDefaultExpenseCategories,
-  createDefaultInvestment
-} from '../../core'
-import Income from '../income/Income'
-import Expenses from '../expenses/Expenses'
+import { storage } from '../../shared/storage'
+import { getAvailableStates, getCountryForState, initializeTaxLadders } from '../taxes/csvTaxLadders'
 
 /**
  * ScenarioEditor - Comprehensive scenario editor with tabbed interface
@@ -29,7 +20,7 @@ function ScenarioEditor() {
   const [activeTab, setActiveTab] = useState('basic')
   const [hasChanges, setHasChanges] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
-  const [isNeverSaved, setIsNeverSaved] = useState(false)  // Track if user ever saved
+  const [availableStates, setAvailableStates] = useState(['California'])
 
   // Load scenario
   useEffect(() => {
@@ -38,12 +29,16 @@ function ScenarioEditor() {
 
     if (found) {
       setScenario(found)
-      // If modifiedAt equals createdAt, this is a newly created scenario that was never saved
-      setIsNeverSaved(found.modifiedAt === found.createdAt)
       console.log('📋 Loaded scenario for editing:', found)
     } else {
       alert('Scenario not found')
       navigate('/scenarios')
+    }
+
+    initializeTaxLadders()
+    const states = getAvailableStates()
+    if (states.length > 0) {
+      setAvailableStates(states)
     }
   }, [id, navigate])
 
@@ -68,19 +63,27 @@ function ScenarioEditor() {
     setHasChanges(true)
   }
 
+  const handleLocationChange = (newLocation) => {
+    if (!newLocation) {
+      handleDataChange('profile', { location: '', state: '', country: '' })
+      return
+    }
+    const country = getCountryForState(newLocation) || 'USA'
+    handleDataChange('profile', { location: newLocation, state: newLocation, country })
+  }
+
   // Save scenario
   const handleSave = () => {
     const scenarios = storage.load('scenarios') || []
-    const updated = scenarios.map(s =>
-      s.id === id
-        ? { ...scenario, modifiedAt: Date.now() }
-        : s
+    const updatedScenario = { ...scenario, isDraft: false, modifiedAt: Date.now() }
+    const updatedList = scenarios.map(s =>
+      s.id === id ? updatedScenario : s
     )
 
-    storage.save('scenarios', updated)
+    storage.save('scenarios', updatedList)
+    setScenario(updatedScenario)
     setHasChanges(false)
-    setIsNeverSaved(false)  // User has now saved at least once
-    console.log('💾 Saved scenario:', scenario)
+    console.log('💾 Saved scenario:', updatedScenario)
     alert('Scenario saved successfully!')
   }
 
@@ -90,19 +93,24 @@ function ScenarioEditor() {
     navigate('/scenarios')
   }
 
-  // Delete scenario if it was never saved
-  const deleteUnsavedScenario = () => {
-    if (isNeverSaved) {
+  // Request cancel
+  const discardDraftScenario = () => {
+    if (scenario?.isDraft) {
       const scenarios = storage.load('scenarios') || []
-      const updated = scenarios.filter(s => s.id !== id)
+      const updated = scenarios.filter(s => s.id !== scenario.id)
       storage.save('scenarios', updated)
-      console.log('🗑️ Deleted unsaved scenario:', id)
+      console.log('🗑️ Discarded draft scenario:', scenario.id)
     }
   }
 
-  // Request cancel
   const requestCancel = () => {
-    if (hasChanges || isNeverSaved) {
+    if (scenario?.isDraft && !hasChanges) {
+      discardDraftScenario()
+      navigate('/scenarios')
+      return
+    }
+
+    if (hasChanges) {
       setShowCancelConfirm(true)
     } else {
       navigate('/scenarios')
@@ -112,7 +120,11 @@ function ScenarioEditor() {
   // Execute cancel after confirmation
   const executeCancel = () => {
     setShowCancelConfirm(false)
-    deleteUnsavedScenario()  // Delete if never saved
+
+    if (scenario?.isDraft) {
+      discardDraftScenario()
+    }
+
     navigate('/scenarios')
   }
 
@@ -121,6 +133,10 @@ function ScenarioEditor() {
   }
 
   const data = scenario.data || {}
+  const profile = data.profile || {}
+  const currentLocation = profile.location || ''
+  const hasCustomLocation = currentLocation && !availableStates.includes(currentLocation)
+  const inferredCountry = profile.country || (currentLocation ? getCountryForState(currentLocation) : '')
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -193,31 +209,32 @@ function ScenarioEditor() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Location/City</label>
-                  <input
-                    type="text"
-                    value={data.profile?.location || ''}
-                    onChange={(e) => handleDataChange('profile', { location: e.target.value })}
+                  <label className="block text-sm font-medium mb-1">Location</label>
+                  <select
+                    value={currentLocation}
+                    onChange={(e) => handleLocationChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded"
-                    placeholder="e.g., San Francisco, Austin"
-                  />
+                  >
+                    <option value="">Select location...</option>
+                    {hasCustomLocation && (
+                      <option value={currentLocation}>{currentLocation}</option>
+                    )}
+                    {availableStates.map(state => (
+                      <option key={state} value={state}>
+                        {state} ({getCountryForState(state)})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">State</label>
-                  <select
-                    value={data.profile?.state || ''}
-                    onChange={(e) => handleDataChange('profile', { state: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded"
-                  >
-                    <option value="">Select state...</option>
-                    <option value="CA">California</option>
-                    <option value="TX">Texas</option>
-                    <option value="NY">New York</option>
-                    <option value="FL">Florida</option>
-                    <option value="WA">Washington</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">Note: Only CA taxes currently supported</p>
+                  <label className="block text-sm font-medium mb-1">Country</label>
+                  <input
+                    type="text"
+                    value={inferredCountry || ''}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
+                  />
                 </div>
 
                 <div>
@@ -300,22 +317,248 @@ function ScenarioEditor() {
 
           {/* Income Tab */}
           {activeTab === 'income' && (
-            <Income
-              embedded
-              value={data.income}
-              onChange={(newData) => handleDataChange('income', newData)}
-              profileData={data.profile}
-            />
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Income Streams</h3>
+                <button
+                  onClick={() => {
+                    const newStream = {
+                      id: `stream-${Date.now()}`,
+                      name: `Income Stream ${(data.income?.incomeStreams?.length || 0) + 1}`,
+                      annualIncome: 0,
+                      company401k: 0,
+                      individual401k: 0,
+                      equity: 0,
+                      growthRate: 2.7,
+                      endWorkYear: 30,
+                      jumps: []
+                    }
+                    const updated = [...(data.income?.incomeStreams || []), newStream]
+                    handleDataChange('income', { incomeStreams: updated })
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                >
+                  + Add Income Stream
+                </button>
+              </div>
+
+              {(!data.income?.incomeStreams || data.income.incomeStreams.length === 0) ? (
+                <div className="text-center py-8 text-gray-500">
+                  No income streams yet. Click "Add Income Stream" to create one.
+                </div>
+              ) : (
+                data.income.incomeStreams.map((stream, index) => (
+                  <div key={stream.id || index} className="mb-6 p-4 border border-gray-200 rounded relative">
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="flex-1">
+                        <label className="block text-sm font-medium mb-1">Stream Name</label>
+                        <input
+                          type="text"
+                          value={stream.name || ''}
+                          onChange={(e) => {
+                            const updated = [...(data.income?.incomeStreams || [])]
+                            updated[index] = { ...updated[index], name: e.target.value }
+                            handleDataChange('income', { incomeStreams: updated })
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded"
+                          placeholder={`Income Stream ${index + 1}`}
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (confirm('Delete this income stream?')) {
+                            const updated = data.income.incomeStreams.filter((_, i) => i !== index)
+                            handleDataChange('income', { incomeStreams: updated })
+                          }
+                        }}
+                        className="ml-3 mt-6 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Annual Salary ($)</label>
+                        <input
+                          type="number"
+                          value={stream.annualIncome || ''}
+                          onChange={(e) => {
+                            const updated = [...(data.income?.incomeStreams || [])]
+                            updated[index] = { ...updated[index], annualIncome: Number(e.target.value) }
+                            handleDataChange('income', { incomeStreams: updated })
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Equity ($)</label>
+                        <input
+                          type="number"
+                          value={stream.equity || 0}
+                          onChange={(e) => {
+                            const updated = [...(data.income?.incomeStreams || [])]
+                            updated[index] = { ...updated[index], equity: Number(e.target.value) }
+                            handleDataChange('income', { incomeStreams: updated })
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Growth Rate (%)</label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={stream.growthRate || 0}
+                          onChange={(e) => {
+                            const updated = [...(data.income?.incomeStreams || [])]
+                            updated[index] = { ...updated[index], growthRate: Number(e.target.value) }
+                            handleDataChange('income', { incomeStreams: updated })
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Individual 401k ($)</label>
+                        <input
+                          type="number"
+                          value={stream.individual401k || 0}
+                          onChange={(e) => {
+                            const updated = [...(data.income?.incomeStreams || [])]
+                            updated[index] = { ...updated[index], individual401k: Number(e.target.value) }
+                            handleDataChange('income', { incomeStreams: updated })
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Company 401k ($)</label>
+                        <input
+                          type="number"
+                          value={stream.company401k || 0}
+                          onChange={(e) => {
+                            const updated = [...(data.income?.incomeStreams || [])]
+                            updated[index] = { ...updated[index], company401k: Number(e.target.value) }
+                            handleDataChange('income', { incomeStreams: updated })
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">End Work Year</label>
+                        <input
+                          type="number"
+                          value={stream.endWorkYear || 30}
+                          onChange={(e) => {
+                            const updated = [...(data.income?.incomeStreams || [])]
+                            updated[index] = { ...updated[index], endWorkYear: Number(e.target.value) }
+                            handleDataChange('income', { incomeStreams: updated })
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+              <p className="text-xs text-gray-500 mt-2">
+                Tip: For advanced editing (jumps, multi-year changes), use the JSON tab
+              </p>
+            </div>
           )}
 
           {/* Expenses Tab */}
           {activeTab === 'expenses' && (
-            <Expenses
-              embedded
-              value={data.expenses}
-              onChange={(newData) => handleDataChange('expenses', newData)}
-              profileData={data.profile}
-            />
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Expense Categories</h3>
+                <button
+                  onClick={() => {
+                    const newCategory = {
+                      id: `expense-${Date.now()}`,
+                      category: `New Expense Category`,
+                      annualAmount: 0,
+                      growthRate: 2.7,
+                      jumps: []
+                    }
+                    const updated = [...(data.expenses?.expenseCategories || []), newCategory]
+                    handleDataChange('expenses', {
+                      expenseCategories: updated,
+                      oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                    })
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                >
+                  + Add Expense Category
+                </button>
+              </div>
+
+              {(!data.expenses?.expenseCategories || data.expenses.expenseCategories.length === 0) ? (
+                <div className="text-center py-8 text-gray-500">
+                  No expense categories yet. Click "Add Expense Category" to create one.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {data.expenses.expenseCategories.map((category, index) => (
+                    <div key={category.id || index} className="p-4 border border-gray-200 rounded">
+                      <div className="grid grid-cols-4 gap-4 items-end">
+                        <div className="col-span-2">
+                          <label className="block text-sm font-medium mb-1">Category Name</label>
+                          <input
+                            type="text"
+                            value={category.category || ''}
+                            onChange={(e) => {
+                              const updated = [...(data.expenses?.expenseCategories || [])]
+                              updated[index] = { ...updated[index], category: e.target.value }
+                              handleDataChange('expenses', {
+                                expenseCategories: updated,
+                                oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                              })
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded"
+                            placeholder="e.g., Housing, Food, Transportation"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Annual Amount ($)</label>
+                          <input
+                            type="number"
+                            value={category.annualAmount || ''}
+                            onChange={(e) => {
+                              const updated = [...(data.expenses?.expenseCategories || [])]
+                              updated[index] = { ...updated[index], annualAmount: Number(e.target.value) }
+                              handleDataChange('expenses', {
+                                expenseCategories: updated,
+                                oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                              })
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded"
+                          />
+                        </div>
+                        <div>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Delete "${category.category}" expense category?`)) {
+                                const updated = data.expenses.expenseCategories.filter((_, i) => i !== index)
+                                handleDataChange('expenses', {
+                                  expenseCategories: updated,
+                                  oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                                })
+                              }
+                            }}
+                            className="w-full px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs text-gray-500 mt-4">
+                Tip: For advanced expense editing (growth rate, jumps, one-time expenses), use the JSON tab
+              </p>
+            </div>
           )}
 
           {/* Investments Tab */}
@@ -407,23 +650,25 @@ function ScenarioEditor() {
 
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <h4 className="font-medium">Investment Accounts <span className="text-sm text-gray-500 font-normal">(max {INVESTMENTS_CONFIG.MAX_INVESTMENTS})</span></h4>
-                  {(data.investmentsDebt?.investments?.length || 0) < INVESTMENTS_CONFIG.MAX_INVESTMENTS && (
-                    <button
-                      onClick={() => {
-                        const currentInvestments = data.investmentsDebt?.investments || []
-                        const newInvestment = createDefaultInvestment(currentInvestments.length + 1, 0, 0)
-                        const updated = [...currentInvestments, newInvestment]
-                        handleDataChange('investmentsDebt', {
-                          ...data.investmentsDebt,
-                          investments: updated
-                        })
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                    >
-                      + Add Investment Account
-                    </button>
-                  )}
+                  <h4 className="font-medium">Investment Accounts</h4>
+                  <button
+                    onClick={() => {
+                      const newInvestment = {
+                        id: `investment-${Date.now()}`,
+                        currentValue: 0,
+                        costBasis: 0,
+                        growthRate: 7
+                      }
+                      const updated = [...(data.investmentsDebt?.investments || []), newInvestment]
+                      handleDataChange('investmentsDebt', {
+                        ...data.investmentsDebt,
+                        investments: updated
+                      })
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                  >
+                    + Add Investment Account
+                  </button>
                 </div>
 
                 {(!data.investmentsDebt?.investments || data.investmentsDebt.investments.length === 0) ? (
@@ -434,7 +679,7 @@ function ScenarioEditor() {
                   <div className="space-y-3">
                     {data.investmentsDebt.investments.map((investment, index) => (
                       <div key={investment.id || index} className="p-4 border border-gray-200 rounded">
-                        <div className="grid grid-cols-5 gap-4 items-end">
+                        <div className="grid grid-cols-4 gap-4 items-end">
                           <div>
                             <label className="block text-sm font-medium mb-1">Current Value ($)</label>
                             <input
@@ -448,7 +693,7 @@ function ScenarioEditor() {
                                   investments: updated
                                 })
                               }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                              className="w-full px-3 py-2 border border-gray-300 rounded"
                             />
                           </div>
                           <div>
@@ -464,7 +709,7 @@ function ScenarioEditor() {
                                   investments: updated
                                 })
                               }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+                              className="w-full px-3 py-2 border border-gray-300 rounded"
                             />
                           </div>
                           <div>
@@ -472,7 +717,7 @@ function ScenarioEditor() {
                             <input
                               type="number"
                               step="0.1"
-                              value={investment.growthRate || INVESTMENTS_CONFIG.DEFAULT_GROWTH_RATE}
+                              value={investment.growthRate || 7}
                               onChange={(e) => {
                                 const updated = [...(data.investmentsDebt?.investments || [])]
                                 updated[index] = { ...updated[index], growthRate: Number(e.target.value) }
@@ -481,25 +726,7 @@ function ScenarioEditor() {
                                   investments: updated
                                 })
                               }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Portfolio %</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={investment.portfolioPercent || 0}
-                              onChange={(e) => {
-                                const updated = [...(data.investmentsDebt?.investments || [])]
-                                updated[index] = { ...updated[index], portfolioPercent: Number(e.target.value) }
-                                handleDataChange('investmentsDebt', {
-                                  ...data.investmentsDebt,
-                                  investments: updated
-                                })
-                              }}
-                              className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-                              placeholder="33.33"
+                              className="w-full px-3 py-2 border border-gray-300 rounded"
                             />
                           </div>
                           <div>
@@ -591,19 +818,11 @@ function ScenarioEditor() {
       {showCancelConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
-            <h3 className="text-xl font-bold mb-4 text-amber-600">
-              {isNeverSaved ? 'Discard New Scenario?' : 'Unsaved Changes'}
-            </h3>
+            <h3 className="text-xl font-bold mb-4 text-amber-600">Unsaved Changes</h3>
             <p className="text-gray-700 mb-6">
-              {isNeverSaved
-                ? 'This scenario has never been saved. Are you sure you want to discard it?'
-                : 'You have unsaved changes. Are you sure you want to leave without saving?'
-              }
+              You have unsaved changes. Are you sure you want to leave without saving?
               <br /><br />
-              {isNeverSaved
-                ? 'The scenario will be permanently deleted.'
-                : 'Your changes will be lost.'
-              }
+              Your changes will be lost.
             </p>
             <div className="flex gap-3 justify-end">
               <button

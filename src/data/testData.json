@@ -1,0 +1,11 @@
+{
+  "profile": null,
+  "income": null,
+  "expenses": null,
+  "investmentsDebt": null,
+  "taxes": null,
+  "taxLadders": null,
+  "scenarios": [],
+  "filingStatusRemapping": null,
+  "customTaxLadder": null
+}

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capture localStorage</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    pre {
+      background: #f3f4f6;
+      padding: 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+    .success {
+      color: #059669;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Capture Current localStorage Data</h1>
+  <p>This helper will export your current Finance Project data to save as test data.</p>
+
+  <button onclick="captureData()">Capture localStorage</button>
+
+  <div id="output"></div>
+
+  <script>
+    function captureData() {
+      // Get all the keys used by the Finance Project
+      const keys = ['profile', 'income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'scenarios', 'filingStatusRemapping', 'customTaxLadder'];
+
+      const data = {};
+      keys.forEach(key => {
+        const value = localStorage.getItem(key);
+        if (value) {
+          try {
+            data[key] = JSON.parse(value);
+          } catch (e) {
+            console.error(`Error parsing ${key}:`, e);
+          }
+        }
+      });
+
+      const jsonString = JSON.stringify(data, null, 2);
+
+      // Create download
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'testData.json';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      // Show preview
+      const output = document.getElementById('output');
+      output.innerHTML = `
+        <p class="success">✅ Downloaded testData.json</p>
+        <p>Preview:</p>
+        <pre>${jsonString}</pre>
+      `;
+    }
+  </script>
+</body>
+</html>

@@ -80,6 +80,7 @@ function ScenarioManager() {
       description: 'Clone of your current financial plan',
       createdAt: Date.now(),
       modifiedAt: Date.now(),
+      isDraft: true,
       data: {
         profile: { ...current.profile },
         income: JSON.parse(JSON.stringify(current.income)), // Deep copy
@@ -104,9 +105,12 @@ function ScenarioManager() {
       description: '',
       createdAt: Date.now(),
       modifiedAt: Date.now(),
+      isDraft: true,
       data: {
         profile: {
-          location: '',
+          location: 'California',
+          state: 'California',
+          country: 'USA',
           filingStatus: 'Single',
           age: 30,
           retirementAge: 65,

@@ -55,7 +55,9 @@ export const storage = {
       investmentsDebt: this.load('investmentsDebt'),
       taxes: this.load('taxes'),
       taxLadders: this.load('taxLadders'),
-      scenarios: this.load('scenarios') || []
+      scenarios: this.load('scenarios') || [],
+      filingStatusRemapping: this.load('filingStatusRemapping'),
+      customTaxLadder: this.load('customTaxLadder')
     }
   },
 
@@ -76,7 +78,7 @@ export const storage = {
    * Clear all app data from localStorage
    */
   clearAll() {
-    const keys = ['profile', 'income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'scenarios']
+    const keys = ['profile', 'income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'scenarios', 'filingStatusRemapping', 'customTaxLadder']
     keys.forEach(key => localStorage.removeItem(key))
     console.log('✅ All data cleared')
   }
