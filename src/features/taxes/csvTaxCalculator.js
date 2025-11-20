@@ -12,6 +12,9 @@ import {
 } from './csvTaxLadders';
 import { storage } from '../../shared/storage';
 
+// Temporary flag to disable capital gains taxation until investment flows are wired up
+const APPLY_CAPITAL_GAINS = false;
+
 // Helper to get data from storage
 const getData = (key) => storage.load(key);
 
@@ -273,9 +276,14 @@ export function calculateTaxesCSV(income, incomeType, filingStatus, state, year,
     );
   } else {
     // Use CSV data
-    if (incomeType === 'investment') {
+    if (incomeType === 'investment' && APPLY_CAPITAL_GAINS) {
       stateTax = calculateStateCapitalGainsTax(income, state, remappedFilingStatus, inflationMultiplier);
       federalTax = calculateFederalCapitalGainsTax(income, country, remappedFilingStatus, inflationMultiplier);
+      payrollTaxes = { socialSecurity: 0, medicare: 0, additionalMedicare: 0, cpp: 0, ei: 0, total: 0 };
+    } else if (incomeType === 'investment') {
+      // Capital gains taxes temporarily disabled
+      stateTax = { tax: 0, breakdown: [], effectiveRate: 0, notAvailable: true };
+      federalTax = { tax: 0, breakdown: [], effectiveRate: 0, notAvailable: true };
       payrollTaxes = { socialSecurity: 0, medicare: 0, additionalMedicare: 0, cpp: 0, ei: 0, total: 0 };
     } else {
       stateTax = calculateStateIncomeTax(income, state, remappedFilingStatus, inflationMultiplier);
