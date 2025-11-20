@@ -10,7 +10,7 @@ import {
   getCountryForState,
   mapFilingStatusToCSV
 } from './csvTaxLadders';
-import { storage } from '../../shared/storage';
+import { storage } from "../../core/storage";
 
 // Temporary flag to disable capital gains taxation until investment flows are wired up
 const APPLY_CAPITAL_GAINS = false;

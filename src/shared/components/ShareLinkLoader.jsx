@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from 'react'
 import { hasSharedState, loadStateFromURL, clearShareHash } from '../shareLink'
-import { storage } from '../storage'
+import { storage } from '../../core/storage'
 import ConfirmModal from './ConfirmModal'
 
 function ShareLinkLoader() {

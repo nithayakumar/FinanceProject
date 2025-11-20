@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { storage } from '../../shared/storage'
+import { storage } from "../../core/storage"
 import { calculateTaxesCSV } from './csvTaxCalculator'
 import {
   initializeTaxLadders,

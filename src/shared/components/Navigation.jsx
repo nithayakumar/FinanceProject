@@ -4,7 +4,7 @@ import { generateShareLink, copyToClipboard } from '../shareLink'
 import { exportAsJSON, triggerJSONImport } from '../jsonExport'
 import { clearAllData } from '../devTools'
 import { generateCSVExport, downloadCSV, generateFilename } from '../../features/export/CSVExporter'
-import { storage } from '../storage'
+import { storage } from '../../core/storage'
 import ConfirmModal from './ConfirmModal'
 
 function Navigation() {

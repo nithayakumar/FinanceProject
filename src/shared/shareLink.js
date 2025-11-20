@@ -4,7 +4,7 @@
  */
 
 import LZString from 'lz-string'
-import { storage } from './storage'
+import { storage } from '../core/storage'
 
 /**
  * Generate a shareable link with compressed state in URL hash

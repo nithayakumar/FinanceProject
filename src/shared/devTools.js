@@ -3,7 +3,7 @@
  * Provides testing helpers like clearing data
  */
 
-import { storage } from './storage'
+import { storage } from '../core/storage'
 
 /**
  * Clear all application data from localStorage

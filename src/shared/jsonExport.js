@@ -3,7 +3,7 @@
  * Handles downloading and uploading app data as JSON files
  */
 
-import { storage } from './storage'
+import { storage } from '../core/storage'
 
 /**
  * Export all data as JSON file download
