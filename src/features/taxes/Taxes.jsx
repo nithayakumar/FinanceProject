@@ -7,6 +7,7 @@ import {
   getCountryForState,
   getFilingStatusesForTaxType,
   mapFilingStatusToCSV,
+  mapFilingStatusFromCSV,
   getStateTaxLadder,
   getFederalTaxLadder
 } from './csvTaxLadders'
@@ -41,7 +42,8 @@ const deriveFallbackStatus = (scope, location, csvStatus) => {
     : getFederalTaxLadder(location, 'Income', csvStatus)
 
   if (ladder && ladder.filingStatus && ladder.filingStatus !== csvStatus) {
-    return ladder.filingStatus
+    // Convert CSV format to user-friendly format before returning
+    return mapFilingStatusFromCSV(ladder.filingStatus)
   }
   return null
 }
@@ -133,7 +135,11 @@ function Taxes() {
       const scope = !stateHasStatus ? 'state' : 'federal'
       const location = scope === 'state' ? userState : userCountry
       const availableStatuses = scope === 'state' ? stateFilingStatuses : federalFilingStatuses
-      const fallback = deriveFallbackStatus(scope === 'state' ? 'state' : 'federal', location, csvFilingStatus) || availableStatuses[0] || null
+      // Convert CSV format fallback to user-friendly format
+      const csvFallback = deriveFallbackStatus(scope === 'state' ? 'state' : 'federal', location, csvFilingStatus)
+        || availableStatuses[0]
+        || null
+      const fallback = csvFallback ? (typeof csvFallback === 'string' && csvFallback.includes('_') ? mapFilingStatusFromCSV(csvFallback) : csvFallback) : null
 
       setMissingFilingStatus({
         status: profile.filingStatus || 'Single',
@@ -213,7 +219,9 @@ function Taxes() {
     const remapping = storage.load('filingStatusRemapping') || {}
     const storedRemap = remapping[userState]?.[profile.filingStatus]
     if (storedRemap && storedRemap !== csvFilingStatus) {
-      setFilingStatusRemap(storedRemap)
+      // Convert CSV format to user-friendly format if needed (for backwards compatibility)
+      const userFriendlyRemap = storedRemap.includes('_') ? mapFilingStatusFromCSV(storedRemap) : storedRemap
+      setFilingStatusRemap(userFriendlyRemap)
     } else {
       setFilingStatusRemap('')
     }
