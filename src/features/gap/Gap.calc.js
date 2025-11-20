@@ -163,6 +163,20 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     let cashContribution = 0
     const investmentAllocations = {}
 
+    // Equity compensation goes directly to investments (before gap allocation)
+    if (annualEquity > 0 && investments.length > 0 && totalAllocation > 0) {
+      investments.forEach((inv, index) => {
+        const equityToInvest = annualEquity * (inv.portfolioPercent / totalAllocation)
+        inv.costBasis += equityToInvest
+        investedThisYear += equityToInvest
+        investmentAllocations[`investment${index + 1}`] = (investmentAllocations[`investment${index + 1}`] || 0) + equityToInvest
+      })
+    } else if (annualEquity > 0 && investments.length === 0) {
+      // No investments defined - equity goes to cash
+      cash += annualEquity
+      cashContribution += annualEquity
+    }
+
     if (gap > 0) {
       // Positive gap - allocate funds
       let remainingGap = gap
@@ -361,6 +375,14 @@ function calculateSummary(projections, yearsToRetirement) {
   const lifetimeInvested = projections.reduce((sum, p) => sum + p.investedThisYear, 0)
   const lifetimeInvestedPV = projections.reduce((sum, p) => sum + p.investedThisYearPV, 0)
 
+  // Lifetime equity and 401k contributions
+  const lifetimeEquity = projections.reduce((sum, p) => sum + p.annualEquity, 0)
+  const lifetimeEquityPV = projections.reduce((sum, p) => sum + p.annualEquityPV, 0)
+  const lifetimeIndividual401k = projections.reduce((sum, p) => sum + p.totalIndividual401k, 0)
+  const lifetimeIndividual401kPV = projections.reduce((sum, p) => sum + p.totalIndividual401kPV, 0)
+  const lifetimeCompany401k = projections.reduce((sum, p) => sum + p.annualCompany401k, 0)
+  const lifetimeCompany401kPV = projections.reduce((sum, p) => sum + p.annualCompany401kPV, 0)
+
   // Net worth growth
   const netWorthGrowth = retirementYear.netWorth - currentYear.netWorth
   const netWorthGrowthPercent = currentYear.netWorth > 0
@@ -385,12 +407,20 @@ function calculateSummary(projections, yearsToRetirement) {
     retirementNetWorthPV: retirementYear.netWorthPV,
     retirementCash: retirementYear.cash,
     retirementCashPV: retirementYear.cashPV,
+    retirement401k: retirementYear.retirement401kValue,
+    retirement401kPV: retirementYear.retirement401kValuePV,
 
     // Lifetime
     lifetimeGap,
     lifetimeGapPV,
     lifetimeInvested,
     lifetimeInvestedPV,
+    lifetimeEquity,
+    lifetimeEquityPV,
+    lifetimeIndividual401k,
+    lifetimeIndividual401kPV,
+    lifetimeCompany401k,
+    lifetimeCompany401kPV,
 
     // Growth
     netWorthGrowth,
