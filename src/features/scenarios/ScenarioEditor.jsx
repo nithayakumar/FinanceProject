@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { storage } from '../../shared/storage'
+import { getAvailableStates, getCountryForState, initializeTaxLadders } from '../taxes/csvTaxLadders'
 
 /**
  * ScenarioEditor - Comprehensive scenario editor with tabbed interface
@@ -19,6 +20,7 @@ function ScenarioEditor() {
   const [activeTab, setActiveTab] = useState('basic')
   const [hasChanges, setHasChanges] = useState(false)
   const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [availableStates, setAvailableStates] = useState(['California'])
 
   // Load scenario
   useEffect(() => {
@@ -31,6 +33,12 @@ function ScenarioEditor() {
     } else {
       alert('Scenario not found')
       navigate('/scenarios')
+    }
+
+    initializeTaxLadders()
+    const states = getAvailableStates()
+    if (states.length > 0) {
+      setAvailableStates(states)
     }
   }, [id, navigate])
 
@@ -55,18 +63,27 @@ function ScenarioEditor() {
     setHasChanges(true)
   }
 
+  const handleLocationChange = (newLocation) => {
+    if (!newLocation) {
+      handleDataChange('profile', { location: '', state: '', country: '' })
+      return
+    }
+    const country = getCountryForState(newLocation) || 'USA'
+    handleDataChange('profile', { location: newLocation, state: newLocation, country })
+  }
+
   // Save scenario
   const handleSave = () => {
     const scenarios = storage.load('scenarios') || []
-    const updated = scenarios.map(s =>
-      s.id === id
-        ? { ...scenario, modifiedAt: Date.now() }
-        : s
+    const updatedScenario = { ...scenario, isDraft: false, modifiedAt: Date.now() }
+    const updatedList = scenarios.map(s =>
+      s.id === id ? updatedScenario : s
     )
 
-    storage.save('scenarios', updated)
+    storage.save('scenarios', updatedList)
+    setScenario(updatedScenario)
     setHasChanges(false)
-    console.log('💾 Saved scenario:', scenario)
+    console.log('💾 Saved scenario:', updatedScenario)
     alert('Scenario saved successfully!')
   }
 
@@ -77,7 +94,22 @@ function ScenarioEditor() {
   }
 
   // Request cancel
+  const discardDraftScenario = () => {
+    if (scenario?.isDraft) {
+      const scenarios = storage.load('scenarios') || []
+      const updated = scenarios.filter(s => s.id !== scenario.id)
+      storage.save('scenarios', updated)
+      console.log('🗑️ Discarded draft scenario:', scenario.id)
+    }
+  }
+
   const requestCancel = () => {
+    if (scenario?.isDraft && !hasChanges) {
+      discardDraftScenario()
+      navigate('/scenarios')
+      return
+    }
+
     if (hasChanges) {
       setShowCancelConfirm(true)
     } else {
@@ -88,6 +120,11 @@ function ScenarioEditor() {
   // Execute cancel after confirmation
   const executeCancel = () => {
     setShowCancelConfirm(false)
+
+    if (scenario?.isDraft) {
+      discardDraftScenario()
+    }
+
     navigate('/scenarios')
   }
 
@@ -96,6 +133,10 @@ function ScenarioEditor() {
   }
 
   const data = scenario.data || {}
+  const profile = data.profile || {}
+  const currentLocation = profile.location || ''
+  const hasCustomLocation = currentLocation && !availableStates.includes(currentLocation)
+  const inferredCountry = profile.country || (currentLocation ? getCountryForState(currentLocation) : '')
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -168,31 +209,32 @@ function ScenarioEditor() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Location/City</label>
-                  <input
-                    type="text"
-                    value={data.profile?.location || ''}
-                    onChange={(e) => handleDataChange('profile', { location: e.target.value })}
+                  <label className="block text-sm font-medium mb-1">Location</label>
+                  <select
+                    value={currentLocation}
+                    onChange={(e) => handleLocationChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded"
-                    placeholder="e.g., San Francisco, Austin"
-                  />
+                  >
+                    <option value="">Select location...</option>
+                    {hasCustomLocation && (
+                      <option value={currentLocation}>{currentLocation}</option>
+                    )}
+                    {availableStates.map(state => (
+                      <option key={state} value={state}>
+                        {state} ({getCountryForState(state)})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">State</label>
-                  <select
-                    value={data.profile?.state || ''}
-                    onChange={(e) => handleDataChange('profile', { state: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded"
-                  >
-                    <option value="">Select state...</option>
-                    <option value="CA">California</option>
-                    <option value="TX">Texas</option>
-                    <option value="NY">New York</option>
-                    <option value="FL">Florida</option>
-                    <option value="WA">Washington</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">Note: Only CA taxes currently supported</p>
+                  <label className="block text-sm font-medium mb-1">Country</label>
+                  <input
+                    type="text"
+                    value={inferredCountry || ''}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
+                  />
                 </div>
 
                 <div>
