@@ -148,6 +148,58 @@ function Income({ value, onChange, embedded = false, profileData }) {
     }))
   }
 
+  // Career Break Management Functions
+  const addCareerBreak = (streamId) => {
+    const newBreak = {
+      id: `break-${Date.now()}`,
+      startYear: '',
+      durationMonths: '',
+      reductionPercent: 100,  // Default to 100% (full layoff)
+      description: ''
+    }
+
+    setData(prev => ({
+      ...prev,
+      incomeStreams: prev.incomeStreams.map(stream =>
+        stream.id === streamId
+          ? { ...stream, careerBreaks: [...(stream.careerBreaks || []), newBreak] }
+          : stream
+      )
+    }))
+  }
+
+  const handleCareerBreakChange = (streamId, breakId, field, value) => {
+    setData(prev => ({
+      ...prev,
+      incomeStreams: prev.incomeStreams.map(stream =>
+        stream.id === streamId
+          ? {
+              ...stream,
+              careerBreaks: (stream.careerBreaks || []).map(breakItem =>
+                breakItem.id === breakId
+                  ? { ...breakItem, [field]: value }
+                  : breakItem
+              )
+            }
+          : stream
+      )
+    }))
+  }
+
+  const removeCareerBreak = (streamId, breakId) => {
+    setData(prev => ({
+      ...prev,
+      incomeStreams: prev.incomeStreams.map(stream =>
+        stream.id === streamId
+          ? {
+              ...stream,
+              careerBreaks: (stream.careerBreaks || []).filter(b => b.id !== breakId)
+            }
+          : stream
+      )
+    }))
+  }
+
   const handleContinue = () => {
     console.group('💾 Saving Income')
     console.log('Data:', data)
@@ -429,6 +481,134 @@ function Income({ value, onChange, embedded = false, profileData }) {
                       </div>
                     ) : (
                       <p className="text-xs text-gray-500 italic">No jumps added yet</p>
+                    )}
+                  </div>
+
+                  {/* Career Breaks for this stream */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between items-center mb-3">
+                      <div>
+                        <h3 className="text-xs font-semibold text-purple-700 uppercase">Career Breaks</h3>
+                        <p className="text-[10px] text-gray-500 mt-0.5">Temporary reductions: layoffs, sabbaticals, parental leave</p>
+                      </div>
+                      <button
+                        onClick={() => addCareerBreak(stream.id)}
+                        className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 font-medium"
+                      >
+                        + Add Career Break
+                      </button>
+                    </div>
+
+                    {stream.careerBreaks && stream.careerBreaks.length > 0 ? (
+                      <div className="space-y-3">
+                        {stream.careerBreaks.map((breakItem) => (
+                          <div key={breakItem.id} className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                            {/* Description */}
+                            <div className="mb-2">
+                              <label className="block text-xs font-medium text-gray-700 mb-1">
+                                Description
+                              </label>
+                              <input
+                                type="text"
+                                value={breakItem.description}
+                                onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'description', e.target.value)}
+                                placeholder="e.g., Parental Leave, Sabbatical, Layoff"
+                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-purple-500"
+                              />
+                            </div>
+
+                            {/* Start Year, Duration, Reduction % */}
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Start Year
+                                </label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={breakItem.startYear}
+                                  onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'startYear', e.target.value ? Number(e.target.value) : '')}
+                                  placeholder="5"
+                                  className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:border-purple-500 ${
+                                    errors[`${stream.id}-break-${breakItem.id}-startYear`] ? 'border-red-500' : 'border-gray-300'
+                                  }`}
+                                />
+                                {errors[`${stream.id}-break-${breakItem.id}-startYear`] && (
+                                  <p className="text-xs text-red-600 mt-1">{errors[`${stream.id}-break-${breakItem.id}-startYear`]}</p>
+                                )}
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Duration (months)
+                                </label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  step="1"
+                                  value={breakItem.durationMonths}
+                                  onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'durationMonths', e.target.value ? Number(e.target.value) : '')}
+                                  placeholder="18"
+                                  className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:border-purple-500 ${
+                                    errors[`${stream.id}-break-${breakItem.id}-durationMonths`] ? 'border-red-500' : 'border-gray-300'
+                                  }`}
+                                />
+                                {errors[`${stream.id}-break-${breakItem.id}-durationMonths`] && (
+                                  <p className="text-xs text-red-600 mt-1">{errors[`${stream.id}-break-${breakItem.id}-durationMonths`]}</p>
+                                )}
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Reduction %
+                                  <span className="ml-1 text-gray-500">(0-100)</span>
+                                </label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="1"
+                                  value={breakItem.reductionPercent}
+                                  onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'reductionPercent', e.target.value ? Number(e.target.value) : '')}
+                                  placeholder="100"
+                                  className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:border-purple-500 ${
+                                    errors[`${stream.id}-break-${breakItem.id}-reductionPercent`] ? 'border-red-500' : 'border-gray-300'
+                                  }`}
+                                />
+                                {errors[`${stream.id}-break-${breakItem.id}-reductionPercent`] && (
+                                  <p className="text-xs text-red-600 mt-1">{errors[`${stream.id}-break-${breakItem.id}-reductionPercent`]}</p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Duration Helper Text and Remove Button */}
+                            <div className="mt-2 flex items-center justify-between">
+                              <p className="text-[10px] text-gray-600">
+                                {breakItem.durationMonths && breakItem.startYear ? (
+                                  <>
+                                    From <strong>Jan Year {breakItem.startYear}</strong> for{' '}
+                                    <strong>{breakItem.durationMonths} months</strong>{' '}
+                                    ({(breakItem.durationMonths / 12).toFixed(2)} years)
+                                  </>
+                                ) : (
+                                  'Fill in values to see timeline'
+                                )}
+                              </p>
+
+                              <button
+                                onClick={() => removeCareerBreak(stream.id, breakItem.id)}
+                                className="text-xs px-2 py-1 bg-white border border-red-300 text-red-600 rounded hover:bg-red-50"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500 italic">
+                        No career breaks added yet. Add one to model layoffs, sabbaticals, or parental leave.
+                      </p>
                     )}
                   </div>
                 </div>

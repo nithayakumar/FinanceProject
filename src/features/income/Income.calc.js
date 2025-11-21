@@ -48,6 +48,40 @@ export function validateIncome(data, yearsToRetirement) {
     } else if (stream.endWorkYear > yearsToRetirement) {
       errors[`${stream.id}-endWorkYear`] = `Cannot exceed retirement year (${yearsToRetirement})`
     }
+
+    // Career Breaks Validation
+    if (stream.careerBreaks && stream.careerBreaks.length > 0) {
+      stream.careerBreaks.forEach((breakItem, breakIndex) => {
+        const breakId = breakItem.id || breakIndex
+
+        // Start year must be valid
+        if (!breakItem.startYear || breakItem.startYear < 1) {
+          errors[`${stream.id}-break-${breakId}-startYear`] = 'Start year must be 1 or greater'
+        } else if (breakItem.startYear > yearsToRetirement) {
+          errors[`${stream.id}-break-${breakId}-startYear`] = `Start year cannot exceed retirement year (${yearsToRetirement})`
+        }
+
+        // Duration must be at least 1 month
+        if (!breakItem.durationMonths || breakItem.durationMonths < 1) {
+          errors[`${stream.id}-break-${breakId}-durationMonths`] = 'Duration must be at least 1 month'
+        }
+
+        // Reduction must be 0-100%
+        if (breakItem.reductionPercent === '' || breakItem.reductionPercent === undefined) {
+          errors[`${stream.id}-break-${breakId}-reductionPercent`] = 'Reduction percent is required'
+        } else if (breakItem.reductionPercent < 0 || breakItem.reductionPercent > 100) {
+          errors[`${stream.id}-break-${breakId}-reductionPercent`] = 'Reduction must be between 0% and 100%'
+        }
+
+        // Optional: Warn if break extends past retirement
+        if (breakItem.startYear && breakItem.durationMonths) {
+          const breakEndYear = breakItem.startYear + Math.ceil(breakItem.durationMonths / 12)
+          if (breakEndYear > yearsToRetirement) {
+            errors[`${stream.id}-break-${breakId}-duration`] = `Career break extends past retirement (ends Year ${breakEndYear}, retirement Year ${yearsToRetirement})`
+          }
+        }
+      })
+    }
   })
 
   console.log('Errors found:', Object.keys(errors).length)
@@ -83,6 +117,8 @@ export function calculateIncomeProjections(data, profile) {
   data.incomeStreams.forEach(stream => {
     streamMultipliers[stream.id] = 1.0
   })
+
+  // No need to track career break reductions separately - calculated per month
 
   // Generate 1,200 monthly rows
   for (let monthIndex = 0; monthIndex < 1200; monthIndex++) {
@@ -120,9 +156,30 @@ export function calculateIncomeProjections(data, profile) {
         const growthMultiplier = Math.pow(1 + stream.growthRate / 100, yearsOfGrowth)
         const jumpMultiplier = streamMultipliers[stream.id]
 
-        const annualSalary = stream.annualIncome * growthMultiplier * jumpMultiplier
-        const annualEquity = stream.equity * growthMultiplier * jumpMultiplier
-        const annual401k = stream.company401k * growthMultiplier * jumpMultiplier
+        // Calculate career break reduction for THIS SPECIFIC MONTH
+        let activeBreakReduction = 0  // 0-100%
+
+        if (stream.careerBreaks && stream.careerBreaks.length > 0) {
+          stream.careerBreaks.forEach(breakItem => {
+            // Career breaks start in January of startYear
+            const breakStartMonthIndex = (breakItem.startYear - 1) * 12  // 0-indexed month
+            const breakEndMonthIndex = breakStartMonthIndex + breakItem.durationMonths - 1
+
+            if (monthIndex >= breakStartMonthIndex && monthIndex <= breakEndMonthIndex) {
+              // This break is active this month
+              // If multiple breaks overlap, use the maximum reduction
+              activeBreakReduction = Math.max(activeBreakReduction, breakItem.reductionPercent || 0)
+            }
+          })
+        }
+
+        // Calculate reduction multiplier (0% reduction = 1.0, 100% reduction = 0.0)
+        const careerBreakMultiplier = 1 - (activeBreakReduction / 100)
+
+        // Apply growth, jumps, AND career break reduction together
+        const annualSalary = stream.annualIncome * growthMultiplier * jumpMultiplier * careerBreakMultiplier
+        const annualEquity = stream.equity * growthMultiplier * jumpMultiplier * careerBreakMultiplier
+        const annual401k = stream.company401k * growthMultiplier * jumpMultiplier * careerBreakMultiplier
 
         // Convert to monthly
         salaryNominal += annualSalary / 12
@@ -243,9 +300,26 @@ function prepareChartData(projections, incomeStreams, yearsToRetirement, inflati
               })
           }
 
-          const annualSalary = stream.annualIncome * growthMultiplier * jumpMultiplier
-          const annualEquity = stream.equity * growthMultiplier * jumpMultiplier
-          const annual401k = stream.company401k * growthMultiplier * jumpMultiplier
+          // Calculate career break reduction for this month (if any)
+          // Note: This is a simplified calculation for chart data
+          // The actual monthly projections already have career breaks applied correctly
+          let careerBreakMultiplier = 1.0
+          if (stream.careerBreaks && stream.careerBreaks.length > 0) {
+            stream.careerBreaks.forEach(breakItem => {
+              const breakStartYear = breakItem.startYear
+              const breakEndYear = breakItem.startYear + Math.ceil(breakItem.durationMonths / 12)
+
+              if (year >= breakStartYear && year < breakEndYear) {
+                // This break affects this year - use average reduction
+                const reductionPercent = breakItem.reductionPercent || 0
+                careerBreakMultiplier = Math.min(careerBreakMultiplier, 1 - (reductionPercent / 100))
+              }
+            })
+          }
+
+          const annualSalary = stream.annualIncome * growthMultiplier * jumpMultiplier * careerBreakMultiplier
+          const annualEquity = stream.equity * growthMultiplier * jumpMultiplier * careerBreakMultiplier
+          const annual401k = stream.company401k * growthMultiplier * jumpMultiplier * careerBreakMultiplier
           const annualTotal = annualSalary + annualEquity + annual401k
           const monthlyTotal = annualTotal / 12
 

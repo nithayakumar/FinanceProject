@@ -67,7 +67,8 @@ export function createDefaultIncomeStream(index = 1, yearsToRetirement = 30, inf
     equity: '',
     growthRate: inflationRate,
     endWorkYear: yearsToRetirement,
-    jumps: []
+    jumps: [],
+    careerBreaks: []
   }
 }
 

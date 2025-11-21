@@ -457,12 +457,195 @@ function ScenarioEditor() {
                         />
                       </div>
                     </div>
+
+                    {/* Collapsible: Income Jumps */}
+                    <details className="mt-3 border-t pt-3">
+                      <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-blue-600">
+                        Income Jumps ({stream.jumps?.length || 0})
+                      </summary>
+                      <div className="mt-3 space-y-2">
+                        {stream.jumps && stream.jumps.length > 0 ? (
+                          stream.jumps.map((jump, jumpIndex) => (
+                            <div key={jump.id || jumpIndex} className="bg-gray-50 rounded p-2">
+                              <input
+                                type="text"
+                                value={jump.description || ''}
+                                onChange={(e) => {
+                                  const updated = [...(data.income?.incomeStreams || [])]
+                                  updated[index].jumps[jumpIndex] = { ...jump, description: e.target.value }
+                                  handleDataChange('income', { incomeStreams: updated })
+                                }}
+                                placeholder="e.g., Promotion"
+                                className="w-full text-xs mb-2 px-2 py-1 border border-gray-300 rounded"
+                              />
+                              <div className="grid grid-cols-3 gap-2">
+                                <div>
+                                  <label className="block text-xs mb-1">Year</label>
+                                  <input
+                                    type="number"
+                                    value={jump.year || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(data.income?.incomeStreams || [])]
+                                      updated[index].jumps[jumpIndex] = { ...jump, year: Number(e.target.value) }
+                                      handleDataChange('income', { incomeStreams: updated })
+                                    }}
+                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs mb-1">Jump %</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    value={jump.jumpPercent || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(data.income?.incomeStreams || [])]
+                                      updated[index].jumps[jumpIndex] = { ...jump, jumpPercent: Number(e.target.value) }
+                                      handleDataChange('income', { incomeStreams: updated })
+                                    }}
+                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                  />
+                                </div>
+                                <div className="flex items-end">
+                                  <button
+                                    onClick={() => {
+                                      const updated = [...(data.income?.incomeStreams || [])]
+                                      updated[index].jumps = updated[index].jumps.filter((_, i) => i !== jumpIndex)
+                                      handleDataChange('income', { incomeStreams: updated })
+                                    }}
+                                    className="w-full px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs text-gray-500 italic">No jumps added yet</p>
+                        )}
+                        <button
+                          onClick={() => {
+                            const updated = [...(data.income?.incomeStreams || [])]
+                            updated[index].jumps = [...(updated[index].jumps || []), {
+                              id: `jump-${Date.now()}`,
+                              year: '',
+                              jumpPercent: '',
+                              description: ''
+                            }]
+                            handleDataChange('income', { incomeStreams: updated })
+                          }}
+                          className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          + Add Jump
+                        </button>
+                      </div>
+                    </details>
+
+                    {/* Collapsible: Career Breaks */}
+                    <details className="mt-3 border-t pt-3">
+                      <summary className="cursor-pointer text-sm font-medium text-purple-700 hover:text-purple-800">
+                        Career Breaks ({stream.careerBreaks?.length || 0})
+                      </summary>
+                      <div className="mt-3 space-y-2">
+                        {stream.careerBreaks && stream.careerBreaks.length > 0 ? (
+                          stream.careerBreaks.map((breakItem, breakIndex) => (
+                            <div key={breakItem.id || breakIndex} className="bg-purple-50 border border-purple-200 rounded p-2">
+                              <input
+                                type="text"
+                                value={breakItem.description || ''}
+                                onChange={(e) => {
+                                  const updated = [...(data.income?.incomeStreams || [])]
+                                  updated[index].careerBreaks[breakIndex] = { ...breakItem, description: e.target.value }
+                                  handleDataChange('income', { incomeStreams: updated })
+                                }}
+                                placeholder="e.g., Parental Leave, Sabbatical"
+                                className="w-full text-xs mb-2 px-2 py-1 border border-gray-300 rounded"
+                              />
+                              <div className="grid grid-cols-4 gap-2">
+                                <div>
+                                  <label className="block text-xs mb-1">Start Year</label>
+                                  <input
+                                    type="number"
+                                    value={breakItem.startYear || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(data.income?.incomeStreams || [])]
+                                      updated[index].careerBreaks[breakIndex] = { ...breakItem, startYear: Number(e.target.value) }
+                                      handleDataChange('income', { incomeStreams: updated })
+                                    }}
+                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs mb-1">Duration (mo)</label>
+                                  <input
+                                    type="number"
+                                    value={breakItem.durationMonths || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(data.income?.incomeStreams || [])]
+                                      updated[index].careerBreaks[breakIndex] = { ...breakItem, durationMonths: Number(e.target.value) }
+                                      handleDataChange('income', { incomeStreams: updated })
+                                    }}
+                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs mb-1">Reduction %</label>
+                                  <input
+                                    type="number"
+                                    value={breakItem.reductionPercent || ''}
+                                    onChange={(e) => {
+                                      const updated = [...(data.income?.incomeStreams || [])]
+                                      updated[index].careerBreaks[breakIndex] = { ...breakItem, reductionPercent: Number(e.target.value) }
+                                      handleDataChange('income', { incomeStreams: updated })
+                                    }}
+                                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                  />
+                                </div>
+                                <div className="flex items-end">
+                                  <button
+                                    onClick={() => {
+                                      const updated = [...(data.income?.incomeStreams || [])]
+                                      updated[index].careerBreaks = updated[index].careerBreaks.filter((_, i) => i !== breakIndex)
+                                      handleDataChange('income', { incomeStreams: updated })
+                                    }}
+                                    className="w-full px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </div>
+                              {breakItem.durationMonths && breakItem.startYear && (
+                                <p className="text-[10px] text-gray-600 mt-1">
+                                  From Jan Year {breakItem.startYear} for {breakItem.durationMonths} months ({(breakItem.durationMonths / 12).toFixed(2)} years)
+                                </p>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs text-gray-500 italic">No career breaks added yet</p>
+                        )}
+                        <button
+                          onClick={() => {
+                            const updated = [...(data.income?.incomeStreams || [])]
+                            updated[index].careerBreaks = [...(updated[index].careerBreaks || []), {
+                              id: `break-${Date.now()}`,
+                              startYear: '',
+                              durationMonths: '',
+                              reductionPercent: 100,
+                              description: ''
+                            }]
+                            handleDataChange('income', { incomeStreams: updated })
+                          }}
+                          className="text-xs px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700"
+                        >
+                          + Add Career Break
+                        </button>
+                      </div>
+                    </details>
                   </div>
                 ))
               )}
-              <p className="text-xs text-gray-500 mt-2">
-                Tip: For advanced editing (jumps, multi-year changes), use the JSON tab
-              </p>
             </div>
           )}
 
@@ -500,64 +683,340 @@ function ScenarioEditor() {
                 <div className="space-y-4">
                   {data.expenses.expenseCategories.map((category, index) => (
                     <div key={category.id || index} className="p-4 border border-gray-200 rounded">
-                      <div className="grid grid-cols-4 gap-4 items-end">
-                        <div className="col-span-2">
-                          <label className="block text-sm font-medium mb-1">Category Name</label>
-                          <input
-                            type="text"
-                            value={category.category || ''}
+                      {/* Category Name */}
+                      <div className="mb-3">
+                        <label className="block text-sm font-medium mb-1">Category Name</label>
+                        <input
+                          type="text"
+                          value={category.category || ''}
+                          onChange={(e) => {
+                            const updated = [...(data.expenses?.expenseCategories || [])]
+                            updated[index] = { ...updated[index], category: e.target.value }
+                            handleDataChange('expenses', {
+                              expenseCategories: updated,
+                              oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                            })
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded"
+                          placeholder="e.g., Housing, Food, Transportation"
+                        />
+                      </div>
+
+                      {/* Amount Type, Amount/Percent, Growth Rate */}
+                      <div className="grid grid-cols-3 gap-4 mb-3">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Amount Type</label>
+                          <select
+                            value={category.amountType || 'dollar'}
                             onChange={(e) => {
                               const updated = [...(data.expenses?.expenseCategories || [])]
-                              updated[index] = { ...updated[index], category: e.target.value }
+                              updated[index] = { ...updated[index], amountType: e.target.value }
                               handleDataChange('expenses', {
                                 expenseCategories: updated,
                                 oneTimeExpenses: data.expenses?.oneTimeExpenses || []
                               })
                             }}
                             className="w-full px-3 py-2 border border-gray-300 rounded"
-                            placeholder="e.g., Housing, Food, Transportation"
-                          />
+                          >
+                            <option value="dollar">$ Fixed Amount</option>
+                            <option value="percentOfIncome">% of Gross Income</option>
+                          </select>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Annual Amount ($)</label>
-                          <input
-                            type="number"
-                            value={category.annualAmount || ''}
-                            onChange={(e) => {
-                              const updated = [...(data.expenses?.expenseCategories || [])]
-                              updated[index] = { ...updated[index], annualAmount: Number(e.target.value) }
-                              handleDataChange('expenses', {
-                                expenseCategories: updated,
-                                oneTimeExpenses: data.expenses?.oneTimeExpenses || []
-                              })
-                            }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded"
-                          />
-                        </div>
-                        <div>
-                          <button
-                            onClick={() => {
-                              if (confirm(`Delete "${category.category}" expense category?`)) {
-                                const updated = data.expenses.expenseCategories.filter((_, i) => i !== index)
+
+                        {category.amountType === 'percentOfIncome' ? (
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Percent of Income</label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={category.percentOfIncome || ''}
+                              onChange={(e) => {
+                                const updated = [...(data.expenses?.expenseCategories || [])]
+                                updated[index] = { ...updated[index], percentOfIncome: Number(e.target.value) }
                                 handleDataChange('expenses', {
                                   expenseCategories: updated,
                                   oneTimeExpenses: data.expenses?.oneTimeExpenses || []
                                 })
-                              }
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded"
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Annual Amount ($)</label>
+                            <input
+                              type="number"
+                              value={category.annualAmount || ''}
+                              onChange={(e) => {
+                                const updated = [...(data.expenses?.expenseCategories || [])]
+                                updated[index] = { ...updated[index], annualAmount: Number(e.target.value) }
+                                handleDataChange('expenses', {
+                                  expenseCategories: updated,
+                                  oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                                })
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded"
+                            />
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Growth Rate (%)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={category.growthRate || ''}
+                            onChange={(e) => {
+                              const updated = [...(data.expenses?.expenseCategories || [])]
+                              updated[index] = { ...updated[index], growthRate: Number(e.target.value) }
+                              handleDataChange('expenses', {
+                                expenseCategories: updated,
+                                oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                              })
                             }}
-                            className="w-full px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-                          >
-                            Delete
-                          </button>
+                            className="w-full px-3 py-2 border border-gray-300 rounded"
+                          />
                         </div>
                       </div>
+
+                      {/* Collapsible: Expense Changes (Jumps) */}
+                      <details className="mt-3 border-t pt-3">
+                        <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-blue-600">
+                          Expense Changes ({category.jumps?.length || 0})
+                        </summary>
+                        <div className="mt-3 space-y-2">
+                          {category.jumps && category.jumps.length > 0 ? (
+                            category.jumps.map((jump, jumpIndex) => (
+                              <div key={jump.id || jumpIndex} className="bg-gray-50 rounded p-2">
+                                <input
+                                  type="text"
+                                  value={jump.description || ''}
+                                  onChange={(e) => {
+                                    const updated = [...(data.expenses?.expenseCategories || [])]
+                                    updated[index].jumps[jumpIndex] = { ...jump, description: e.target.value }
+                                    handleDataChange('expenses', {
+                                      expenseCategories: updated,
+                                      oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                                    })
+                                  }}
+                                  placeholder="e.g., Move to cheaper area"
+                                  className="w-full text-xs mb-2 px-2 py-1 border border-gray-300 rounded"
+                                />
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div>
+                                    <label className="block text-xs mb-1">Year</label>
+                                    <input
+                                      type="number"
+                                      value={jump.year || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(data.expenses?.expenseCategories || [])]
+                                        updated[index].jumps[jumpIndex] = { ...jump, year: Number(e.target.value) }
+                                        handleDataChange('expenses', {
+                                          expenseCategories: updated,
+                                          oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                                        })
+                                      }}
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs mb-1">Type</label>
+                                    <select
+                                      value={jump.changeType || 'percent'}
+                                      onChange={(e) => {
+                                        const updated = [...(data.expenses?.expenseCategories || [])]
+                                        updated[index].jumps[jumpIndex] = { ...jump, changeType: e.target.value }
+                                        handleDataChange('expenses', {
+                                          expenseCategories: updated,
+                                          oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                                        })
+                                      }}
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    >
+                                      <option value="percent">%</option>
+                                      <option value="dollar">$</option>
+                                      <option value="setAmountPV">Set $ (PV)</option>
+                                      <option value="percentOfIncome">% of income</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs mb-1">Value</label>
+                                    <input
+                                      type="number"
+                                      step={jump.changeType === 'dollar' ? '1' : '0.1'}
+                                      value={jump.changeValue || ''}
+                                      onChange={(e) => {
+                                        const updated = [...(data.expenses?.expenseCategories || [])]
+                                        updated[index].jumps[jumpIndex] = { ...jump, changeValue: Number(e.target.value) }
+                                        handleDataChange('expenses', {
+                                          expenseCategories: updated,
+                                          oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                                        })
+                                      }}
+                                      className="w-full px-2 py-1 text-xs border border-gray-300 rounded"
+                                    />
+                                  </div>
+                                  <div className="flex items-end">
+                                    <button
+                                      onClick={() => {
+                                        const updated = [...(data.expenses?.expenseCategories || [])]
+                                        updated[index].jumps = updated[index].jumps.filter((_, i) => i !== jumpIndex)
+                                        handleDataChange('expenses', {
+                                          expenseCategories: updated,
+                                          oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                                        })
+                                      }}
+                                      className="w-full px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-xs text-gray-500 italic">No expense changes added yet</p>
+                          )}
+                          <button
+                            onClick={() => {
+                              const updated = [...(data.expenses?.expenseCategories || [])]
+                              updated[index].jumps = [...(updated[index].jumps || []), {
+                                id: `jump-${Date.now()}`,
+                                year: '',
+                                changeType: 'percent',
+                                changeValue: '',
+                                description: ''
+                              }]
+                              handleDataChange('expenses', {
+                                expenseCategories: updated,
+                                oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                              })
+                            }}
+                            className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                          >
+                            + Add Expense Change
+                          </button>
+                        </div>
+                      </details>
+
+                      {/* Delete Button */}
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete "${category.category}" expense category?`)) {
+                            const updated = data.expenses.expenseCategories.filter((_, i) => i !== index)
+                            handleDataChange('expenses', {
+                              expenseCategories: updated,
+                              oneTimeExpenses: data.expenses?.oneTimeExpenses || []
+                            })
+                          }
+                        }}
+                        className="mt-3 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                      >
+                        Delete Category
+                      </button>
                     </div>
                   ))}
                 </div>
               )}
-              <p className="text-xs text-gray-500 mt-4">
-                Tip: For advanced expense editing (growth rate, jumps, one-time expenses), use the JSON tab
-              </p>
+
+              {/* One-Time Expenses Section */}
+              <details className="mt-6 border-t pt-4">
+                <summary className="cursor-pointer text-lg font-semibold text-gray-700 hover:text-blue-600">
+                  One-Time Expenses ({data.expenses?.oneTimeExpenses?.length || 0})
+                </summary>
+                <div className="mt-4 space-y-3">
+                  {data.expenses?.oneTimeExpenses && data.expenses.oneTimeExpenses.length > 0 ? (
+                    data.expenses.oneTimeExpenses.map((expense, expIndex) => (
+                      <div key={expense.id || expIndex} className="bg-orange-50 border border-orange-200 rounded p-3">
+                        <div className="grid grid-cols-4 gap-3">
+                          <div>
+                            <label className="block text-xs mb-1">Description</label>
+                            <input
+                              type="text"
+                              value={expense.description || ''}
+                              onChange={(e) => {
+                                const updated = [...(data.expenses?.oneTimeExpenses || [])]
+                                updated[expIndex] = { ...updated[expIndex], description: e.target.value }
+                                handleDataChange('expenses', {
+                                  expenseCategories: data.expenses?.expenseCategories || [],
+                                  oneTimeExpenses: updated
+                                })
+                              }}
+                              placeholder="e.g., Car purchase"
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs mb-1">Year</label>
+                            <input
+                              type="number"
+                              value={expense.year || ''}
+                              onChange={(e) => {
+                                const updated = [...(data.expenses?.oneTimeExpenses || [])]
+                                updated[expIndex] = { ...updated[expIndex], year: Number(e.target.value) }
+                                handleDataChange('expenses', {
+                                  expenseCategories: data.expenses?.expenseCategories || [],
+                                  oneTimeExpenses: updated
+                                })
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs mb-1">Amount ($)</label>
+                            <input
+                              type="number"
+                              value={expense.amount || ''}
+                              onChange={(e) => {
+                                const updated = [...(data.expenses?.oneTimeExpenses || [])]
+                                updated[expIndex] = { ...updated[expIndex], amount: Number(e.target.value) }
+                                handleDataChange('expenses', {
+                                  expenseCategories: data.expenses?.expenseCategories || [],
+                                  oneTimeExpenses: updated
+                                })
+                              }}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            <button
+                              onClick={() => {
+                                const updated = data.expenses.oneTimeExpenses.filter((_, i) => i !== expIndex)
+                                handleDataChange('expenses', {
+                                  expenseCategories: data.expenses?.expenseCategories || [],
+                                  oneTimeExpenses: updated
+                                })
+                              }}
+                              className="w-full px-2 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-500 italic">No one-time expenses added yet</p>
+                  )}
+                  <button
+                    onClick={() => {
+                      const updated = [...(data.expenses?.oneTimeExpenses || []), {
+                        id: `onetime-${Date.now()}`,
+                        description: '',
+                        year: '',
+                        amount: ''
+                      }]
+                      handleDataChange('expenses', {
+                        expenseCategories: data.expenses?.expenseCategories || [],
+                        oneTimeExpenses: updated
+                      })
+                    }}
+                    className="text-sm px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+                  >
+                    + Add One-Time Expense
+                  </button>
+                </div>
+              </details>
             </div>
           )}
 
