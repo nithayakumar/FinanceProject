@@ -196,7 +196,10 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
       } else if (amountType === 'percentOfIncome') {
         baseAnnual = grossMonthlyIncome * 12 * (effectivePercentOfIncome / 100)
       } else {
-        baseAnnual = (category.annualAmount || 0) * growthMultiplier
+        // Dollar-based: if annualAmount is empty/falsy, treat as $0
+        // User must explicitly set dollar amounts or switch to percentOfIncome
+        const annualAmount = category.annualAmount || 0
+        baseAnnual = annualAmount * growthMultiplier
       }
 
       // Apply dollar adjustments first, then percentage changes to the whole
