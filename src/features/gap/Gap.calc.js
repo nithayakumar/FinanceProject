@@ -103,6 +103,15 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       annualCompany401k += (monthProjection.company401kNominal || 0)
     }
 
+    // Debug logging for first 5 years
+    if (year <= 5) {
+      console.log(`Year ${year} annual values (summed from 12 months):`, {
+        annualIncome,
+        annualEquity,
+        annualCompany401k
+      })
+    }
+
     // Calculate total individual 401k contribution across all streams
     // Note: 401k contributions can be made during career breaks using savings/debt
     const totalIndividual401k = incomeData.incomeStreams.reduce((sum, stream) => {
