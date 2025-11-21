@@ -104,7 +104,43 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
         // Apply growth to 401k contribution
         const yearsOfGrowth = year - 1
         const growthMultiplier = Math.pow(1 + stream.growthRate / 100, yearsOfGrowth)
-        return sum + ((Number(stream.individual401k) || 0) * growthMultiplier)
+
+        // Calculate career break reduction for this year
+        // Need to determine what fraction of the year this stream is NOT on break
+        let workingMonthsInYear = 12
+
+        if (stream.careerBreaks && stream.careerBreaks.length > 0) {
+          // Count how many months this year are affected by career breaks
+          let breakMonthsInYear = 0
+
+          stream.careerBreaks.forEach(breakItem => {
+            // Career breaks start in January (month 0 of startYear)
+            const breakStartMonth = (breakItem.startYear - 1) * 12  // 0-indexed
+            const breakEndMonth = breakStartMonth + breakItem.durationMonths - 1
+
+            // This year spans months: (year-1)*12 to year*12-1
+            const yearStartMonth = (year - 1) * 12
+            const yearEndMonth = year * 12 - 1
+
+            // Find overlap between break period and this year
+            const overlapStart = Math.max(breakStartMonth, yearStartMonth)
+            const overlapEnd = Math.min(breakEndMonth, yearEndMonth)
+
+            if (overlapStart <= overlapEnd) {
+              // There's overlap - count the months
+              const monthsAffected = overlapEnd - overlapStart + 1
+              // Apply the reduction percentage
+              const reductionPercent = breakItem.reductionPercent || 0
+              breakMonthsInYear += monthsAffected * (reductionPercent / 100)
+            }
+          })
+
+          workingMonthsInYear = 12 - breakMonthsInYear
+        }
+
+        // Prorate individual 401k based on working months
+        const workingFraction = workingMonthsInYear / 12
+        return sum + ((Number(stream.individual401k) || 0) * growthMultiplier * workingFraction)
       }
       return sum
     }, 0)

@@ -277,20 +277,14 @@ function prepareChartData(projections, incomeStreams, yearsToRetirement, inflati
     incomeStreams.forEach(stream => {
       let streamAnnualPV = 0
 
-      yearMonths.forEach(monthProj => {
+      yearMonths.forEach((monthProj, monthIndex) => {
         // Check if this stream was active this month
         if (monthProj.activeStreams.includes(stream.id)) {
-          // We need to recalculate this stream's contribution
-          // We can use the ratio of streams from the total
-          const totalPV = monthProj.totalCompPV
-
-          // For now, we'll calculate the stream's PV by recalculating
-          // This is a simplified approach - we could optimize later
+          // Calculate this stream's contribution for this specific month
           const yearsOfGrowth = year - 1
           const growthMultiplier = Math.pow(1 + stream.growthRate / 100, yearsOfGrowth)
 
-          // Get jump multiplier (we need to track this per stream)
-          // For simplicity, we'll recalculate jumps
+          // Get jump multiplier (recalculate jumps up to this year)
           let jumpMultiplier = 1.0
           if (stream.jumps && stream.jumps.length > 0) {
             stream.jumps
@@ -300,22 +294,26 @@ function prepareChartData(projections, incomeStreams, yearsToRetirement, inflati
               })
           }
 
-          // Calculate career break reduction for this month (if any)
-          // Note: This is a simplified calculation for chart data
-          // The actual monthly projections already have career breaks applied correctly
-          let careerBreakMultiplier = 1.0
+          // Calculate career break reduction for THIS SPECIFIC MONTH
+          // This month's index in the full 1200-month array
+          const absoluteMonthIndex = (year - 1) * 12 + monthIndex
+          let activeBreakReduction = 0  // 0-100%
+
           if (stream.careerBreaks && stream.careerBreaks.length > 0) {
             stream.careerBreaks.forEach(breakItem => {
-              const breakStartYear = breakItem.startYear
-              const breakEndYear = breakItem.startYear + Math.ceil(breakItem.durationMonths / 12)
+              // Career breaks start in January of startYear
+              const breakStartMonthIndex = (breakItem.startYear - 1) * 12  // 0-indexed month
+              const breakEndMonthIndex = breakStartMonthIndex + breakItem.durationMonths - 1
 
-              if (year >= breakStartYear && year < breakEndYear) {
-                // This break affects this year - use average reduction
-                const reductionPercent = breakItem.reductionPercent || 0
-                careerBreakMultiplier = Math.min(careerBreakMultiplier, 1 - (reductionPercent / 100))
+              if (absoluteMonthIndex >= breakStartMonthIndex && absoluteMonthIndex <= breakEndMonthIndex) {
+                // This break is active this month
+                activeBreakReduction = Math.max(activeBreakReduction, breakItem.reductionPercent || 0)
               }
             })
           }
+
+          // Calculate reduction multiplier (0% reduction = 1.0, 100% reduction = 0.0)
+          const careerBreakMultiplier = 1 - (activeBreakReduction / 100)
 
           const annualSalary = stream.annualIncome * growthMultiplier * jumpMultiplier * careerBreakMultiplier
           const annualEquity = stream.equity * growthMultiplier * jumpMultiplier * careerBreakMultiplier
