@@ -155,27 +155,14 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     }
 
     // Calculate gap = disposable income after all deductions (available for cash/investments)
-    // Gap includes all income sources and flows through allocation logic
+    // Gap includes all income sources (salary + equity + company 401k) minus deductions
+    // Equity compensation is TAXED as ordinary income, then flows through gap allocation
     const gap = annualIncome - totalIndividual401k - annualTaxes - annualExpenses
 
     // Track investments and cash changes this year
     let investedThisYear = 0
     let cashContribution = 0
     const investmentAllocations = {}
-
-    // Equity compensation goes directly to investments (before gap allocation)
-    if (annualEquity > 0 && investments.length > 0 && totalAllocation > 0) {
-      investments.forEach((inv, index) => {
-        const equityToInvest = annualEquity * (inv.portfolioPercent / totalAllocation)
-        inv.costBasis += equityToInvest
-        investedThisYear += equityToInvest
-        investmentAllocations[`investment${index + 1}`] = (investmentAllocations[`investment${index + 1}`] || 0) + equityToInvest
-      })
-    } else if (annualEquity > 0 && investments.length === 0) {
-      // No investments defined - equity goes to cash
-      cash += annualEquity
-      cashContribution += annualEquity
-    }
 
     if (gap > 0) {
       // Positive gap - allocate funds
@@ -375,9 +362,8 @@ function calculateSummary(projections, yearsToRetirement) {
   const lifetimeInvested = projections.reduce((sum, p) => sum + p.investedThisYear, 0)
   const lifetimeInvestedPV = projections.reduce((sum, p) => sum + p.investedThisYearPV, 0)
 
-  // Lifetime equity and 401k contributions
-  const lifetimeEquity = projections.reduce((sum, p) => sum + p.annualEquity, 0)
-  const lifetimeEquityPV = projections.reduce((sum, p) => sum + p.annualEquityPV, 0)
+  // Lifetime 401k contributions
+  // Note: Equity is now included in gap (taxed as ordinary income), not tracked separately
   const lifetimeIndividual401k = projections.reduce((sum, p) => sum + p.totalIndividual401k, 0)
   const lifetimeIndividual401kPV = projections.reduce((sum, p) => sum + p.totalIndividual401kPV, 0)
   const lifetimeCompany401k = projections.reduce((sum, p) => sum + p.annualCompany401k, 0)
@@ -415,8 +401,6 @@ function calculateSummary(projections, yearsToRetirement) {
     lifetimeGapPV,
     lifetimeInvested,
     lifetimeInvestedPV,
-    lifetimeEquity,
-    lifetimeEquityPV,
     lifetimeIndividual401k,
     lifetimeIndividual401kPV,
     lifetimeCompany401k,

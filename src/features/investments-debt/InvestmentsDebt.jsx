@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../../core'
-import { validateInvestments, calculateInvestmentProjections } from './InvestmentsDebt.calc'
+import { validateInvestments } from './InvestmentsDebt.calc'
+import { calculateGapProjections } from '../gap/Gap.calc'
+import { calculateIncomeProjections } from '../income/Income.calc'
+import { calculateExpenseProjections } from '../expenses/Expenses.calc'
 import {
   BarChart,
   Bar,
@@ -186,11 +189,52 @@ function InvestmentsDebt() {
     })
 
     // Get years to retirement from profile
-    const yearsToRetirement = profile.yearsToRetirement || 30
+    const yearsToRetirement = profile.retirementAge - profile.age
 
-    // Calculate projections
-    const calculatedProjections = calculateInvestmentProjections(data, yearsToRetirement, profile)
-    setProjections(calculatedProjections)
+    // Calculate full pipeline (same as Dashboard) to get realistic projections
+    const incomeData = storage.load('income')
+    const expensesData = storage.load('expenses')
+
+    if (!incomeData || !expensesData) {
+      console.error('Missing income or expenses data. Please complete those sections first.')
+      alert('Please complete the Income and Expenses sections before calculating investment projections.')
+      console.groupEnd()
+      return
+    }
+
+    const enrichedProfile = {
+      ...profile,
+      yearsToRetirement
+    }
+
+    // Step 1: Calculate income projections
+    const incomeProjections = calculateIncomeProjections(incomeData, enrichedProfile)
+
+    // Step 2: Calculate expense projections
+    const expenseProjections = calculateExpenseProjections(
+      expensesData,
+      enrichedProfile,
+      incomeProjections.projections
+    )
+
+    // Step 3: Calculate gap projections (includes investment growth + contributions)
+    const incomeWithProjections = {
+      ...incomeData,
+      projections: incomeProjections.projections
+    }
+    const expensesWithProjections = {
+      ...expensesData,
+      projections: expenseProjections.projections
+    }
+
+    const gapProjections = calculateGapProjections(
+      incomeWithProjections,
+      expensesWithProjections,
+      data, // investmentsData
+      enrichedProfile
+    )
+
+    setProjections(gapProjections)
 
     // Switch to output view
     setView('output')
@@ -550,9 +594,32 @@ function InvestmentsDebt() {
     return <div className="p-8">Loading projections...</div>
   }
 
-  const { summary } = projections
   const profile = storage.load('profile') || {}
-  const yearsToRetirement = profile.yearsToRetirement || 30
+  const yearsToRetirement = profile.retirementAge - profile.age
+
+  // Transform gap projections to chart data format
+  const chartData = projections.projections.map(p => {
+    const chartPoint = {
+      year: p.year,
+      cash: p.cash,
+      retirement401k: p.retirement401kValue
+    }
+
+    // Add individual investments
+    p.investments.forEach((inv, idx) => {
+      chartPoint[`investment${idx + 1}`] = inv.marketValue
+    })
+
+    return chartPoint
+  })
+
+  // Create summary from gap projections
+  const summary = {
+    currentTotalSavings: projections.summary.currentNetWorth,
+    year10Total: projections.summary.year10NetWorth,
+    retirementTotal: projections.summary.retirementNetWorth,
+    totalGrowthPercent: projections.summary.netWorthGrowthPercent
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-8">
@@ -599,7 +666,7 @@ function InvestmentsDebt() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">Portfolio Growth Over Time</h2>
         <ResponsiveContainer width="100%" height={400}>
-          <AreaChart data={projections.chartData}>
+          <AreaChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="year"
@@ -661,28 +728,87 @@ function InvestmentsDebt() {
             </thead>
             <tbody>
               {[
-                { year: 'Today', data: projections.chartData[0] },
-                { year: 'Year 5', data: projections.chartData[4] },
-                { year: 'Year 10', data: projections.chartData[9] },
-                { year: 'Year 20', data: projections.chartData[19] },
-                { year: `Year ${yearsToRetirement} (Retirement)`, data: projections.chartData[yearsToRetirement - 1] }
+                { year: 'Today', data: chartData[0] },
+                { year: 'Year 5', data: chartData[4] },
+                { year: 'Year 10', data: chartData[9] },
+                { year: 'Year 20', data: chartData[19] },
+                { year: `Year ${yearsToRetirement} (Retirement)`, data: chartData[yearsToRetirement - 1] }
               ].map((milestone, index) => {
                 if (!milestone.data) return null
                 const investmentsTotal = data.investments.reduce((sum, _, i) => {
                   return sum + (milestone.data[`investment${i + 1}`] || 0)
                 }, 0)
+                const total = (milestone.data.cash || 0) + (milestone.data.retirement401k || 0) + investmentsTotal
                 return (
                   <tr key={index} className={`border-b border-gray-100 ${index === 0 || index === 4 ? 'bg-blue-50' : ''}`}>
                     <td className="py-3 px-4 font-medium text-gray-900">{milestone.year}</td>
                     <td className="text-right py-3 px-4">${Math.round(milestone.data.cash || 0).toLocaleString()}</td>
                     <td className="text-right py-3 px-4">${Math.round(milestone.data.retirement401k || 0).toLocaleString()}</td>
                     <td className="text-right py-3 px-4">${Math.round(investmentsTotal).toLocaleString()}</td>
-                    <td className="text-right py-3 px-4 font-bold">${Math.round(milestone.data.total || 0).toLocaleString()}</td>
+                    <td className="text-right py-3 px-4 font-bold">${Math.round(total).toLocaleString()}</td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Annual Contributions Breakdown */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
+        <h2 className="text-xl font-semibold mb-4">Annual Contributions Breakdown</h2>
+        <p className="text-sm text-gray-600 mb-4">
+          This table shows how your savings grow through contributions (including taxed equity) and compound growth.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b-2 border-gray-300">
+                <th className="text-left py-2 px-2">Year</th>
+                <th className="text-right py-2 px-2">Gap → Investments</th>
+                <th className="text-right py-2 px-2">Individual 401k</th>
+                <th className="text-right py-2 px-2">Company 401k</th>
+                <th className="text-right py-2 px-2">Total Contributions</th>
+                <th className="text-right py-2 px-2">Net Worth</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projections.projections.slice(0, Math.min(10, yearsToRetirement)).map((p, index) => {
+                const totalContributions = p.investedThisYear + p.totalIndividual401k + p.annualCompany401k
+                return (
+                  <tr key={p.year} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-gray-50' : ''}`}>
+                    <td className="py-2 px-2 font-medium">{p.year}</td>
+                    <td className="text-right py-2 px-2">${Math.round(p.investedThisYear).toLocaleString()}</td>
+                    <td className="text-right py-2 px-2">${Math.round(p.totalIndividual401k).toLocaleString()}</td>
+                    <td className="text-right py-2 px-2">${Math.round(p.annualCompany401k).toLocaleString()}</td>
+                    <td className="text-right py-2 px-2 font-semibold">${Math.round(totalContributions).toLocaleString()}</td>
+                    <td className="text-right py-2 px-2 font-bold text-blue-600">${Math.round(p.netWorth).toLocaleString()}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="border-t-2 border-gray-300 font-semibold">
+                <td className="py-3 px-2">Lifetime Total</td>
+                <td className="text-right py-3 px-2">${Math.round(projections.summary.lifetimeInvested).toLocaleString()}</td>
+                <td className="text-right py-3 px-2">${Math.round(projections.summary.lifetimeIndividual401k).toLocaleString()}</td>
+                <td className="text-right py-3 px-2">${Math.round(projections.summary.lifetimeCompany401k).toLocaleString()}</td>
+                <td className="text-right py-3 px-2 font-bold">${Math.round(
+                  projections.summary.lifetimeInvested +
+                  projections.summary.lifetimeIndividual401k +
+                  projections.summary.lifetimeCompany401k
+                ).toLocaleString()}</td>
+                <td className="text-right py-3 px-2 font-bold text-blue-600">${Math.round(projections.summary.retirementNetWorth).toLocaleString()}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+          <p className="text-sm text-gray-700">
+            <strong>Note:</strong> "Gap → Investments" includes after-tax equity compensation.
+            Equity is taxed as ordinary income, then allocated to investments along with other savings.
+            Your equity contributions over {yearsToRetirement} years are included in the Gap total.
+          </p>
         </div>
       </div>
     </div>
