@@ -1,13 +1,10 @@
 /**
  * Tax Calculation Logic
+ *
+ * Note: All calculations preserve full precision. Rounding only occurs at display time.
  */
 
 import { storage } from '../../core'
-
-/**
- * Helper function for 5 decimal place rounding
- */
-const round5 = (value) => Math.round(value * 100000) / 100000
 
 /**
  * Load custom tax brackets from storage or use defaults
@@ -187,7 +184,7 @@ function calculateBracketTax(income, brackets) {
   }
 
   return {
-    total: round5(tax),
+    total: tax,
     breakdown
   }
 }
@@ -206,21 +203,19 @@ function calculateFICATax(salary, filingType, inflationMultiplier = 1) {
   }
 
   // Apply inflation to thresholds
-  const inflatedWageBase = round5(FICA_RATES_2025.socialSecurity.wageBase * inflationMultiplier)
+  const inflatedWageBase = FICA_RATES_2025.socialSecurity.wageBase * inflationMultiplier
   const baseThreshold = FICA_RATES_2025.additionalMedicare.threshold[filingType] || 200000
-  const inflatedThreshold = round5(baseThreshold * inflationMultiplier)
+  const inflatedThreshold = baseThreshold * inflationMultiplier
 
   // Social Security (capped at inflated wage base)
-  const socialSecurity = round5(
-    Math.min(salary, inflatedWageBase) * FICA_RATES_2025.socialSecurity.rate
-  )
+  const socialSecurity = Math.min(salary, inflatedWageBase) * FICA_RATES_2025.socialSecurity.rate
 
   // Medicare (no cap)
-  const medicare = round5(salary * FICA_RATES_2025.medicare.rate)
+  const medicare = salary * FICA_RATES_2025.medicare.rate
 
   // Additional Medicare (over inflated threshold)
   const additionalMedicare = salary > inflatedThreshold
-    ? round5((salary - inflatedThreshold) * FICA_RATES_2025.additionalMedicare.rate)
+    ? (salary - inflatedThreshold) * FICA_RATES_2025.additionalMedicare.rate
     : 0
 
   return {
@@ -285,8 +280,8 @@ export function calculateTaxes(income, incomeType, filingType, state = 'californ
 
     return brackets.map((bracket, idx) => ({
       rate: bracket.rate,
-      min: round5(bracket.min * multiplier),
-      max: bracket.max === Infinity ? Infinity : round5(bracket.max * multiplier),
+      min: bracket.min * multiplier,
+      max: bracket.max === Infinity ? Infinity : bracket.max * multiplier,
       stepTax: bracket.stepTax * multiplier  // Step tax also needs to be scaled
     }))
   }

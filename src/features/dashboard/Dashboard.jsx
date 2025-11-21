@@ -7,6 +7,7 @@ import NetWorthTab from './NetWorthTab'
 import IncomeTab from './IncomeTab'
 import ExpensesTab from './ExpensesTab'
 import RetirementTab from './RetirementTab'
+import WIPTab from './WIPTab'
 import ExportButton from '../../components/ExportButton'
 
 function Dashboard() {
@@ -327,7 +328,8 @@ function Dashboard() {
     { id: 'networth', label: 'Net Worth' },
     { id: 'income', label: 'Income' },
     { id: 'expenses', label: 'Expenses' },
-    { id: 'retirement', label: 'Retirement' }
+    { id: 'retirement', label: 'Retirement' },
+    { id: 'wip', label: '🚧 WIP' }
   ]
 
   return (
@@ -370,6 +372,7 @@ function Dashboard() {
         {activeTab === 'income' && <IncomeTab data={data} />}
         {activeTab === 'expenses' && <ExpensesTab data={data} />}
         {activeTab === 'retirement' && <RetirementTab data={data} />}
+        {activeTab === 'wip' && <WIPTab data={data} />}
       </div>
     </div>
   )

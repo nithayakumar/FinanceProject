@@ -1,11 +1,8 @@
 /**
  * Expense Validation and Projection Calculations
+ *
+ * Note: All calculations preserve full precision. Rounding only occurs at display time.
  */
-
-/**
- * Helper function for 5 decimal place rounding
- */
-const round5 = (value) => Math.round(value * 100000) / 100000
 
 /**
  * Validate expense input data
@@ -324,11 +321,7 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
     })
   })
 
-  // Round category totals
-  Object.keys(categoryTotals).forEach(cat => {
-    categoryTotals[cat] = round5(categoryTotals[cat])
-    categoryTotalsPV[cat] = round5(categoryTotalsPV[cat])
-  })
+  // Category totals are kept at full precision
 
   // One-time expenses total (in today's dollars as entered)
   const oneTimeTotalTodayDollars = data.oneTimeExpenses
@@ -364,8 +357,8 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
             milestones.push({
               year: jump.year,
               label: `Year ${jump.year}: ${category.category} - ${jump.description || 'Expense change'} (${jump.jumpPercent > 0 ? '+' : ''}${jump.jumpPercent}%)`,
-              expensesNominal: round5(expensesNominal),
-              expensesPV: round5(expensesPV),
+              expensesNominal,
+              expensesPV,
               changeType
             })
           }
@@ -408,32 +401,32 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
 
     return {
       categoryName: category.category,
-      currentYearExpensesNominal: round5(currentYearCat),
-      year10ExpensesNominal: round5(year10Cat),
+      currentYearExpensesNominal: currentYearCat,
+      year10ExpensesNominal: year10Cat,
       lifetimeExpensesNominal: categoryTotals[category.category] || 0,
       lifetimeExpensesPV: categoryTotalsPV[category.category] || 0
     }
   })
 
   return {
-    currentYearExpensesNominal: round5(currentYearExpensesNominal),
-    currentYearExpensesPV: round5(currentYearExpensesPV),
+    currentYearExpensesNominal,
+    currentYearExpensesPV,
 
-    year10ExpensesNominal: round5(year10ExpensesNominal),
-    year10ExpensesPV: round5(year10ExpensesPV),
+    year10ExpensesNominal,
+    year10ExpensesPV,
 
-    lifetimeExpensesNominal: round5(lifetimeExpensesNominal),
-    lifetimeExpensesPV: round5(lifetimeExpensesPV),
+    lifetimeExpensesNominal,
+    lifetimeExpensesPV,
 
-    avgAnnualExpensesNominal: round5(avgAnnualExpensesNominal),
-    avgAnnualExpensesPV: round5(avgAnnualExpensesPV),
+    avgAnnualExpensesNominal,
+    avgAnnualExpensesPV,
 
     categoryTotals,
     categoryTotalsPV,
     perCategorySummaries,
 
-    oneTimeTotalNominal: round5(oneTimeTotalNominal),
-    oneTimeTotalPV: round5(oneTimeTotalPV),
+    oneTimeTotalNominal,
+    oneTimeTotalPV,
 
     milestones
   }
@@ -465,7 +458,7 @@ function prepareChartData(projections, expenseCategories, yearsToRetirement, inf
         }
       })
 
-      yearData[category.category] = round5(categoryAnnualPV)
+      yearData[category.category] = categoryAnnualPV
       yearData.total += categoryAnnualPV
     })
 
@@ -477,10 +470,9 @@ function prepareChartData(projections, expenseCategories, yearsToRetirement, inf
       }
     })
 
-    yearData['One-Time'] = round5(oneTimeForYear)
+    yearData['One-Time'] = oneTimeForYear
     yearData.total += oneTimeForYear
 
-    yearData.total = round5(yearData.total)
     chartData.push(yearData)
   }
 

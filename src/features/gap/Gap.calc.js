@@ -36,12 +36,9 @@ const normalizeLocation = (value) => {
 }
 
 /**
- * Helper function for 5 decimal place rounding
- */
-const round5 = (value) => Math.round(value * 100000) / 100000
-
-/**
  * Calculate gap projections and net worth over time
+ *
+ * Note: All calculations preserve full precision. Rounding only occurs at display time.
  */
 export function calculateGapProjections(incomeData, expensesData, investmentsData, profile) {
   console.group('📊 Calculating Gap Projections')
@@ -250,87 +247,87 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     const projection = {
       year,
 
-      // Nominal values - Income Components
-      annualSalary: round5(annualSalary),
-      annualEquity: round5(annualEquity),
-      annualCompany401k: round5(annualCompany401k),
-      grossIncome: round5(grossIncome),
+      // Nominal values - Income Components (full precision)
+      annualSalary,
+      annualEquity,
+      annualCompany401k,
+      grossIncome,
 
-      // Nominal values - Deductions and Taxes
-      totalIndividual401k: round5(totalIndividual401k),
-      taxableIncome: round5(taxableIncome),
-      annualTaxes: round5(annualTaxes),
+      // Nominal values - Deductions and Taxes (full precision)
+      totalIndividual401k,
+      taxableIncome,
+      annualTaxes,
       taxBreakdown: {
-        federal: round5(taxBreakdown.federal),
-        state: round5(taxBreakdown.state),
-        socialSecurity: round5(taxBreakdown.socialSecurity),
-        medicare: round5(taxBreakdown.medicare)
+        federal: taxBreakdown.federal,
+        state: taxBreakdown.state,
+        socialSecurity: taxBreakdown.socialSecurity,
+        medicare: taxBreakdown.medicare
       },
-      afterTaxIncome: round5(afterTaxIncome),
+      afterTaxIncome,
 
-      // Nominal values - Expenses and Disposable Income
-      annualExpenses: round5(annualExpenses),
-      disposableIncome: round5(disposableIncome),
-      gap: round5(gap),  // Same as disposableIncome
+      // Nominal values - Expenses and Disposable Income (full precision)
+      annualExpenses,
+      disposableIncome,
+      gap,  // Same as disposableIncome
 
-      // Nominal values - Allocations
-      investedThisYear: round5(investedThisYear),
-      cashContribution: round5(cashContribution),
+      // Nominal values - Allocations (full precision)
+      investedThisYear,
+      cashContribution,
 
-      // Nominal values - Balances
-      cash: round5(cash),
-      targetCash: round5(targetCash),  // Inflation-adjusted target for this year
-      retirement401kValue: round5(retirement401k.value),
-      totalCostBasis: round5(totalCostBasis),
-      totalInvestmentValue: round5(totalInvestmentValue),
-      netWorth: round5(netWorth),
+      // Nominal values - Balances (full precision)
+      cash,
+      targetCash,  // Inflation-adjusted target for this year
+      retirement401kValue: retirement401k.value,
+      totalCostBasis,
+      totalInvestmentValue,
+      netWorth,
 
-      // Individual investments
+      // Individual investments (full precision)
       investments: investments.map(inv => ({
-        costBasis: round5(inv.costBasis),
-        marketValue: round5(inv.marketValue)
+        costBasis: inv.costBasis,
+        marketValue: inv.marketValue
       })),
 
-      // Present values - Income Components
-      annualSalaryPV: round5(annualSalary / discountFactor),
-      annualEquityPV: round5(annualEquity / discountFactor),
-      annualCompany401kPV: round5(annualCompany401k / discountFactor),
-      grossIncomePV: round5(grossIncome / discountFactor),
+      // Present values - Income Components (full precision)
+      annualSalaryPV: annualSalary / discountFactor,
+      annualEquityPV: annualEquity / discountFactor,
+      annualCompany401kPV: annualCompany401k / discountFactor,
+      grossIncomePV: grossIncome / discountFactor,
 
-      // Present values - Deductions and Taxes
-      totalIndividual401kPV: round5(totalIndividual401k / discountFactor),
-      taxableIncomePV: round5(taxableIncome / discountFactor),
-      annualTaxesPV: round5(annualTaxes / discountFactor),
+      // Present values - Deductions and Taxes (full precision)
+      totalIndividual401kPV: totalIndividual401k / discountFactor,
+      taxableIncomePV: taxableIncome / discountFactor,
+      annualTaxesPV: annualTaxes / discountFactor,
       taxBreakdownPV: {
-        federal: round5(taxBreakdown.federal / discountFactor),
-        state: round5(taxBreakdown.state / discountFactor),
-        socialSecurity: round5(taxBreakdown.socialSecurity / discountFactor),
-        medicare: round5(taxBreakdown.medicare / discountFactor)
+        federal: taxBreakdown.federal / discountFactor,
+        state: taxBreakdown.state / discountFactor,
+        socialSecurity: taxBreakdown.socialSecurity / discountFactor,
+        medicare: taxBreakdown.medicare / discountFactor
       },
-      afterTaxIncomePV: round5(afterTaxIncome / discountFactor),
+      afterTaxIncomePV: afterTaxIncome / discountFactor,
 
-      // Present values - Expenses and Disposable Income
-      annualExpensesPV: round5(annualExpenses / discountFactor),
-      disposableIncomePV: round5(disposableIncome / discountFactor),
-      gapPV: round5(gap / discountFactor),
+      // Present values - Expenses and Disposable Income (full precision)
+      annualExpensesPV: annualExpenses / discountFactor,
+      disposableIncomePV: disposableIncome / discountFactor,
+      gapPV: gap / discountFactor,
 
-      // Present values - Allocations
-      investedThisYearPV: round5(investedThisYear / discountFactor),
-      cashContributionPV: round5(cashContribution / discountFactor),
+      // Present values - Allocations (full precision)
+      investedThisYearPV: investedThisYear / discountFactor,
+      cashContributionPV: cashContribution / discountFactor,
 
-      // Present values - Balances
-      cashPV: round5(cash / discountFactor),
-      targetCashPV: round5(targetCash / discountFactor),  // PV of inflation-adjusted target
-      retirement401kValuePV: round5(retirement401k.value / discountFactor),
-      totalCostBasisPV: round5(totalCostBasis / discountFactor),
-      totalInvestmentValuePV: round5(totalInvestmentValue / discountFactor),
-      netWorthPV: round5(netWorth / discountFactor)
+      // Present values - Balances (full precision)
+      cashPV: cash / discountFactor,
+      targetCashPV: targetCash / discountFactor,  // PV of inflation-adjusted target
+      retirement401kValuePV: retirement401k.value / discountFactor,
+      totalCostBasisPV: totalCostBasis / discountFactor,
+      totalInvestmentValuePV: totalInvestmentValue / discountFactor,
+      netWorthPV: netWorth / discountFactor
     }
 
-    // Add individual investment allocations
+    // Add individual investment allocations (full precision)
     Object.keys(investmentAllocations).forEach(key => {
-      projection[key] = round5(investmentAllocations[key])
-      projection[`${key}PV`] = round5(investmentAllocations[key] / discountFactor)
+      projection[key] = investmentAllocations[key]
+      projection[`${key}PV`] = investmentAllocations[key] / discountFactor
     })
 
     projections.push(projection)
