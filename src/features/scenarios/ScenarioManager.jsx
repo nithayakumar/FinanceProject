@@ -279,12 +279,11 @@ function ScenarioManager() {
     try {
       // Calculate actual first year values using the calculation engine
       const projections = calculateScenarioProjections(currentPlan)
-      const firstYear = projections.yearlyProjections[0]
 
       return {
-        income: firstYear.income,
-        expenses: firstYear.expenses,
-        gap: firstYear.gap
+        income: projections.firstYearIncome,
+        expenses: projections.firstYearExpenses,
+        gap: projections.firstYearGap
       }
     } catch (error) {
       console.error('Error calculating current plan summary:', error)
