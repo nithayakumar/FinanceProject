@@ -292,11 +292,11 @@ function PersonalDetails() {
             </div>
           </div>
 
-          {/* Row 4: Savings & Inflation */}
+          {/* Row 4: Investments & Inflation */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Savings & Investments <span className="text-xs text-gray-500">(401k + stocks)</span>
+                Total Investments <span className="text-xs text-gray-500">(401k + stocks)</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1.5 text-gray-500">$</span>
@@ -304,12 +304,15 @@ function PersonalDetails() {
                   type="number"
                   value={data.currentSavings}
                   onChange={(e) => handleChange('currentSavings', e.target.value ? Number(e.target.value) : '')}
-                  placeholder="100000"
+                  placeholder="600000"
                   className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.currentSavings ? 'border-red-500' : 'border-gray-300'
                   }`}
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                → This populates your Investments & Debt page
+              </p>
               {errors.currentSavings && <p className="mt-1 text-xs text-red-600">{errors.currentSavings}</p>}
             </div>
 
@@ -366,7 +369,7 @@ function PersonalDetails() {
         <SummaryRow label="Retirement Age" value={data.retirementAge} />
         <SummaryRow label="Current Cash" value={`$${Math.round(data.currentCash).toLocaleString()}`} />
         <SummaryRow label="Target Cash on Hand" value={`$${Math.round(data.targetCash).toLocaleString()}`} />
-        <SummaryRow label="Savings and Investments" value={`$${Math.round(Number(data.currentSavings)).toLocaleString()}`} />
+        <SummaryRow label="Total Investments" value={`$${Math.round(Number(data.currentSavings)).toLocaleString()}`} />
         <SummaryRow label="Inflation Rate" value={`${data.inflationRate}%`} />
 
         {/* Years to Retirement */}

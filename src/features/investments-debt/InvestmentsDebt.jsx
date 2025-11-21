@@ -63,27 +63,28 @@ function InvestmentsDebt() {
       console.log('📋 Loaded saved investments:', saved)
       console.log('💰 Synced targetCash from profile:', profileTargetCash)
     } else {
-      // Initialize from profile
+      // Initialize from profile - use currentSavings which is the total investments field
       const currentCash = profile.currentCash || 0
       const targetCash = profile.targetCash || 0
+      const totalInvestments = profile.currentSavings || 0
 
-      // Calculate total savings (currentCash from profile is our savings)
-      const totalSavings = currentCash
+      // Pre-load 3 investments, each at 1/3 of total investments
+      const investmentValue = Math.round(totalInvestments / 3)
 
-      // Pre-load 3 investments, each at 1/3 of savings
-      const investmentValue = Math.round(totalSavings / 3)
-
-      const preloadedInvestments = [
+      const preloadedInvestments = totalInvestments > 0 ? [
         createDefaultInvestment(1, investmentValue, 33.33),
         createDefaultInvestment(2, investmentValue, 33.33),
         createDefaultInvestment(3, investmentValue, 33.34)
-      ]
+      ] : []
+
+      console.log(`💰 Initializing from profile: Total Investments = $${totalInvestments.toLocaleString()}`)
+      console.log(`📊 Creating 3 investment accounts at $${investmentValue.toLocaleString()} each`)
 
       setData({
         currentCash: currentCash,
         targetCash: targetCash,
         retirement401k: createDefault401k(totalCompany401k),
-        investments: totalSavings > 0 ? preloadedInvestments : []
+        investments: preloadedInvestments
       })
     }
   }, [])
