@@ -10,23 +10,32 @@ function ExpensesTab({ data }) {
   const chartData = []
   for (let i = 0; i < projections.length; i += 12) {
     const year = Math.floor(i / 12) + 1
-    const projection = projections[i]
+    if (year > yearsToRetirement) break // Only show up to retirement
 
-    const dataPoint = {
-      year,
-      'Total Expenses': projection.totalExpensesNominal
-    }
+    const yearMonths = projections.slice(i, i + 12)
 
-    // Add categories
-    projection.categories?.forEach(cat => {
-      dataPoint[cat.name] = cat.totalNominal
+    // Aggregate annual values for each category
+    const dataPoint = { year }
+    const categoryBreakdown = {}
+
+    yearMonths.forEach(monthProj => {
+      Object.entries(monthProj.categoryBreakdownNominal || {}).forEach(([catName, value]) => {
+        categoryBreakdown[catName] = (categoryBreakdown[catName] || 0) + value
+      })
+    })
+
+    // Add category totals to data point
+    Object.entries(categoryBreakdown).forEach(([catName, total]) => {
+      dataPoint[catName] = total
     })
 
     chartData.push(dataPoint)
   }
 
-  // Get category names for the legend
-  const categoryNames = projections[0]?.categories?.map(c => c.name) || []
+  // Get category names from the first projection
+  const categoryNames = projections[0]?.categoryBreakdownNominal
+    ? Object.keys(projections[0].categoryBreakdownNominal)
+    : []
 
   return (
     <div>
@@ -68,7 +77,7 @@ function ExpensesTab({ data }) {
             />
             <YAxis
               tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
-              label={{ value: 'Monthly Expenses', angle: -90, position: 'insideLeft' }}
+              label={{ value: 'Annual Expenses', angle: -90, position: 'insideLeft' }}
             />
             <Tooltip
               formatter={(val) => `$${Math.round(val).toLocaleString()}`}

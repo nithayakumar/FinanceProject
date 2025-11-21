@@ -388,6 +388,33 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
   // Sort milestones by year
   milestones.sort((a, b) => a.year - b.year)
 
+  // Calculate average annual expenses
+  const avgAnnualExpensesNominal = yearsToRetirement > 0
+    ? lifetimeExpensesNominal / yearsToRetirement
+    : 0
+  const avgAnnualExpensesPV = yearsToRetirement > 0
+    ? lifetimeExpensesPV / yearsToRetirement
+    : 0
+
+  // Build per-category summaries for table display
+  const perCategorySummaries = data.expenseCategories.map(category => {
+    // Current year breakdown
+    const currentYearCat = year1Months.reduce((sum, p) =>
+      sum + (p.categoryBreakdownNominal[category.category] || 0), 0)
+
+    // Year 10 breakdown
+    const year10Cat = year10Months.reduce((sum, p) =>
+      sum + (p.categoryBreakdownNominal[category.category] || 0), 0)
+
+    return {
+      categoryName: category.category,
+      currentYearExpensesNominal: round5(currentYearCat),
+      year10ExpensesNominal: round5(year10Cat),
+      lifetimeExpensesNominal: categoryTotals[category.category] || 0,
+      lifetimeExpensesPV: categoryTotalsPV[category.category] || 0
+    }
+  })
+
   return {
     currentYearExpensesNominal: round5(currentYearExpensesNominal),
     currentYearExpensesPV: round5(currentYearExpensesPV),
@@ -398,8 +425,12 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
     lifetimeExpensesNominal: round5(lifetimeExpensesNominal),
     lifetimeExpensesPV: round5(lifetimeExpensesPV),
 
+    avgAnnualExpensesNominal: round5(avgAnnualExpensesNominal),
+    avgAnnualExpensesPV: round5(avgAnnualExpensesPV),
+
     categoryTotals,
     categoryTotalsPV,
+    perCategorySummaries,
 
     oneTimeTotalNominal: round5(oneTimeTotalNominal),
     oneTimeTotalPV: round5(oneTimeTotalPV),
