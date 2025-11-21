@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../../core'
-import { getCurrentPlanData } from './Scenario.calc'
+import { getCurrentPlanData, calculateScenarioProjections } from './Scenario.calc'
 import {
   INCOME_CONFIG,
   EXPENSE_CONFIG,
@@ -276,16 +276,27 @@ function ScenarioManager() {
   const getCurrentPlanSummary = () => {
     if (!currentPlan) return null
 
-    const totalIncome = currentPlan.income?.incomeStreams?.reduce((sum, stream) =>
-      sum + (Number(stream.annualIncome) || 0), 0) || 0
+    try {
+      // Calculate actual first year values using the calculation engine
+      const projections = calculateScenarioProjections(currentPlan)
+      const firstYear = projections.yearlyProjections[0]
 
-    const totalExpenses = currentPlan.expenses?.expenseCategories?.reduce((sum, cat) =>
-      sum + (Number(cat.annualAmount) || 0), 0) || 0
+      return {
+        income: firstYear.income,
+        expenses: firstYear.expenses,
+        gap: firstYear.gap
+      }
+    } catch (error) {
+      console.error('Error calculating current plan summary:', error)
+      // Fallback to simple sum (will be wrong for % of income expenses)
+      const totalIncome = currentPlan.income?.incomeStreams?.reduce((sum, stream) =>
+        sum + (Number(stream.annualIncome) || 0), 0) || 0
 
-    return {
-      income: totalIncome,
-      expenses: totalExpenses,
-      gap: totalIncome - totalExpenses
+      return {
+        income: totalIncome,
+        expenses: 0, // Can't calculate without proper logic
+        gap: totalIncome
+      }
     }
   }
 

@@ -77,6 +77,7 @@ export function validateExpenses(data, yearsToRetirement) {
  * @param {Object} incomeProjectionData Optional income projection results to support % of income expenses
  */
 export function calculateExpenseProjections(data, profile, incomeProjectionData) {
+  console.log('🔴 EXPENSE CALC STARTING')
   console.group('📊 Calculating Expense Projections')
 
   const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
@@ -88,10 +89,11 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
 
   console.log('Inflation Rate:', inflationRate + '%')
   console.log('Years to Retirement:', yearsToRetirement)
-  console.log('Income projections provided:', incomeProjections ? `Yes (${incomeProjections.length} months)` : 'No')
+  console.log('🔴 Income projections provided:', incomeProjections ? `Yes (${incomeProjections.length} months)` : 'NO - THIS IS THE PROBLEM')
 
   // Log percent of income categories
   const percentCategories = data.expenseCategories.filter(c => c.amountType === 'percentOfIncome')
+  console.log('🔴 Percent categories found:', percentCategories.length)
   if (percentCategories.length > 0) {
     console.log('Percent of income categories:', percentCategories.map(c => `${c.category}: ${c.percentOfIncome}%`))
   }
@@ -279,6 +281,13 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
 
   console.log(`Generated ${projections.length} monthly projections`)
 
+  // Log first month for debugging
+  if (projections.length > 0) {
+    const firstMonth = projections[0]
+    console.log('🔴 First month total expenses:', firstMonth.totalExpensesNominal)
+    console.log('🔴 First month breakdown:', firstMonth.categoryBreakdownNominal)
+  }
+
   // Calculate summary statistics
   const summary = calculateSummary(projections, yearsToRetirement, data, inflationRate)
 
@@ -286,6 +295,7 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
   const chartData = prepareChartData(projections, data.expenseCategories, yearsToRetirement, inflationRate, data.oneTimeExpenses)
 
   console.log('Summary calculated:', summary)
+  console.log('🔴 EXPENSE CALC COMPLETE')
   console.groupEnd()
 
   return {
