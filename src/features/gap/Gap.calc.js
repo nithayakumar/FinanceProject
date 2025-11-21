@@ -89,65 +89,40 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     const inflationMultiplier = Math.pow(1 + inflationRate / 100, year - 1)
     const targetCash = baseTargetCash * inflationMultiplier
 
-    // Get annual income from income projections (January of this year, monthly * 12)
-    const janIndex = (year - 1) * 12  // Month index for January of this year
-    const incomeProjection = incomeData.projections[janIndex] || {}
-    const annualIncome = (incomeProjection.totalCompNominal || 0) * 12
+    // Get annual income from income projections (SUM all 12 months, not January * 12)
+    // This is critical for career breaks where months may have different values
+    let annualIncome = 0
+    let annualEquity = 0
+    let annualCompany401k = 0
 
-    // Extract equity and company 401k for tracking (but include in gap calculation)
-    const annualEquity = (incomeProjection.equityNominal || 0) * 12
-    const annualCompany401k = (incomeProjection.company401kNominal || 0) * 12
+    for (let month = 0; month < 12; month++) {
+      const monthIndex = (year - 1) * 12 + month
+      const monthProjection = incomeData.projections[monthIndex] || {}
+      annualIncome += (monthProjection.totalCompNominal || 0)
+      annualEquity += (monthProjection.equityNominal || 0)
+      annualCompany401k += (monthProjection.company401kNominal || 0)
+    }
 
     // Calculate total individual 401k contribution across all streams
+    // Note: 401k contributions can be made during career breaks using savings/debt
     const totalIndividual401k = incomeData.incomeStreams.reduce((sum, stream) => {
       if (year <= stream.endWorkYear) {
         // Apply growth to 401k contribution
         const yearsOfGrowth = year - 1
         const growthMultiplier = Math.pow(1 + stream.growthRate / 100, yearsOfGrowth)
-
-        // Calculate career break reduction for this year
-        // Need to determine what fraction of the year this stream is NOT on break
-        let workingMonthsInYear = 12
-
-        if (stream.careerBreaks && stream.careerBreaks.length > 0) {
-          // Count how many months this year are affected by career breaks
-          let breakMonthsInYear = 0
-
-          stream.careerBreaks.forEach(breakItem => {
-            // Career breaks start in January (month 0 of startYear)
-            const breakStartMonth = (breakItem.startYear - 1) * 12  // 0-indexed
-            const breakEndMonth = breakStartMonth + breakItem.durationMonths - 1
-
-            // This year spans months: (year-1)*12 to year*12-1
-            const yearStartMonth = (year - 1) * 12
-            const yearEndMonth = year * 12 - 1
-
-            // Find overlap between break period and this year
-            const overlapStart = Math.max(breakStartMonth, yearStartMonth)
-            const overlapEnd = Math.min(breakEndMonth, yearEndMonth)
-
-            if (overlapStart <= overlapEnd) {
-              // There's overlap - count the months
-              const monthsAffected = overlapEnd - overlapStart + 1
-              // Apply the reduction percentage
-              const reductionPercent = breakItem.reductionPercent || 0
-              breakMonthsInYear += monthsAffected * (reductionPercent / 100)
-            }
-          })
-
-          workingMonthsInYear = 12 - breakMonthsInYear
-        }
-
-        // Prorate individual 401k based on working months
-        const workingFraction = workingMonthsInYear / 12
-        return sum + ((Number(stream.individual401k) || 0) * growthMultiplier * workingFraction)
+        return sum + ((Number(stream.individual401k) || 0) * growthMultiplier)
       }
       return sum
     }, 0)
 
-    // Get annual expenses from expenses projections (January of this year, monthly * 12)
-    const expenseProjection = expensesData.projections[janIndex] || {}
-    const annualExpenses = (expenseProjection.totalExpensesNominal || 0) * 12
+    // Get annual expenses from expenses projections (SUM all 12 months, not January * 12)
+    // This is critical for expense patterns that vary by month
+    let annualExpenses = 0
+    for (let month = 0; month < 12; month++) {
+      const monthIndex = (year - 1) * 12 + month
+      const expenseProjection = expensesData.projections[monthIndex] || {}
+      annualExpenses += (expenseProjection.totalExpensesNominal || 0)
+    }
 
     // Calculate taxes on income after 401k deduction
     // Tax brackets are now automatically inflated within calculateTaxes
