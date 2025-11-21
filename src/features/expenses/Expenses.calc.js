@@ -88,6 +88,13 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
 
   console.log('Inflation Rate:', inflationRate + '%')
   console.log('Years to Retirement:', yearsToRetirement)
+  console.log('Income projections provided:', incomeProjections ? `Yes (${incomeProjections.length} months)` : 'No')
+
+  // Log percent of income categories
+  const percentCategories = data.expenseCategories.filter(c => c.amountType === 'percentOfIncome')
+  if (percentCategories.length > 0) {
+    console.log('Percent of income categories:', percentCategories.map(c => `${c.category}: ${c.percentOfIncome}%`))
+  }
 
   // Generate monthly projections (1,200 months = 100 years)
   const projections = []
@@ -206,6 +213,11 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
       const annualWithDollars = baseAnnual + dollarAddition
       const annualExpense = annualWithDollars * jumpMultiplier
       const monthlyExpense = annualExpense / 12
+
+      // Debug: Log first month calculations for percent of income categories
+      if (monthIndex === 0 && amountType === 'percentOfIncome' && monthlyExpense > 0) {
+        console.log(`${category.category}: ${effectivePercentOfIncome}% of $${grossMonthlyIncome.toFixed(2)} = $${monthlyExpense.toFixed(2)}/month`)
+      }
 
       categoryBreakdown[category.category] = monthlyExpense
       totalRecurringNominal += monthlyExpense
