@@ -13,6 +13,70 @@ import { calculateExpenseProjections } from '../expenses/Expenses.calc'
 import { storage } from '../../core'
 
 /**
+ * Validate that projection results have the expected structure
+ * This helps catch API contract mismatches early
+ * @param {Object} projectionResults - Results from calculateScenarioProjections
+ * @throws {Error} If structure is invalid
+ */
+export function validateProjectionResults(projectionResults) {
+  if (!projectionResults) {
+    throw new Error('ProjectionResults is null or undefined')
+  }
+
+  if (!projectionResults.projections || !Array.isArray(projectionResults.projections)) {
+    throw new Error('ProjectionResults.projections must be an array')
+  }
+
+  if (projectionResults.projections.length === 0) {
+    throw new Error('ProjectionResults.projections array is empty')
+  }
+
+  const firstYear = projectionResults.projections[0]
+  const requiredFields = ['year', 'grossIncome', 'annualTaxes', 'annualExpenses', 'gap', 'netWorth']
+
+  requiredFields.forEach(field => {
+    if (!(field in firstYear)) {
+      throw new Error(`ProjectionResults.projections[0] is missing required field: ${field}`)
+    }
+    if (typeof firstYear[field] !== 'number') {
+      throw new Error(`ProjectionResults.projections[0].${field} must be a number, got ${typeof firstYear[field]}`)
+    }
+  })
+
+  return true
+}
+
+/**
+ * Safely extract first year summary from projection results
+ * Helper function to prevent API contract mismatches
+ *
+ * @param {Object} projectionResults - Results from calculateScenarioProjections
+ * @returns {Object} First year summary with income, taxes, expenses, gap
+ * @returns {number} return.income - Annual gross income
+ * @returns {number} return.taxes - Annual taxes
+ * @returns {number} return.expenses - Annual expenses
+ * @returns {number} return.gap - Annual gap/savings
+ * @returns {number} return.netWorth - Net worth at end of year
+ *
+ * @example
+ * const summary = getFirstYearSummary(projectionResults)
+ * console.log(`Income: ${summary.income}, Taxes: ${summary.taxes}`)
+ */
+export function getFirstYearSummary(projectionResults) {
+  validateProjectionResults(projectionResults)
+
+  const firstYear = projectionResults.projections[0]
+
+  return {
+    income: firstYear.grossIncome,
+    taxes: firstYear.annualTaxes,
+    expenses: firstYear.annualExpenses,
+    gap: firstYear.gap,
+    netWorth: firstYear.netWorth
+  }
+}
+
+/**
  * Get current plan data from localStorage
  * This is the user's active financial plan
  * @returns {Object} Complete scenario data with proper defaults
@@ -92,8 +156,29 @@ export function mergeScenarioData(baseData, scenarioData) {
 /**
  * Calculate full financial projections for a scenario
  * NEW: Works with complete scenario data (not base + overrides)
+ *
  * @param {Object} scenarioData - Complete scenario data OR scenario object with .data property
- * @returns {Object} Full projection results
+ * @param {Object} scenarioData.profile - Profile settings (age, retirementAge, inflationRate, etc.)
+ * @param {Object} scenarioData.income - Income data with incomeStreams array
+ * @param {Object} scenarioData.expenses - Expense data with expenseCategories and oneTimeExpenses
+ * @param {Object} scenarioData.investmentsDebt - Investment/debt data
+ *
+ * @returns {Object} ProjectionResults
+ * @returns {Object} ProjectionResults.incomeData - Income projection data with projections array
+ * @returns {Object} ProjectionResults.expensesData - Expense projection data with projections array
+ * @returns {Array<Object>} ProjectionResults.projections - Array of yearly projections (1 per year)
+ * @returns {number} ProjectionResults.projections[].year - Year number (1, 2, 3, ...)
+ * @returns {number} ProjectionResults.projections[].grossIncome - Total annual income (nominal)
+ * @returns {number} ProjectionResults.projections[].annualTaxes - Total annual taxes (nominal)
+ * @returns {number} ProjectionResults.projections[].annualExpenses - Total annual expenses (nominal)
+ * @returns {number} ProjectionResults.projections[].gap - Annual gap/savings (nominal)
+ * @returns {number} ProjectionResults.projections[].netWorth - Net worth at end of year (nominal)
+ * @returns {Object} ProjectionResults.gapSummary - Summary statistics object
+ *
+ * @example
+ * const results = calculateScenarioProjections(scenarioData)
+ * const firstYear = results.projections[0]
+ * console.log(firstYear.grossIncome, firstYear.annualTaxes, firstYear.annualExpenses, firstYear.gap)
  */
 export function calculateScenarioProjections(scenarioData) {
   console.group('📊 Calculating Scenario Projections')
@@ -132,12 +217,17 @@ export function calculateScenarioProjections(scenarioData) {
   console.log('Scenario Projections:', gapResults)
   console.groupEnd()
 
-  return {
+  const results = {
     incomeData,
     expensesData,
     projections: gapResults.projections,  // Extract the array from the result object
     gapSummary: gapResults.summary
   }
+
+  // Validate structure before returning (helps catch API contract issues)
+  validateProjectionResults(results)
+
+  return results
 }
 
 /**

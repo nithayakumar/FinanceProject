@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../../core'
-import { getCurrentPlanData, calculateScenarioProjections } from './Scenario.calc'
+import { getCurrentPlanData, calculateScenarioProjections, getFirstYearSummary } from './Scenario.calc'
 import {
   INCOME_CONFIG,
   EXPENSE_CONFIG,
@@ -278,15 +278,15 @@ function ScenarioManager() {
 
     try {
       // Calculate actual first year values using the calculation engine
-      const projections = calculateScenarioProjections(currentPlan)
+      const projectionResults = calculateScenarioProjections(currentPlan)
 
-      return {
-        income: projections.firstYearIncome,
-        expenses: projections.firstYearExpenses,
-        gap: projections.firstYearGap
-      }
+      console.log('🔴 Projections result:', projectionResults)
+
+      // Use the helper function to safely extract first year data
+      // This validates the structure and returns properly named fields
+      return getFirstYearSummary(projectionResults)
     } catch (error) {
-      console.error('Error calculating current plan summary:', error)
+      console.error('🔴 Error calculating current plan summary:', error)
       // Fallback to simple sum (will be wrong for % of income expenses)
       const totalIncome = currentPlan.income?.incomeStreams?.reduce((sum, stream) =>
         sum + (Number(stream.annualIncome) || 0), 0) || 0
@@ -294,7 +294,9 @@ function ScenarioManager() {
       return {
         income: totalIncome,
         expenses: 0, // Can't calculate without proper logic
-        gap: totalIncome
+        taxes: 0,
+        gap: totalIncome,
+        netWorth: 0
       }
     }
   }
@@ -353,16 +355,20 @@ function ScenarioManager() {
                 <div className="flex gap-6 text-sm">
                   <div>
                     <span className="text-gray-600">Annual Income:</span>
-                    <span className="ml-2 font-semibold">${summary.income.toLocaleString()}</span>
+                    <span className="ml-2 font-semibold">${Math.round(summary.income).toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Annual Taxes:</span>
+                    <span className="ml-2 font-semibold text-red-600">${Math.round(summary.taxes).toLocaleString()}</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Annual Expenses:</span>
-                    <span className="ml-2 font-semibold">${summary.expenses.toLocaleString()}</span>
+                    <span className="ml-2 font-semibold">${Math.round(summary.expenses).toLocaleString()}</span>
                   </div>
                   <div>
                     <span className="text-gray-600">Annual Gap:</span>
                     <span className={`ml-2 font-semibold ${summary.gap >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ${summary.gap.toLocaleString()}
+                      ${Math.round(summary.gap).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -409,11 +415,22 @@ function ScenarioManager() {
         ) : (
           <div className="space-y-3">
             {alternativeScenarios.map((scenario) => {
-              // Get quick summary of scenario
-              const scenarioIncome = scenario.data?.income?.incomeStreams?.reduce((sum, stream) =>
-                sum + (Number(stream.annualIncome) || 0), 0) || 0
-              const scenarioExpenses = scenario.data?.expenses?.expenseCategories?.reduce((sum, cat) =>
-                sum + (Number(cat.annualAmount) || 0), 0) || 0
+              // Calculate proper summary including taxes using helper function
+              let scenarioSummary = { income: 0, taxes: 0, expenses: 0, gap: 0, netWorth: 0 }
+
+              try {
+                const projectionResults = calculateScenarioProjections(scenario.data)
+                // Use the helper function to safely extract first year data
+                scenarioSummary = getFirstYearSummary(projectionResults)
+              } catch (error) {
+                console.error('Error calculating scenario summary:', error)
+                // Fallback to simple calculation
+                scenarioSummary.income = scenario.data?.income?.incomeStreams?.reduce((sum, stream) =>
+                  sum + (Number(stream.annualIncome) || 0), 0) || 0
+                scenarioSummary.expenses = scenario.data?.expenses?.expenseCategories?.reduce((sum, cat) =>
+                  sum + (Number(cat.annualAmount) || 0), 0) || 0
+                scenarioSummary.gap = scenarioSummary.income - scenarioSummary.expenses
+              }
 
               return (
                 <div
@@ -438,14 +455,17 @@ function ScenarioManager() {
                       {/* Quick Summary */}
                       <div className="flex gap-4 text-sm mt-2">
                         <span className="text-gray-600">
-                          Income: <span className="font-medium">${scenarioIncome.toLocaleString()}</span>
+                          Income: <span className="font-medium">${Math.round(scenarioSummary.income).toLocaleString()}</span>
                         </span>
                         <span className="text-gray-600">
-                          Expenses: <span className="font-medium">${scenarioExpenses.toLocaleString()}</span>
+                          Taxes: <span className="font-medium text-red-600">${Math.round(scenarioSummary.taxes).toLocaleString()}</span>
                         </span>
                         <span className="text-gray-600">
-                          Gap: <span className={`font-medium ${(scenarioIncome - scenarioExpenses) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            ${(scenarioIncome - scenarioExpenses).toLocaleString()}
+                          Expenses: <span className="font-medium">${Math.round(scenarioSummary.expenses).toLocaleString()}</span>
+                        </span>
+                        <span className="text-gray-600">
+                          Gap: <span className={`font-medium ${scenarioSummary.gap >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            ${Math.round(scenarioSummary.gap).toLocaleString()}
                           </span>
                         </span>
                       </div>
