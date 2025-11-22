@@ -91,9 +91,14 @@ export function useExpensesData() {
 
                 // Handle amountType switch
                 if (field === 'amountType') {
-                    // When switching, we might want to clear the other value or calculate it?
-                    // For now, just switch the type.
-                    return { ...cat, amountType: value }
+                    // When switching, ensure the other value is initialized if missing to prevent NaN
+                    // But mainly, we just switch the type. The calculation logic should handle empty strings as 0.
+                    return {
+                        ...cat,
+                        amountType: value,
+                        // Optional: clear the other field or keep it? Keeping it allows switching back.
+                        // But we must ensure the active field has a valid value or is empty string (which calc handles)
+                    }
                 }
 
                 return { ...cat, [field]: value }

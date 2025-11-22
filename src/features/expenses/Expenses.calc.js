@@ -221,10 +221,10 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
       if (categoryAmountOverrides[category.id] !== null) {
         baseAnnual = categoryAmountOverrides[category.id]
       } else if (amountType === 'percent') {
-        baseAnnual = grossMonthlyIncome * 12 * (effectivePercentOfIncome / 100)
+        baseAnnual = grossMonthlyIncome * 12 * ((Number(effectivePercentOfIncome) || 0) / 100)
       } else {
         // Fixed Amount
-        const annualAmount = category.annualAmount || 0
+        const annualAmount = Number(category.annualAmount) || 0
         baseAnnual = annualAmount * growthMultiplier
       }
 

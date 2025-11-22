@@ -14,7 +14,7 @@ export function CurrentExpensesCard({ categories, onUpdate }) {
                 <table className="w-full text-sm text-left">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
-                            <th className="px-4 py-3 rounded-l-lg w-1/4">Category</th>
+                            <th className="px-4 py-3 rounded-l-lg w-1/5">Category</th>
                             <th className="px-4 py-3 w-1/4">Type</th>
                             <th className="px-4 py-3 w-1/4">Yearly Expense</th>
                             <th className="px-4 py-3 rounded-r-lg w-1/4">Yearly Growth</th>
@@ -23,7 +23,7 @@ export function CurrentExpensesCard({ categories, onUpdate }) {
                     <tbody>
                         {categories.map((category) => (
                             <tr key={category.id} className="bg-white border-b hover:bg-gray-50">
-                                <td className="px-4 py-3 font-medium text-gray-900 text-base">
+                                <td className="px-4 py-3 font-medium text-gray-900 text-sm">
                                     {category.name}
                                 </td>
                                 <td className="px-4 py-3">
@@ -57,7 +57,7 @@ export function CurrentExpensesCard({ categories, onUpdate }) {
                                                 onChange={(val) => onUpdate(category.id, 'annualAmount', val)}
                                                 prefix="$"
                                                 placeholder="0"
-                                                className="w-full max-w-[140px]"
+                                                className="w-full max-w-[180px]"
                                             />
                                         </div>
                                     ) : (
