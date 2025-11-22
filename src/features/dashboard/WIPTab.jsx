@@ -1181,14 +1181,180 @@ function WIPTab({ data }) {
         </div>
       )}
 
-      {/* Coming Soon Section */}
-      <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4">🔮 Coming Soon</h3>
-        <div className="bg-white rounded-lg p-4 border border-gray-200">
-          <div className="text-2xl mb-2">👨‍👩‍👧</div>
-          <h4 className="font-medium text-gray-800">Life Planner</h4>
-          <p className="text-xs text-gray-500 mt-1">Plan for children, partners, education, relocations</p>
+      {/* Life Planner */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">👨‍👩‍👧 Life Planner</h3>
+          {lifeEvents.length > 0 && (
+            <button
+              onClick={() => setLifeEvents([])}
+              className="text-xs text-red-600 hover:text-red-800"
+            >
+              Clear all events
+            </button>
+          )}
         </div>
+        <p className="text-sm text-gray-600 mb-6">
+          Add life events to see how they impact your FIRE timeline
+        </p>
+
+        {/* Event Templates */}
+        <div className="mb-6">
+          <p className="text-xs text-gray-500 mb-3">Click to add a life event:</p>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(lifeEventTemplates).map(([key, template]) => (
+              <button
+                key={key}
+                onClick={() => addLifeEvent(key)}
+                className={`px-3 py-2 text-xs rounded-lg border transition flex items-center gap-2 ${
+                  template.incomeImpact > 0 || template.expenseImpact < 0
+                    ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                    : template.incomeImpact < 0 || template.expenseImpact > 0
+                    ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
+                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <span>{template.icon}</span>
+                <span>{template.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Active Events */}
+        {lifeEvents.length > 0 && (
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Your Life Events</h4>
+            <div className="space-y-3">
+              {lifeEvents.map((event) => (
+                <div key={event.id} className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{event.icon}</span>
+                      <span className="font-medium text-gray-800">{event.name}</span>
+                    </div>
+                    <button
+                      onClick={() => removeLifeEvent(event.id)}
+                      className="text-gray-400 hover:text-red-600"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    {/* Start Year */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">Start Year</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max={maxYear}
+                        value={event.startYear}
+                        onChange={(e) => updateLifeEvent(event.id, 'startYear', Number(e.target.value))}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      />
+                    </div>
+
+                    {/* Duration */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">Duration (years)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="50"
+                        value={event.duration}
+                        onChange={(e) => updateLifeEvent(event.id, 'duration', Number(e.target.value))}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      />
+                      <p className="text-xs text-gray-400 mt-1">{event.duration === 0 ? 'Permanent' : `${event.duration} years`}</p>
+                    </div>
+
+                    {/* Expense Impact */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">Annual Expense</label>
+                      <input
+                        type="number"
+                        value={event.expenseImpact}
+                        onChange={(e) => updateLifeEvent(event.id, 'expenseImpact', Number(e.target.value))}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      />
+                      <p className={`text-xs mt-1 ${event.expenseImpact > 0 ? 'text-red-600' : event.expenseImpact < 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                        {event.expenseImpact > 0 ? '+' : ''}{fmtCompact(event.expenseImpact)}/yr
+                      </p>
+                    </div>
+
+                    {/* Income Impact */}
+                    <div>
+                      <label className="text-xs text-gray-500 block mb-1">Annual Income</label>
+                      <input
+                        type="number"
+                        value={event.incomeImpact}
+                        onChange={(e) => updateLifeEvent(event.id, 'incomeImpact', Number(e.target.value))}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      />
+                      <p className={`text-xs mt-1 ${event.incomeImpact > 0 ? 'text-green-600' : event.incomeImpact < 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                        {event.incomeImpact > 0 ? '+' : ''}{fmtCompact(event.incomeImpact)}/yr
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Impact Summary */}
+        {lifePlannerImpact && (
+          <div className="border-t border-gray-200 pt-6">
+            <h4 className="text-sm font-semibold text-gray-700 mb-4">Impact Summary</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Net Worth at Retirement</p>
+                <p className="text-xl font-bold text-gray-800">{fmtCompact(lifePlannerImpact.adjustedNetWorth)}</p>
+                <p className={`text-sm font-medium ${lifePlannerImpact.netWorthChange > 0 ? 'text-green-600' : lifePlannerImpact.netWorthChange < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                  {lifePlannerImpact.netWorthChange > 0 ? '+' : ''}{fmtCompact(lifePlannerImpact.netWorthChange)}
+                </p>
+              </div>
+
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Years to FIRE</p>
+                <p className="text-xl font-bold text-gray-800">
+                  {lifePlannerImpact.adjustedYearsToFire ? `${lifePlannerImpact.adjustedYearsToFire} yrs` : '—'}
+                </p>
+                {lifePlannerImpact.yearsToFireChange !== null && (
+                  <p className={`text-sm font-medium ${lifePlannerImpact.yearsToFireChange < 0 ? 'text-green-600' : lifePlannerImpact.yearsToFireChange > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                    {lifePlannerImpact.yearsToFireChange > 0 ? '+' : ''}{lifePlannerImpact.yearsToFireChange} yrs
+                  </p>
+                )}
+              </div>
+
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total Extra Expenses</p>
+                <p className={`text-xl font-bold ${lifePlannerImpact.totalExtraExpenses > 0 ? 'text-red-600' : lifePlannerImpact.totalExtraExpenses < 0 ? 'text-green-600' : 'text-gray-800'}`}>
+                  {fmtCompact(Math.abs(lifePlannerImpact.totalExtraExpenses))}
+                </p>
+                <p className="text-xs text-gray-500">over career</p>
+              </div>
+
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total Extra Income</p>
+                <p className={`text-xl font-bold ${lifePlannerImpact.totalExtraIncome > 0 ? 'text-green-600' : lifePlannerImpact.totalExtraIncome < 0 ? 'text-red-600' : 'text-gray-800'}`}>
+                  {fmtCompact(Math.abs(lifePlannerImpact.totalExtraIncome))}
+                </p>
+                <p className="text-xs text-gray-500">over career</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {lifeEvents.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <div className="text-4xl mb-3">📅</div>
+            <p className="text-sm">No life events added yet</p>
+            <p className="text-xs text-gray-400 mt-1">Click the buttons above to plan your future</p>
+          </div>
+        )}
       </div>
     </div>
   )
