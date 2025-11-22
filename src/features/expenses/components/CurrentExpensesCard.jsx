@@ -6,7 +6,7 @@ export function CurrentExpensesCard({ categories, onUpdate }) {
     return (
         <Card className="mb-6">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Current Expenses 💸</h2>
+                <h2 className="text-xl font-bold text-gray-900">Current Expenses</h2>
                 {/* Add button removed as per request for fixed categories */}
             </div>
 

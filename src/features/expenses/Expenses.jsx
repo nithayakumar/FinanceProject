@@ -41,6 +41,7 @@ function Expenses() {
           onAddJump={actions.addJump}
           onUpdateJump={actions.updateJump}
           onRemoveJump={actions.removeJump}
+          onMoveJump={actions.moveJump}
         />
       </div>
     </div>

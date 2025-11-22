@@ -41,10 +41,10 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
 ]
 
 export const JUMP_TYPES = {
-    CHANGE_AMOUNT: { value: 'change_amount', label: 'Change Expense $' },
-    SET_AMOUNT: { value: 'set_amount', label: 'Set New Expense $' },
-    CHANGE_PERCENT: { value: 'change_percent', label: 'Change by %' }, // e.g. increase by 10%
-    SET_PERCENT_INCOME: { value: 'set_percent_income', label: 'Set New % of Income' }
+    SET_AMOUNT: { value: 'set_amount', label: 'New $ Amount' },
+    CHANGE_AMOUNT: { value: 'change_amount', label: 'Add/Subtract $ Amount' },
+    CHANGE_PERCENT: { value: 'change_percent', label: 'Change Amount by %' },
+    SET_PERCENT_INCOME: { value: 'set_percent_income', label: 'New % of Income' }
 }
 
 export const JUMP_DESCRIPTIONS = ["Lifestyle Inflation 🍾", "New Home 🏠", "Child Expenses 👶", "Medical Costs 🏥", "Travel Plans ✈️"]

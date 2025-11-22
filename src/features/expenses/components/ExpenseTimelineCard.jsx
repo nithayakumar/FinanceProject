@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Card, Button, Input } from '../../../shared/ui'
 import { JUMP_TYPES } from '../config/expensesSchema'
 
-export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRemoveJump }) {
+export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRemoveJump, onMoveJump }) {
     // Flatten all jumps into a single array with category context
     const allJumps = categories.flatMap(cat =>
         cat.jumps.map(jump => ({
@@ -12,11 +12,10 @@ export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRem
         }))
     ).sort((a, b) => (Number(a.year) || 9999) - (Number(b.year) || 9999))
 
-    const [selectedCategoryForNewJump, setSelectedCategoryForNewJump] = useState(categories[0]?.id || '')
-
     const handleAddJump = () => {
-        if (selectedCategoryForNewJump) {
-            onAddJump(selectedCategoryForNewJump)
+        // Add jump to the first category by default
+        if (categories.length > 0) {
+            onAddJump(categories[0].id)
         }
     }
 
@@ -24,40 +23,39 @@ export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRem
         <Card className="mb-6">
             <div className="flex justify-between items-center mb-4">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-900">Expense Timeline 📅</h2>
+                    <h2 className="text-xl font-bold text-gray-900">Change in Expense 📅</h2>
                     <p className="text-sm text-gray-500">Future changes to your expenses (e.g., buying a home, kids, etc.)</p>
                 </div>
-                <div className="flex gap-2">
-                    <select
-                        value={selectedCategoryForNewJump}
-                        onChange={(e) => setSelectedCategoryForNewJump(e.target.value)}
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2"
-                    >
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                    </select>
-                    <Button onClick={handleAddJump} variant="secondary" size="sm" disabled={!selectedCategoryForNewJump}>
-                        + Add Change
-                    </Button>
-                </div>
+                <Button onClick={handleAddJump} variant="secondary" size="sm">
+                    + Add Change in Expense
+                </Button>
             </div>
 
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-left">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
-                            <th className="px-4 py-3 rounded-l-lg w-24">Year</th>
-                            <th className="px-4 py-3 w-48">Category</th>
-                            <th className="px-4 py-3">Description</th>
+                            <th className="px-4 py-3 rounded-l-lg w-48">Category</th>
+                            <th className="px-4 py-3 w-24">Year</th>
                             <th className="px-4 py-3">Change Type</th>
                             <th className="px-4 py-3">Value</th>
-                            <th className="px-4 py-3 rounded-r-lg text-right">Actions</th>
+                            <th className="px-4 py-3 rounded-r-lg text-right w-16"></th>
                         </tr>
                     </thead>
                     <tbody>
                         {allJumps.map((jump) => (
                             <tr key={jump.id} className="bg-white border-b hover:bg-gray-50">
+                                <td className="px-4 py-3">
+                                    <select
+                                        value={jump.categoryId}
+                                        onChange={(e) => onMoveJump(jump.id, jump.categoryId, e.target.value)}
+                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                    >
+                                        {categories.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        ))}
+                                    </select>
+                                </td>
                                 <td className="px-4 py-3">
                                     <Input
                                         type="number"
@@ -65,17 +63,6 @@ export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRem
                                         onChange={(val) => onUpdateJump(jump.categoryId, jump.id, 'year', val)}
                                         placeholder="Year"
                                         className="w-20"
-                                    />
-                                </td>
-                                <td className="px-4 py-3 font-medium text-gray-900">
-                                    {jump.categoryName}
-                                </td>
-                                <td className="px-4 py-3">
-                                    <Input
-                                        value={jump.description}
-                                        onChange={(val) => onUpdateJump(jump.categoryId, jump.id, 'description', val)}
-                                        placeholder="Description"
-                                        className="w-full"
                                     />
                                 </td>
                                 <td className="px-4 py-3">
@@ -92,10 +79,9 @@ export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRem
                                 <td className="px-4 py-3">
                                     <Input
                                         type="number"
-                                        value={jump.value || jump.jumpPercent} // Fallback for migration
+                                        value={jump.value || jump.jumpPercent}
                                         onChange={(val) => {
                                             onUpdateJump(jump.categoryId, jump.id, 'value', val)
-                                            // Also update jumpPercent for backward compatibility if needed, or just rely on 'value'
                                             onUpdateJump(jump.categoryId, jump.id, 'jumpPercent', val)
                                         }}
                                         placeholder="0"
@@ -105,16 +91,17 @@ export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRem
                                 <td className="px-4 py-3 text-right">
                                     <button
                                         onClick={() => onRemoveJump(jump.categoryId, jump.id)}
-                                        className="text-red-600 hover:text-red-900 font-medium"
+                                        className="text-gray-400 hover:text-red-600 font-medium text-lg"
+                                        title="Remove"
                                     >
-                                        Remove
+                                        ×
                                     </button>
                                 </td>
                             </tr>
                         ))}
                         {allJumps.length === 0 && (
                             <tr>
-                                <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                                <td colSpan="5" className="px-4 py-8 text-center text-gray-500">
                                     No future changes added yet.
                                 </td>
                             </tr>

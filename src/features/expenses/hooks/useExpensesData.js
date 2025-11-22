@@ -146,6 +146,31 @@ export function useExpensesData() {
         }))
     }
 
+    const moveJump = (jumpId, oldCategoryId, newCategoryId) => {
+        setData(prev => {
+            // Find the jump in the old category
+            const oldCategory = prev.expenseCategories.find(c => c.id === oldCategoryId)
+            const jumpToMove = oldCategory?.jumps.find(j => j.id === jumpId)
+
+            if (!jumpToMove) return prev
+
+            return {
+                ...prev,
+                expenseCategories: prev.expenseCategories.map(c => {
+                    if (c.id === oldCategoryId) {
+                        // Remove from old
+                        return { ...c, jumps: c.jumps.filter(j => j.id !== jumpId) }
+                    }
+                    if (c.id === newCategoryId) {
+                        // Add to new
+                        return { ...c, jumps: [...c.jumps, jumpToMove] }
+                    }
+                    return c
+                })
+            }
+        })
+    }
+
     // Add new category action (since we are moving to a list view)
     const addCategory = () => {
         const newCategory = {
@@ -181,6 +206,7 @@ export function useExpensesData() {
             addJump,
             updateJump,
             removeJump,
+            moveJump,
             addCategory,
             removeCategory
         }
