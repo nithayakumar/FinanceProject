@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { storage, EXPENSE_CONFIG, createDefaultExpenseCategories } from '../../../core'
+import { storage } from '../../../core'
 import { calculateExpenseProjections } from '../Expenses.calc'
-import { JUMP_DESCRIPTIONS } from '../config/expensesSchema'
+import { JUMP_DESCRIPTIONS, DEFAULT_EXPENSE_CATEGORIES, JUMP_TYPES } from '../config/expensesSchema'
 
 export function useExpensesData() {
     // Load profile for inflation rate
@@ -9,14 +9,34 @@ export function useExpensesData() {
     const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
     const incomeData = storage.load('income')
 
-    // Initialize state directly from storage
+    // Initialize state
     const [data, setData] = useState(() => {
         const saved = storage.load('expenses')
-        if (saved) {
-            return saved
+        if (saved && saved.expenseCategories && saved.expenseCategories.length > 0) {
+            // Migration: Ensure amountType exists if loading old data
+            const migratedCategories = saved.expenseCategories.map(cat => ({
+                ...cat,
+                amountType: cat.amountType || 'percent', // Default to percent as requested
+                percentOfIncome: cat.percentOfIncome || '',
+                annualAmount: cat.annualAmount || ''
+            }))
+            return { ...saved, expenseCategories: migratedCategories }
         }
+
+        // Initialize with new defaults
+        const defaultCategories = DEFAULT_EXPENSE_CATEGORIES.map(cat => ({
+            id: cat.id,
+            category: cat.name, // keeping 'category' key for compatibility if needed, or just use name
+            name: cat.name,
+            annualAmount: cat.defaultAmount || '',
+            amountType: 'percent',
+            percentOfIncome: cat.defaultPercent || '',
+            growthRate: inflationRate,
+            jumps: []
+        }))
+
         return {
-            expenseCategories: createDefaultExpenseCategories(inflationRate)
+            expenseCategories: defaultCategories
         }
     })
 
@@ -50,6 +70,14 @@ export function useExpensesData() {
             ...prev,
             expenseCategories: prev.expenseCategories.map(cat => {
                 if (cat.id !== categoryId) return cat
+
+                // Handle amountType switch
+                if (field === 'amountType') {
+                    // When switching, we might want to clear the other value or calculate it?
+                    // For now, just switch the type.
+                    return { ...cat, amountType: value }
+                }
+
                 return { ...cat, [field]: value }
             })
         }))
@@ -62,7 +90,14 @@ export function useExpensesData() {
     // Jumps Logic
     const addJump = (categoryId) => {
         const desc = JUMP_DESCRIPTIONS[Math.floor(Math.random() * JUMP_DESCRIPTIONS.length)]
-        const newJump = { id: `jump-${Date.now()}`, year: '', jumpPercent: '', description: desc }
+        // Default jump type
+        const newJump = {
+            id: `jump-${Date.now()}`,
+            year: '',
+            type: JUMP_TYPES.CHANGE_PERCENT.value, // Default to change by %
+            value: '',
+            description: desc
+        }
 
         setData(prev => ({
             ...prev,
@@ -93,6 +128,31 @@ export function useExpensesData() {
         }))
     }
 
+    // Add new category action (since we are moving to a list view)
+    const addCategory = () => {
+        const newCategory = {
+            id: `cat-${Date.now()}`,
+            name: 'New Expense',
+            annualAmount: '',
+            amountType: 'percent',
+            percentOfIncome: '',
+            growthRate: inflationRate,
+            jumps: []
+        }
+
+        setData(prev => ({
+            ...prev,
+            expenseCategories: [...prev.expenseCategories, newCategory]
+        }))
+    }
+
+    const removeCategory = (categoryId) => {
+        setData(prev => ({
+            ...prev,
+            expenseCategories: prev.expenseCategories.filter(c => c.id !== categoryId)
+        }))
+    }
+
     return {
         data,
         projections,
@@ -102,7 +162,9 @@ export function useExpensesData() {
             toggleAdvanced,
             addJump,
             updateJump,
-            removeJump
+            removeJump,
+            addCategory,
+            removeCategory
         }
     }
 }

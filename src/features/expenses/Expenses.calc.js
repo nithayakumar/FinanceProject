@@ -125,13 +125,25 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
     if (month === 1) {
       data.expenseCategories.forEach(category => {
         if (category.jumps && category.jumps.length > 0) {
-          const changeThisYear = category.jumps.find(j => j.year === year)
-          if (changeThisYear && changeThisYear.changeValue !== undefined && changeThisYear.changeValue !== '') {
-            const delta = Number(changeThisYear.changeValue) || 0
+          const changeThisYear = category.jumps.find(j => Number(j.year) === year)
+          // Check for both new 'value' and legacy 'changeValue'
+          const val = changeThisYear?.value !== undefined ? changeThisYear.value : changeThisYear?.changeValue
+
+          if (changeThisYear && val !== undefined && val !== '') {
+            const delta = Number(val) || 0
             const yearsFromStart = year - 1
             const inflationMultiplier = Math.pow(1 + inflationRate / 100, yearsFromStart)
 
-            if (changeThisYear.changeType === 'dollar') {
+            // Check for both new 'type' and legacy 'changeType'
+            // Map legacy types to new types if needed, or just handle them
+            let type = changeThisYear.type || changeThisYear.changeType || 'change_percent'
+
+            // Map legacy 'dollar' to 'change_amount' if needed, though we can just check for both
+            if (type === 'dollar') type = 'change_amount'
+            if (type === 'percentOfIncome') type = 'set_percent_income'
+            if (type === 'setAmountPV') type = 'set_amount'
+
+            if (type === 'change_amount') {
               // Dollar-based change: track jump for growth calculation
               // The dollar amount entered is in today's dollars and should grow from this year forward
               const growthRate = category.growthRate !== '' && category.growthRate !== undefined
@@ -142,10 +154,10 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
                 basePVAmount: delta,  // In today's dollars
                 growthRate: growthRate
               })
-            } else if (changeThisYear.changeType === 'percentOfIncome') {
+            } else if (type === 'set_percent_income') {
               // Override percent of income for this category from this year onward
               categoryPercentOverrides[category.id] = delta
-            } else if (changeThisYear.changeType === 'setAmountPV') {
+            } else if (type === 'set_amount') {
               // Override base amount (entered in today's dollars; inflate to nominal for this year onward)
               categoryAmountOverrides[category.id] = delta * inflationMultiplier
               // Reset prior adjustments when setting a new absolute amount
@@ -153,7 +165,8 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
               categoryDollarAdditions[category.id] = 0
               categoryDollarJumpYears[category.id] = []
             } else {
-              // Percentage-based change: multiply
+              // 'change_percent': Percentage-based change (multiplier)
+              // e.g. 10 means increase by 10% -> multiplier 1.10
               const jumpMultiplier = 1 + (delta / 100)
               categoryMultipliers[category.id] *= jumpMultiplier
             }
@@ -167,16 +180,21 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
     const categoryBreakdown = {}
 
     data.expenseCategories.forEach(category => {
-      const amountType = category.amountType || 'dollar'
+      const amountType = category.amountType || 'percent' // Default to percent now
 
       // Calculate annual values with growth and changes
       const yearsOfGrowth = year - 1
       const growthRate = category.growthRate !== '' && category.growthRate !== undefined
         ? category.growthRate
         : inflationRate
-      const growthMultiplier = amountType === 'percentOfIncome'
-        ? 1 // Growth derives from income, so no explicit growth applied
+
+      // If amountType is percent, base growth is driven by income growth, so no explicit inflation unless specified?
+      // Actually, if it's % of income, it grows with income.
+      // If it's fixed amount, it grows by inflation/growthRate.
+      const growthMultiplier = amountType === 'percent'
+        ? 1 // Growth derives from income
         : Math.pow(1 + growthRate / 100, yearsOfGrowth)
+
       const jumpMultiplier = categoryMultipliers[category.id]
 
       // Calculate dollar additions with growth from jump year
@@ -202,11 +220,10 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
       let baseAnnual
       if (categoryAmountOverrides[category.id] !== null) {
         baseAnnual = categoryAmountOverrides[category.id]
-      } else if (amountType === 'percentOfIncome') {
+      } else if (amountType === 'percent') {
         baseAnnual = grossMonthlyIncome * 12 * (effectivePercentOfIncome / 100)
       } else {
-        // Dollar-based: if annualAmount is empty/falsy, treat as $0
-        // User must explicitly set dollar amounts or switch to percentOfIncome
+        // Fixed Amount
         const annualAmount = category.annualAmount || 0
         baseAnnual = annualAmount * growthMultiplier
       }

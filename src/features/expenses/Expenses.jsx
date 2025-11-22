@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SplitLayout from '../../shared/components/SplitLayout'
-import { Button } from '../../shared/ui/Button'
 import { useExpensesData } from './hooks/useExpensesData'
-import { ExpenseCategoryCard } from './components/ExpenseCategoryCard'
+import { CurrentExpensesCard } from './components/CurrentExpensesCard'
+import { ExpenseTimelineCard } from './components/ExpenseTimelineCard'
 import { ExpensesChart } from './components/ExpensesChart'
 import { ExpensesSummary } from './components/ExpensesSummary'
 
@@ -15,7 +15,6 @@ function Expenses() {
   const {
     data,
     projections,
-    expandedCategories,
     actions
   } = useExpensesData()
 
@@ -30,18 +29,19 @@ function Expenses() {
       </div>
 
       <div className="space-y-6">
-        {data.expenseCategories.map((category) => (
-          <ExpenseCategoryCard
-            key={category.id}
-            category={category}
-            isExpanded={expandedCategories[category.id]}
-            onToggleExpand={actions.toggleAdvanced}
-            onUpdate={actions.updateCategory}
-            onAddJump={actions.addJump}
-            onUpdateJump={actions.updateJump}
-            onRemoveJump={actions.removeJump}
-          />
-        ))}
+        <CurrentExpensesCard
+          categories={data.expenseCategories}
+          onUpdate={actions.updateCategory}
+          onAdd={actions.addCategory}
+          onRemove={actions.removeCategory}
+        />
+
+        <ExpenseTimelineCard
+          categories={data.expenseCategories}
+          onAddJump={actions.addJump}
+          onUpdateJump={actions.updateJump}
+          onRemoveJump={actions.removeJump}
+        />
       </div>
     </div>
   )
