@@ -8,7 +8,10 @@ import SplitLayout from '../../shared/components/SplitLayout'
 function PersonalDetails() {
   const navigate = useNavigate()
   const [availableStates, setAvailableStates] = useState(['California'])
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(() => {
+    const saved = localStorage.getItem('personalDetails_showAdvanced')
+    return saved === 'true'
+  })
   const [errors, setErrors] = useState({})
 
   // Initialize state directly from storage to avoid race conditions
@@ -72,10 +75,12 @@ function PersonalDetails() {
     // Save to localStorage
     storage.save('profile', data)
 
-    // Sync targetCash and currentSavings to Investments section
+    // Sync targetCash, currentCash, and currentSavings to Investments section
     const investmentsData = storage.load('investmentsDebt')
     if (investmentsData) {
       investmentsData.targetCash = data.targetCash
+      investmentsData.currentCash = data.currentCash
+      investmentsData.currentSavings = data.currentSavings
       storage.save('investmentsDebt', investmentsData)
     }
   }, [data])
@@ -160,7 +165,11 @@ function PersonalDetails() {
         {/* Advanced Section */}
         <div className="pt-2">
           <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
+            onClick={() => {
+              const newValue = !showAdvanced
+              setShowAdvanced(newValue)
+              localStorage.setItem('personalDetails_showAdvanced', newValue.toString())
+            }}
             className="flex items-center text-sm text-gray-600 hover:text-gray-900 font-medium"
           >
             <span className="mr-1">{showAdvanced ? '▼' : '▶'}</span>
@@ -179,7 +188,7 @@ function PersonalDetails() {
                   <input
                     type="number"
                     value={data.currentSavings}
-                    onChange={(e) => handleChange('currentSavings', e.target.value === '' ? 0 : Number(e.target.value))}
+                    onChange={(e) => handleChange('currentSavings', e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="0"
                     className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.currentSavings ? 'border-red-500' : 'border-gray-300'
                       }`}
@@ -199,7 +208,7 @@ function PersonalDetails() {
                     <input
                       type="number"
                       value={data.currentCash}
-                      onChange={(e) => handleChange('currentCash', e.target.value === '' ? 0 : Number(e.target.value))}
+                      onChange={(e) => handleChange('currentCash', e.target.value === '' ? '' : Number(e.target.value))}
                       placeholder="0"
                       className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.currentCash ? 'border-red-500' : 'border-gray-300'
                         }`}
@@ -217,7 +226,7 @@ function PersonalDetails() {
                     <input
                       type="number"
                       value={data.targetCash}
-                      onChange={(e) => handleChange('targetCash', e.target.value === '' ? 0 : Number(e.target.value))}
+                      onChange={(e) => handleChange('targetCash', e.target.value === '' ? '' : Number(e.target.value))}
                       placeholder="10000"
                       className={`w-full pl-8 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.targetCash ? 'border-red-500' : 'border-gray-300'
                         }`}
@@ -297,7 +306,7 @@ function PersonalDetails() {
         </div>
       </div>
 
-      <div className="mt-auto pt-6">
+      <div className="pt-6">
         <button
           onClick={handleNextFeature}
           className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition shadow-sm"

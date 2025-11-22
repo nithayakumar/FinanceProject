@@ -14,6 +14,39 @@ function WIPTab({ data }) {
   // State for sensitivity analysis
   const [sensitivityGrowthRate, setSensitivityGrowthRate] = useState(7) // 0% to 15%
   const [sensitivityInflation, setSensitivityInflation] = useState(profile?.inflationRate || 2.7) // 0% to 8%
+
+  // State for life planner
+  const [lifeEvents, setLifeEvents] = useState([])
+
+  // Life event templates
+  const lifeEventTemplates = {
+    child: { name: 'Have a Child', expenseImpact: 15000, incomeImpact: 0, duration: 18, icon: '👶' },
+    partner: { name: 'Add Partner', expenseImpact: 10000, incomeImpact: 50000, duration: 0, icon: '💑' },
+    losePartner: { name: 'Lose Partner Income', expenseImpact: -5000, incomeImpact: -50000, duration: 0, icon: '💔' },
+    tuition: { name: 'College Tuition', expenseImpact: 40000, incomeImpact: 0, duration: 4, icon: '🎓' },
+    wedding: { name: 'Wedding', expenseImpact: 30000, incomeImpact: 0, duration: 1, icon: '💒' },
+    relocation: { name: 'Relocate (Higher COL)', expenseImpact: 12000, incomeImpact: 20000, duration: 0, icon: '🏠' },
+    relocationLow: { name: 'Relocate (Lower COL)', expenseImpact: -15000, incomeImpact: -10000, duration: 0, icon: '🏡' },
+    careerBreak: { name: 'Career Break', expenseImpact: 0, incomeImpact: -80000, duration: 1, icon: '🏖️' },
+  }
+
+  const addLifeEvent = (templateKey) => {
+    const template = lifeEventTemplates[templateKey]
+    const newEvent = {
+      id: Date.now(),
+      ...template,
+      startYear: 5, // Default to year 5
+    }
+    setLifeEvents([...lifeEvents, newEvent])
+  }
+
+  const updateLifeEvent = (id, field, value) => {
+    setLifeEvents(lifeEvents.map(e => e.id === id ? { ...e, [field]: value } : e))
+  }
+
+  const removeLifeEvent = (id) => {
+    setLifeEvents(lifeEvents.filter(e => e.id !== id))
+  }
   const currentAge = profile?.age || 30
   const retirementAge = profile?.retirementAge || 65
   const inflationRate = (profile?.inflationRate || 2.7) / 100
@@ -365,6 +398,96 @@ function WIPTab({ data }) {
       scenarios
     }
   }, [projections, fireMetrics, sensitivityGrowthRate, sensitivityInflation, inflationRate, currentAge, retirementAge])
+
+  // Calculate life planner impact
+  const lifePlannerImpact = useMemo(() => {
+    if (!projections.length || !fireMetrics || lifeEvents.length === 0) return null
+
+    const yearsToRetirement = retirementAge - currentAge
+    const year1Gap = fireMetrics.year1Gap
+    const year1Income = fireMetrics.year1GrossIncome
+    const year1Expenses = fireMetrics.year1Expenses
+    const startingNetWorth = fireMetrics.year1NetWorth
+    const growthRate = 0.07
+
+    // Simulate without life events (baseline)
+    let baselineNetWorth = startingNetWorth
+    for (let i = 0; i < yearsToRetirement; i++) {
+      baselineNetWorth = baselineNetWorth * (1 + growthRate) + year1Gap
+    }
+
+    // Simulate with life events
+    let adjustedNetWorth = startingNetWorth
+    let totalExtraExpenses = 0
+    let totalExtraIncome = 0
+
+    for (let year = 1; year <= yearsToRetirement; year++) {
+      // Calculate impact for this year from all events
+      let yearlyExpenseImpact = 0
+      let yearlyIncomeImpact = 0
+
+      lifeEvents.forEach(event => {
+        const eventEndYear = event.duration > 0 ? event.startYear + event.duration - 1 : yearsToRetirement
+
+        if (year >= event.startYear && year <= eventEndYear) {
+          yearlyExpenseImpact += event.expenseImpact
+          yearlyIncomeImpact += event.incomeImpact
+        }
+      })
+
+      totalExtraExpenses += yearlyExpenseImpact
+      totalExtraIncome += yearlyIncomeImpact
+
+      // Adjusted gap for this year
+      const adjustedGap = year1Gap + yearlyIncomeImpact - yearlyExpenseImpact
+      adjustedNetWorth = adjustedNetWorth * (1 + growthRate) + adjustedGap
+    }
+
+    // Calculate years to FIRE with life events
+    let adjustedYearsToFire = null
+    let simNetWorth = startingNetWorth
+    for (let year = 1; year <= 100; year++) {
+      // Calculate impact for this year
+      let yearlyExpenseImpact = 0
+      let yearlyIncomeImpact = 0
+
+      lifeEvents.forEach(event => {
+        const eventEndYear = event.duration > 0 ? event.startYear + event.duration - 1 : 100
+
+        if (year >= event.startYear && year <= eventEndYear) {
+          yearlyExpenseImpact += event.expenseImpact
+          yearlyIncomeImpact += event.incomeImpact
+        }
+      })
+
+      const adjustedGap = year1Gap + yearlyIncomeImpact - yearlyExpenseImpact
+      const inflatedFireNumber = fireMetrics.fireNumber * Math.pow(1 + inflationRate, year - 1)
+
+      if (simNetWorth >= inflatedFireNumber) {
+        adjustedYearsToFire = year
+        break
+      }
+
+      simNetWorth = simNetWorth * (1 + growthRate) + adjustedGap
+    }
+
+    const netWorthChange = adjustedNetWorth - baselineNetWorth
+    const yearsToFireChange = adjustedYearsToFire && fireMetrics.yearsToFire
+      ? adjustedYearsToFire - fireMetrics.yearsToFire
+      : null
+
+    return {
+      baselineNetWorth,
+      adjustedNetWorth,
+      netWorthChange,
+      baselineYearsToFire: fireMetrics.yearsToFire,
+      adjustedYearsToFire,
+      yearsToFireChange,
+      totalExtraExpenses,
+      totalExtraIncome,
+      eventCount: lifeEvents.length
+    }
+  }, [projections, fireMetrics, lifeEvents, inflationRate, currentAge, retirementAge])
 
   // Calculate milestones
   const milestones = useMemo(() => {
