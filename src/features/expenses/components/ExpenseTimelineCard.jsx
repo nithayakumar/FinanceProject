@@ -77,16 +77,26 @@ export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRem
                                     </select>
                                 </td>
                                 <td className="px-4 py-3">
-                                    <Input
-                                        type="number"
-                                        value={jump.value || jump.jumpPercent}
-                                        onChange={(val) => {
-                                            onUpdateJump(jump.categoryId, jump.id, 'value', val)
-                                            onUpdateJump(jump.categoryId, jump.id, 'jumpPercent', val)
-                                        }}
-                                        placeholder="0"
-                                        className="w-24"
-                                    />
+                                    {(() => {
+                                        const jumpType = jump.type || JUMP_TYPES.CHANGE_PERCENT.value
+                                        const isPercentType = jumpType === 'change_percent' || jumpType === 'set_percent_income'
+                                        const isDollarType = jumpType === 'set_amount' || jumpType === 'change_amount'
+
+                                        return (
+                                            <Input
+                                                type="number"
+                                                value={jump.value || jump.jumpPercent}
+                                                onChange={(val) => {
+                                                    onUpdateJump(jump.categoryId, jump.id, 'value', val)
+                                                    onUpdateJump(jump.categoryId, jump.id, 'jumpPercent', val)
+                                                }}
+                                                prefix={isDollarType ? '$' : undefined}
+                                                suffix={isPercentType ? '%' : undefined}
+                                                placeholder="0"
+                                                className="w-24"
+                                            />
+                                        )
+                                    })()}
                                 </td>
                                 <td className="px-4 py-3 text-right">
                                     <button

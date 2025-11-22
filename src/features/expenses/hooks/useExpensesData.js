@@ -201,6 +201,37 @@ export function useExpensesData() {
         }))
     }
 
+    // One-time expense actions
+    const addOneTimeExpense = () => {
+        const newExpense = {
+            id: `onetime-${Date.now()}`,
+            year: '',
+            description: '',
+            amount: ''
+        }
+
+        setData(prev => ({
+            ...prev,
+            oneTimeExpenses: [...prev.oneTimeExpenses, newExpense]
+        }))
+    }
+
+    const updateOneTimeExpense = (expenseId, field, value) => {
+        setData(prev => ({
+            ...prev,
+            oneTimeExpenses: prev.oneTimeExpenses.map(e =>
+                e.id === expenseId ? { ...e, [field]: value } : e
+            )
+        }))
+    }
+
+    const removeOneTimeExpense = (expenseId) => {
+        setData(prev => ({
+            ...prev,
+            oneTimeExpenses: prev.oneTimeExpenses.filter(e => e.id !== expenseId)
+        }))
+    }
+
     return {
         data,
         projections,
@@ -213,7 +244,10 @@ export function useExpensesData() {
             removeJump,
             moveJump,
             addCategory,
-            removeCategory
+            removeCategory,
+            addOneTimeExpense,
+            updateOneTimeExpense,
+            removeOneTimeExpense
         }
     }
 }

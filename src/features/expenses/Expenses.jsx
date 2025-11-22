@@ -4,6 +4,7 @@ import SplitLayout from '../../shared/components/SplitLayout'
 import { useExpensesData } from './hooks/useExpensesData'
 import { CurrentExpensesCard } from './components/CurrentExpensesCard'
 import { ExpenseTimelineCard } from './components/ExpenseTimelineCard'
+import { OneTimeExpensesCard } from './components/OneTimeExpensesCard'
 import { ExpensesChart } from './components/ExpensesChart'
 import { ExpensesSummary } from './components/ExpensesSummary'
 
@@ -32,8 +33,6 @@ function Expenses() {
         <CurrentExpensesCard
           categories={data.expenseCategories}
           onUpdate={actions.updateCategory}
-          onAdd={actions.addCategory}
-          onRemove={actions.removeCategory}
         />
 
         <ExpenseTimelineCard
@@ -42,6 +41,13 @@ function Expenses() {
           onUpdateJump={actions.updateJump}
           onRemoveJump={actions.removeJump}
           onMoveJump={actions.moveJump}
+        />
+
+        <OneTimeExpensesCard
+          oneTimeExpenses={data.oneTimeExpenses}
+          onAdd={actions.addOneTimeExpense}
+          onUpdate={actions.updateOneTimeExpense}
+          onRemove={actions.removeOneTimeExpense}
         />
       </div>
     </div>
