@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { storage } from '../../../core'
 import { calculateExpenseProjections } from '../Expenses.calc'
+import { calculateIncomeProjections } from '../../income/Income.calc'
 import { JUMP_DESCRIPTIONS, DEFAULT_EXPENSE_CATEGORIES, JUMP_TYPES } from '../config/expensesSchema'
 
 export function useExpensesData() {
@@ -20,7 +21,12 @@ export function useExpensesData() {
                 percentOfIncome: cat.percentOfIncome || '',
                 annualAmount: cat.annualAmount || ''
             }))
-            return { ...saved, expenseCategories: migratedCategories }
+            // Ensure oneTimeExpenses exists
+            return {
+                ...saved,
+                expenseCategories: migratedCategories,
+                oneTimeExpenses: saved.oneTimeExpenses || []
+            }
         }
 
         // Initialize with new defaults
@@ -36,7 +42,8 @@ export function useExpensesData() {
         }))
 
         return {
-            expenseCategories: defaultCategories
+            expenseCategories: defaultCategories,
+            oneTimeExpenses: []
         }
     })
 
@@ -54,11 +61,17 @@ export function useExpensesData() {
     }, [data])
 
     // Debounced Projections
-    const [projections, setProjections] = useState(() => calculateExpenseProjections(data, profile, incomeData))
+    const [projections, setProjections] = useState(() => {
+        // Calculate income projections first
+        const incomeProjections = incomeData ? calculateIncomeProjections(incomeData, profile) : null
+        return calculateExpenseProjections(data, profile, incomeProjections)
+    })
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            setProjections(calculateExpenseProjections(data, profile, incomeData))
+            // Calculate income projections first
+            const incomeProjections = incomeData ? calculateIncomeProjections(incomeData, profile) : null
+            setProjections(calculateExpenseProjections(data, profile, incomeProjections))
         }, 300) // 300ms debounce
 
         return () => clearTimeout(timer)
