@@ -41,8 +41,8 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
 ]
 
 export const JUMP_TYPES = {
-    SET_AMOUNT: { value: 'set_amount', label: 'New $ Amount' },
-    CHANGE_AMOUNT: { value: 'change_amount', label: 'Add/Subtract $ Amount' },
+    SET_AMOUNT: { value: 'set_amount', label: 'New Amount' },
+    CHANGE_AMOUNT: { value: 'change_amount', label: 'Add/Subtract Amount' },
     CHANGE_PERCENT: { value: 'change_percent', label: 'Change Amount by %' },
     SET_PERCENT_INCOME: { value: 'set_percent_income', label: 'New % of Income' }
 }

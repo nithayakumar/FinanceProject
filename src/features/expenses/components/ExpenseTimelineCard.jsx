@@ -24,10 +24,10 @@ export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRem
             <div className="flex justify-between items-center mb-4">
                 <div>
                     <h2 className="text-xl font-bold text-gray-900">Change in Expense 📅</h2>
-                    <p className="text-sm text-gray-500">Future changes to your expenses (e.g., buying a home, kids, etc.)</p>
+                    <p className="text-sm text-gray-500">Model changes to expenses (e.g. tuition fees)</p>
                 </div>
                 <Button onClick={handleAddJump} variant="secondary" size="sm">
-                    + Add Change in Expense
+                    + Expense Change
                 </Button>
             </div>
 
@@ -35,9 +35,9 @@ export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRem
                 <table className="w-full text-sm text-left">
                     <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                         <tr>
-                            <th className="px-4 py-3 rounded-l-lg w-48">Category</th>
-                            <th className="px-4 py-3 w-24">Year</th>
-                            <th className="px-4 py-3">Change Type</th>
+                            <th className="px-4 py-3 rounded-l-lg w-24">Year</th>
+                            <th className="px-4 py-3 w-48">Category</th>
+                            <th className="px-4 py-3 w-64">Change Type</th>
                             <th className="px-4 py-3">Value</th>
                             <th className="px-4 py-3 rounded-r-lg text-right w-16"></th>
                         </tr>
@@ -45,6 +45,15 @@ export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRem
                     <tbody>
                         {allJumps.map((jump) => (
                             <tr key={jump.id} className="bg-white border-b hover:bg-gray-50">
+                                <td className="px-4 py-3">
+                                    <Input
+                                        type="number"
+                                        value={jump.year}
+                                        onChange={(val) => onUpdateJump(jump.categoryId, jump.id, 'year', val)}
+                                        placeholder="Year"
+                                        className="w-20"
+                                    />
+                                </td>
                                 <td className="px-4 py-3">
                                     <select
                                         value={jump.categoryId}
@@ -55,15 +64,6 @@ export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRem
                                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
                                     </select>
-                                </td>
-                                <td className="px-4 py-3">
-                                    <Input
-                                        type="number"
-                                        value={jump.year}
-                                        onChange={(val) => onUpdateJump(jump.categoryId, jump.id, 'year', val)}
-                                        placeholder="Year"
-                                        className="w-20"
-                                    />
                                 </td>
                                 <td className="px-4 py-3">
                                     <select
