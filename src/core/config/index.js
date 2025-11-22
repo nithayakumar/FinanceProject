@@ -11,7 +11,7 @@
 export const INCOME_CONFIG = {
   MIN_STREAMS: 1,
   MAX_STREAMS: 3,
-  DEFAULT_GROWTH_RATE: 2.7  // Inflation rate
+  DEFAULT_GROWTH_RATE: 5  // Default income growth
 }
 
 // ============================
@@ -57,7 +57,7 @@ export const INVESTMENTS_CONFIG = {
  * @param {number} inflationRate
  * @returns {Object} Default income stream structure
  */
-export function createDefaultIncomeStream(index = 1, yearsToRetirement = 30, inflationRate = 2.7) {
+export function createDefaultIncomeStream(index = 1, yearsToRetirement = 30, inflationRate = 5) {
   return {
     id: `stream-${Date.now()}-${index}`,
     name: `Income Stream ${index}`,
@@ -67,6 +67,7 @@ export function createDefaultIncomeStream(index = 1, yearsToRetirement = 30, inf
     equity: '',
     growthRate: inflationRate,
     endWorkYear: yearsToRetirement,
+    isEndYearLinked: true,
     jumps: [],
     careerBreaks: []
   }

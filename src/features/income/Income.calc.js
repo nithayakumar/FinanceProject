@@ -261,21 +261,21 @@ export function calculateIncomeProjections(data, profile) {
  * Aggregates monthly data by year and separates by income stream
  */
 function prepareChartData(projections, incomeStreams, yearsToRetirement, inflationRate) {
-  const chartData = []
+  const chartDataPV = []
+  const chartDataNominal = []
 
   // Aggregate by year (up to retirement)
   for (let year = 1; year <= yearsToRetirement; year++) {
-    const yearData = {
-      year,
-      total: 0
-    }
+    const yearDataPV = { year, total: 0 }
+    const yearDataNominal = { year, total: 0 }
 
     // Get all months for this year
     const yearMonths = projections.filter(p => p.year === year)
 
-    // Calculate annual PV total for each stream
+    // Calculate annual totals for each stream
     incomeStreams.forEach(stream => {
       let streamAnnualPV = 0
+      let streamAnnualNominal = 0
 
       yearMonths.forEach((monthProj, monthIndex) => {
         // Check if this stream was active this month
@@ -327,18 +327,23 @@ function prepareChartData(projections, incomeStreams, yearsToRetirement, inflati
           const monthlyPV = monthlyTotal / discountFactor
 
           streamAnnualPV += monthlyPV
+          streamAnnualNominal += monthlyTotal
         }
       })
 
-      // Store this stream's annual PV (keep full precision)
-      yearData[stream.name] = streamAnnualPV
-      yearData.total += streamAnnualPV
+      // Store this stream's annual values
+      yearDataPV[stream.name] = streamAnnualPV
+      yearDataPV.total += streamAnnualPV
+
+      yearDataNominal[stream.name] = streamAnnualNominal
+      yearDataNominal.total += streamAnnualNominal
     })
 
-    chartData.push(yearData)
+    chartDataPV.push(yearDataPV)
+    chartDataNominal.push(yearDataNominal)
   }
 
-  return chartData
+  return { chartDataPV, chartDataNominal }
 }
 
 /**

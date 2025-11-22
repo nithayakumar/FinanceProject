@@ -1,77 +1,110 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../../core'
 import { validateIncome, calculateIncomeProjections } from './Income.calc'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { INCOME_CONFIG, createDefaultIncomeStream } from '../../core'
+import SplitLayout from '../../shared/components/SplitLayout'
 
-/**
- * Income Component - supports both controlled and uncontrolled modes
- *
- * Props (all optional):
- * - value: income data object (controlled mode)
- * - onChange: callback when data changes (controlled mode)
- * - embedded: hide navigation/save buttons (for embedding in other views)
- * - profileData: profile data to use instead of loading from storage
- */
-function Income({ value, onChange, embedded = false, profileData }) {
+function Income() {
   const navigate = useNavigate()
-  const [view, setView] = useState('input')
   const [errors, setErrors] = useState({})
-  const [isSaved, setIsSaved] = useState(false)
-
-  // Determine if we're in controlled mode
-  const isControlled = value !== undefined && onChange !== undefined
+  const [expandedStreams, setExpandedStreams] = useState({}) // Track expanded state for advanced options per stream
 
   // Load profile for retirement year and inflation rate
-  const profile = profileData || storage.load('profile') || {}
+  const profile = storage.load('profile') || {}
   const yearsToRetirement = profile.retirementAge && profile.age
     ? profile.retirementAge - profile.age
-    : 30  // Default to 30 if profile not set
+    : 30
   const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
 
-  const [internalData, setInternalData] = useState({
-    incomeStreams: [
-      createDefaultIncomeStream(1, yearsToRetirement, inflationRate)
-    ]
+  const [activeTab, setActiveTab] = useState('all')
+  const [viewMode, setViewMode] = useState('PV') // 'PV' or 'Nominal'
+
+
+
+  // Initialize state directly from storage to avoid race conditions
+  const [data, setData] = useState(() => {
+    const saved = storage.load('income')
+    if (saved) {
+      // Sanitize saved data
+      if (saved.incomeStreams) {
+        saved.incomeStreams = saved.incomeStreams.map(stream => {
+          // Default isEndYearLinked to true for existing streams (migration)
+          if (stream.isEndYearLinked === undefined) {
+            stream.isEndYearLinked = true
+          }
+
+          // Fix invalid endWorkYear
+          if (!stream.endWorkYear || stream.endWorkYear < 0) {
+            stream.endWorkYear = yearsToRetirement > 0 ? yearsToRetirement : 30
+            stream.isEndYearLinked = true
+          }
+          return stream
+        })
+      }
+      return saved
+    }
+    return {
+      incomeStreams: [
+        createDefaultIncomeStream(1, yearsToRetirement, INCOME_CONFIG.DEFAULT_GROWTH_RATE)
+      ]
+    }
   })
 
-  // Use controlled value or internal state
-  const data = isControlled ? value : internalData
-  const setData = isControlled
-    ? (updater) => {
-        const newData = typeof updater === 'function' ? updater(value) : updater
-        onChange(newData)
-      }
-    : setInternalData
-
-  const [projections, setProjections] = useState(null)
-  const [activeTab, setActiveTab] = useState('all')
-
-  // Load saved data on mount (only in uncontrolled mode)
+  // Sync endWorkYear with yearsToRetirement if linked
   useEffect(() => {
-    if (!isControlled) {
-      const saved = storage.load('income')
-      if (saved) {
-        setInternalData(saved)
-        setIsSaved(saved.incomeStreams && saved.incomeStreams.length > 0)
-        console.log('📋 Loaded saved income:', saved)
-      }
-    }
-  }, [isControlled])
-
-  const handleStreamChange = (streamId, field, fieldValue) => {
-    setIsSaved(false)
     setData(prev => ({
       ...prev,
-      incomeStreams: prev.incomeStreams.map(stream =>
-        stream.id === streamId
-          ? { ...stream, [field]: fieldValue }
-          : stream
-      )
+      incomeStreams: prev.incomeStreams.map(stream => {
+        if (stream.isEndYearLinked && stream.endWorkYear !== yearsToRetirement) {
+          return { ...stream, endWorkYear: yearsToRetirement }
+        }
+        return stream
+      })
+    }))
+  }, [yearsToRetirement])
+
+  // Auto-save effect
+  const isFirstRender = useRef(true)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
+    // Save to localStorage
+    storage.save('income', data)
+  }, [data])
+
+  // Calculate projections in real-time
+  const projections = useMemo(() => {
+    return calculateIncomeProjections(data, profile)
+  }, [data, profile])
+
+  const toggleAdvanced = (streamId) => {
+    setExpandedStreams(prev => ({
+      ...prev,
+      [streamId]: !prev[streamId]
+    }))
+  }
+
+  const handleStreamChange = (streamId, field, fieldValue) => {
+    setData(prev => ({
+      ...prev,
+      incomeStreams: prev.incomeStreams.map(stream => {
+        if (stream.id !== streamId) return stream
+
+        const updates = { [field]: fieldValue }
+
+        // If user manually updates endWorkYear, unlink it
+        if (field === 'endWorkYear') {
+          updates.isEndYearLinked = false
+        }
+
+        return { ...stream, ...updates }
+      })
     }))
 
-    // Clear errors for this field
     if (errors[`${streamId}-${field}`]) {
       setErrors(prev => ({ ...prev, [`${streamId}-${field}`]: '' }))
     }
@@ -83,13 +116,13 @@ function Income({ value, onChange, embedded = false, profileData }) {
       incomeStreams: prev.incomeStreams.map(stream =>
         stream.id === streamId
           ? {
-              ...stream,
-              jumps: stream.jumps.map(jump =>
-                jump.id === jumpId
-                  ? { ...jump, [field]: value }
-                  : jump
-              )
-            }
+            ...stream,
+            jumps: stream.jumps.map(jump =>
+              jump.id === jumpId
+                ? { ...jump, [field]: value }
+                : jump
+            )
+          }
           : stream
       )
     }))
@@ -101,8 +134,11 @@ function Income({ value, onChange, embedded = false, profileData }) {
     const newStream = createDefaultIncomeStream(
       data.incomeStreams.length + 1,
       yearsToRetirement,
-      inflationRate
+      INCOME_CONFIG.DEFAULT_GROWTH_RATE
     )
+
+    // Collapse all other streams to focus on the new one (which will be at the bottom)
+    setExpandedStreams({})
 
     setData(prev => ({
       ...prev,
@@ -119,12 +155,17 @@ function Income({ value, onChange, embedded = false, profileData }) {
     }))
   }
 
+  const JUMP_DESCRIPTIONS = ["Promotion 🚀", "Lateral Move ↔️", "New Job 💼", "Performance Bonus 🌟", "Market Adjustment 📈"]
+  const BREAK_DESCRIPTIONS = ["Sabbatical 🏝️", "Parental Leave 👶", "Study Leave 📚", "Travel ✈️", "Personal Time 🧘"]
+
   const addIncomeJump = (streamId) => {
+    const desc = JUMP_DESCRIPTIONS[Math.floor(Math.random() * JUMP_DESCRIPTIONS.length)]
+
     const newJump = {
       id: `jump-${Date.now()}`,
       year: '',
       jumpPercent: '',
-      description: ''
+      description: desc
     }
 
     setData(prev => ({
@@ -154,8 +195,8 @@ function Income({ value, onChange, embedded = false, profileData }) {
       id: `break-${Date.now()}`,
       startYear: '',
       durationMonths: '',
-      reductionPercent: 100,  // Default to 100% (full layoff)
-      description: ''
+      reductionPercent: 100,
+      description: BREAK_DESCRIPTIONS[Math.floor(Math.random() * BREAK_DESCRIPTIONS.length)]
     }
 
     setData(prev => ({
@@ -174,13 +215,13 @@ function Income({ value, onChange, embedded = false, profileData }) {
       incomeStreams: prev.incomeStreams.map(stream =>
         stream.id === streamId
           ? {
-              ...stream,
-              careerBreaks: (stream.careerBreaks || []).map(breakItem =>
-                breakItem.id === breakId
-                  ? { ...breakItem, [field]: value }
-                  : breakItem
-              )
-            }
+            ...stream,
+            careerBreaks: (stream.careerBreaks || []).map(breakItem =>
+              breakItem.id === breakId
+                ? { ...breakItem, [field]: value }
+                : breakItem
+            )
+          }
           : stream
       )
     }))
@@ -192,683 +233,448 @@ function Income({ value, onChange, embedded = false, profileData }) {
       incomeStreams: prev.incomeStreams.map(stream =>
         stream.id === streamId
           ? {
-              ...stream,
-              careerBreaks: (stream.careerBreaks || []).filter(b => b.id !== breakId)
-            }
+            ...stream,
+            careerBreaks: (stream.careerBreaks || []).filter(b => b.id !== breakId)
+          }
           : stream
       )
     }))
-  }
-
-  const handleContinue = () => {
-    console.group('💾 Saving Income')
-    console.log('Data:', data)
-
-    // Validate
-    const validationErrors = validateIncome(data, yearsToRetirement)
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
-      console.error('Validation errors:', validationErrors)
-      console.groupEnd()
-      return
-    }
-
-    // In controlled/embedded mode, don't save to localStorage or switch views
-    if (isControlled || embedded) {
-      console.log('✅ Validation passed (controlled mode)')
-      console.groupEnd()
-      return
-    }
-
-    // Save to localStorage
-    storage.save('income', data)
-    setIsSaved(true)
-
-    // Calculate projections
-    console.log('📊 Calculating income projections...')
-    const calculated = calculateIncomeProjections(data, profile)
-    setProjections(calculated)
-    console.log('Projections calculated:', calculated.summary)
-
-    // Switch to output view
-    setView('output')
-    console.log('✅ Saved and switched to output view')
-    console.groupEnd()
-  }
-
-  const handleEdit = () => {
-    setView('input')
   }
 
   const handleNextFeature = () => {
     navigate('/expenses')
   }
 
-  // Input View
-  if (view === 'input' || embedded) {
-    return (
-      <div className={embedded ? "" : "max-w-4xl mx-auto p-6"}>
-        {!embedded && <h1 className="text-2xl font-bold mb-1">Income</h1>}
+  const InputSection = (
+    <div className="space-y-8 pb-12">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Income 💰</h1>
+        {data.incomeStreams.length < INCOME_CONFIG.MAX_STREAMS && (
+          <button
+            onClick={addIncomeStream}
+            className="bg-black text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-gray-800 transition shadow-sm flex items-center"
+          >
+            <span className="mr-1">+</span> Add Income Source
+          </button>
+        )}
+      </div>
 
-        {/* Save Status Banner - Compact (hidden in embedded mode) */}
-        {!embedded && (isSaved ? (
-          <div className="mb-4 bg-green-50 border border-green-200 rounded px-3 py-2 flex items-center text-sm">
-            <span className="text-green-600 mr-2">✅</span>
-            <span className="text-green-900 font-medium">Saved</span>
-          </div>
-        ) : (
-          <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 flex items-center text-sm">
-            <span className="text-yellow-600 mr-2">⚠️</span>
-            <span className="text-yellow-900 font-medium">Not saved</span>
-          </div>
-        ))}
+      <div className="space-y-6">
+        {data.incomeStreams.map((stream, index) => (
+          <div key={stream.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 transition-all hover:shadow-md">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex-1 mr-4">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Stream Name</label>
+                <input
+                  type="text"
+                  value={stream.name}
+                  onChange={(e) => handleStreamChange(stream.id, 'name', e.target.value)}
+                  className="text-xl font-semibold text-gray-900 bg-transparent border-none p-0 focus:ring-0 placeholder-gray-300 w-full"
+                  placeholder="e.g. Primary Job"
+                />
+              </div>
+              {data.incomeStreams.length > 1 && (
+                <button
+                  onClick={() => removeIncomeStream(stream.id)}
+                  className="text-gray-400 hover:text-red-500 transition p-1"
+                  title="Remove Stream"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
+            </div>
 
-        <div className="space-y-4">
-          {/* Income Streams */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h2 className="text-lg font-semibold mb-2">Income Streams</h2>
-            <p className="text-xs text-gray-600 mb-3">Add up to {INCOME_CONFIG.MAX_STREAMS} income streams</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              {/* Annual Income */}
+              <div className="bg-gray-50 rounded-xl p-3 border border-transparent focus-within:border-blue-500 focus-within:bg-white transition-colors">
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Annual Income 💵
+                </label>
+                <div className="relative">
+                  <span className="absolute left-0 top-0.5 text-gray-400 font-medium">$</span>
+                  <input
+                    type="number"
+                    value={stream.annualIncome}
+                    onChange={(e) => handleStreamChange(stream.id, 'annualIncome', e.target.value ? Number(e.target.value) : '')}
+                    placeholder="150000"
+                    className="w-full pl-4 bg-transparent border-none p-0 text-lg font-semibold text-gray-900 focus:ring-0 placeholder-gray-300"
+                  />
+                </div>
+              </div>
 
-            <div className="space-y-4">
-              {data.incomeStreams.map((stream, index) => (
-                <div key={stream.id} className="border border-gray-200 rounded-lg p-4 relative">
-                  <div className="flex justify-between items-start mb-4">
-                    <input
-                      type="text"
-                      value={stream.name}
-                      onChange={(e) => handleStreamChange(stream.id, 'name', e.target.value)}
-                      className="text-lg font-medium border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2"
-                      placeholder="Stream name"
-                    />
-                    {data.incomeStreams.length > 1 && (
-                      <button
-                        onClick={() => removeIncomeStream(stream.id)}
-                        className="text-red-600 hover:text-red-700 text-sm"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
+              {/* Pre-Tax Retirement */}
+              <div className="bg-gray-50 rounded-xl p-3 border border-transparent focus-within:border-blue-500 focus-within:bg-white transition-colors">
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Pre-Tax Retirement (401k) 🏦
+                </label>
+                <div className="relative">
+                  <span className="absolute left-0 top-0.5 text-gray-400 font-medium">$</span>
+                  <input
+                    type="number"
+                    value={stream.individual401k}
+                    onChange={(e) => handleStreamChange(stream.id, 'individual401k', e.target.value ? Number(e.target.value) : '')}
+                    placeholder="23000"
+                    className="w-full pl-4 bg-transparent border-none p-0 text-lg font-semibold text-gray-900 focus:ring-0 placeholder-gray-300"
+                  />
+                </div>
+              </div>
+            </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Annual Income */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Annual Income
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1.5 text-gray-500">$</span>
+            {/* Advanced Section */}
+            <div>
+              <button
+                onClick={() => toggleAdvanced(stream.id)}
+                className="flex items-center text-sm text-gray-600 hover:text-gray-900 font-medium group"
+              >
+                <div className={`mr-2 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-gray-200 transition ${expandedStreams[stream.id] ? 'rotate-90' : ''}`}>
+                  ▶
+                </div>
+                More detail (Growth, Equity, Jumps & Breaks)
+              </button>
+
+              {expandedStreams[stream.id] && (
+                <div className="mt-4 pl-2 space-y-6 animate-fadeIn">
+                  {/* Growth & Equity Grid */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 rounded-xl p-3">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Growth Rate 📈</label>
+                      <div className="flex items-center">
                         <input
                           type="number"
-                          value={stream.annualIncome}
-                          onChange={(e) => handleStreamChange(stream.id, 'annualIncome', e.target.value ? Number(e.target.value) : '')}
-                          placeholder="150000"
-                          className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            errors[`${stream.id}-annualIncome`] ? 'border-red-500' : 'border-gray-300'
-                          }`}
+                          step="0.1"
+                          value={stream.growthRate}
+                          onChange={(e) => handleStreamChange(stream.id, 'growthRate', e.target.value ? Number(e.target.value) : '')}
+                          className="w-full bg-transparent border-none p-0 text-gray-900 font-medium focus:ring-0"
                         />
+                        <span className="text-gray-400 text-sm ml-1">%</span>
                       </div>
-                      {errors[`${stream.id}-annualIncome`] && (
-                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-annualIncome`]}</p>
-                      )}
                     </div>
-
-                    {/* Company 401k */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Company 401k Match
+                    <div className="bg-gray-50 rounded-xl p-3">
+                      <label className="block text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                        Equity (RSU) 📜
+                        <span title="Treated like cash" className="cursor-help text-gray-400 hover:text-gray-600">ⓘ</span>
                       </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1.5 text-gray-500">$</span>
-                        <input
-                          type="number"
-                          value={stream.company401k}
-                          onChange={(e) => handleStreamChange(stream.id, 'company401k', e.target.value ? Number(e.target.value) : '')}
-                          placeholder="10000"
-                          className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            errors[`${stream.id}-company401k`] ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                        />
-                      </div>
-                      {errors[`${stream.id}-company401k`] && (
-                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-company401k`]}</p>
-                      )}
-                    </div>
-
-                    {/* Individual 401k Contribution Goal */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        401k Contribution Goal
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1.5 text-gray-500">$</span>
-                        <input
-                          type="number"
-                          value={stream.individual401k}
-                          onChange={(e) => handleStreamChange(stream.id, 'individual401k', e.target.value ? Number(e.target.value) : '')}
-                          placeholder="23000"
-                          className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            errors[`${stream.id}-individual401k`] ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                        />
-                      </div>
-                      {errors[`${stream.id}-individual401k`] && (
-                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-individual401k`]}</p>
-                      )}
-                      <p className="mt-1 text-xs text-gray-500">Reduces taxable income</p>
-                    </div>
-
-                    {/* Equity */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Equity (RSU)
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1.5 text-gray-500">$</span>
+                      <div className="flex items-center">
+                        <span className="text-gray-400 text-sm mr-1">$</span>
                         <input
                           type="number"
                           value={stream.equity}
                           onChange={(e) => handleStreamChange(stream.id, 'equity', e.target.value ? Number(e.target.value) : '')}
-                          placeholder="50000"
-                          className={`w-full pl-8 pr-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                            errors[`${stream.id}-equity`] ? 'border-red-500' : 'border-gray-300'
-                          }`}
+                          className="w-full bg-transparent border-none p-0 text-gray-900 font-medium focus:ring-0"
                         />
                       </div>
-                      {errors[`${stream.id}-equity`] && (
-                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-equity`]}</p>
-                      )}
                     </div>
-
-                    {/* Growth Rate */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Annual Growth Rate (%)
+                    <div className="bg-gray-50 rounded-xl p-3">
+                      <label className="block text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                        401k Match 🤝
+                        <span title="Employer contributions to your retirement" className="cursor-help text-gray-400 hover:text-gray-600">ⓘ</span>
                       </label>
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={stream.growthRate}
-                        onChange={(e) => handleStreamChange(stream.id, 'growthRate', e.target.value ? Number(e.target.value) : '')}
-                        placeholder="3.5"
-                        className={`w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors[`${stream.id}-growthRate`] ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      />
-                      {errors[`${stream.id}-growthRate`] && (
-                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-growthRate`]}</p>
-                      )}
+                      <div className="flex items-center">
+                        <span className="text-gray-400 text-sm mr-1">$</span>
+                        <input
+                          type="number"
+                          value={stream.company401k}
+                          onChange={(e) => handleStreamChange(stream.id, 'company401k', e.target.value ? Number(e.target.value) : '')}
+                          className="w-full bg-transparent border-none p-0 text-gray-900 font-medium focus:ring-0"
+                        />
+                      </div>
                     </div>
-
-                    {/* End Work Year */}
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        End Work Year (relative, max: {yearsToRetirement})
-                      </label>
+                    <div className="bg-gray-50 rounded-xl p-3">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">End Work Year 🏁</label>
                       <input
                         type="number"
                         value={stream.endWorkYear}
                         onChange={(e) => handleStreamChange(stream.id, 'endWorkYear', e.target.value ? Number(e.target.value) : '')}
                         placeholder={yearsToRetirement.toString()}
-                        max={yearsToRetirement}
-                        className={`w-full px-3 py-1.5 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors[`${stream.id}-endWorkYear`] ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className="w-full bg-transparent border-none p-0 text-gray-900 font-medium focus:ring-0"
                       />
-                      {errors[`${stream.id}-endWorkYear`] && (
-                        <p className="mt-1 text-xs text-red-600">{errors[`${stream.id}-endWorkYear`]}</p>
+                    </div>
+                  </div>
+
+                  {/* Income Jumps Section */}
+                  <div className="border-t border-gray-100 pt-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="text-sm font-semibold text-gray-800 flex items-center">
+                        Income Jumps 🚀 <span className="ml-2 text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Future changes</span>
+                      </h3>
+                      <button onClick={() => addIncomeJump(stream.id)} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 font-medium transition">
+                        + Add Jump
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {stream.jumps?.map((jump) => {
+
+                        return (
+                          <div key={jump.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg group hover:bg-gray-100 transition">
+                            <input
+                              type="text"
+                              value={jump.description}
+                              onChange={(e) => handleJumpChange(stream.id, jump.id, 'description', e.target.value)}
+                              className="flex-1 bg-transparent border-none text-sm text-gray-900 focus:ring-0 p-0"
+                              placeholder="Description"
+                            />
+                            <div className="flex items-center bg-white rounded px-2 py-1 shadow-sm">
+                              <span className="text-xs text-gray-400 mr-1">Yr</span>
+                              <input
+                                type="number"
+                                value={jump.year}
+                                onChange={(e) => handleJumpChange(stream.id, jump.id, 'year', e.target.value ? Number(e.target.value) : '')}
+                                className="w-12 text-xs text-right border-none p-0 focus:ring-0"
+                                placeholder="5"
+                              />
+                            </div>
+                            <div className="flex items-center bg-white rounded px-2 py-1 shadow-sm">
+                              <input
+                                type="number"
+                                value={jump.jumpPercent}
+                                onChange={(e) => handleJumpChange(stream.id, jump.id, 'jumpPercent', e.target.value ? Number(e.target.value) : '')}
+                                className="w-10 text-xs text-right border-none p-0 focus:ring-0"
+                                placeholder="10"
+                              />
+                              <span className="text-xs text-gray-400 ml-1">%</span>
+                            </div>
+                            <button onClick={() => removeIncomeJump(stream.id, jump.id)} className="text-gray-400 hover:text-red-500 px-1 opacity-0 group-hover:opacity-100 transition">×</button>
+                          </div>
+                        )
+                      })}
+                      {(!stream.jumps || stream.jumps.length === 0) && (
+                        <div className="text-xs text-gray-400 italic pl-2">No future income jumps added.</div>
                       )}
                     </div>
                   </div>
 
-                  {/* Income Jumps for this stream */}
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-xs font-semibold text-gray-700">Income Jumps</h3>
-                      <button
-                        onClick={() => addIncomeJump(stream.id)}
-                        className="text-xs text-blue-600 hover:text-blue-700"
-                      >
-                        + Add Jump
-                      </button>
-                    </div>
-
-                    {stream.jumps && stream.jumps.length > 0 ? (
-                      <div className="space-y-2">
-                        {stream.jumps.map((jump) => (
-                          <div key={jump.id} className="bg-gray-50 rounded p-2">
-                            <div className="flex justify-between items-start mb-1">
-                              <input
-                                type="text"
-                                value={jump.description}
-                                onChange={(e) => handleJumpChange(stream.id, jump.id, 'description', e.target.value)}
-                                className="text-xs font-medium bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
-                                placeholder="e.g., Promotion"
-                              />
-                              <button
-                                onClick={() => removeIncomeJump(stream.id, jump.id)}
-                                className="text-red-600 hover:text-red-700 text-xs"
-                              >
-                                Remove
-                              </button>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="block text-xs text-gray-600 mb-1">Year</label>
-                                <input
-                                  type="number"
-                                  value={jump.year}
-                                  onChange={(e) => handleJumpChange(stream.id, jump.id, 'year', e.target.value ? Number(e.target.value) : '')}
-                                  placeholder="5"
-                                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs text-gray-600 mb-1">Jump %</label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  value={jump.jumpPercent}
-                                  onChange={(e) => handleJumpChange(stream.id, jump.id, 'jumpPercent', e.target.value ? Number(e.target.value) : '')}
-                                  placeholder="7"
-                                  className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-500 italic">No jumps added yet</p>
-                    )}
-                  </div>
-
-                  {/* Career Breaks for this stream */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
+                  {/* Career Breaks Section */}
+                  <div className="border-t border-gray-100 pt-4">
                     <div className="flex justify-between items-center mb-3">
-                      <div>
-                        <h3 className="text-xs font-semibold text-purple-700 uppercase">Career Breaks</h3>
-                        <p className="text-[10px] text-gray-500 mt-0.5">Temporary reductions: layoffs, sabbaticals, parental leave</p>
-                      </div>
-                      <button
-                        onClick={() => addCareerBreak(stream.id)}
-                        className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 font-medium"
-                      >
-                        + Add Career Break
+                      <h3 className="text-sm font-semibold text-gray-800 flex items-center">
+                        Career Breaks ⏸️ <span className="ml-2 text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Gaps in income</span>
+                      </h3>
+                      <button onClick={() => addCareerBreak(stream.id)} className="text-xs bg-orange-50 text-orange-600 px-2 py-1 rounded hover:bg-orange-100 font-medium transition">
+                        + Add Break
                       </button>
                     </div>
-
-                    {stream.careerBreaks && stream.careerBreaks.length > 0 ? (
-                      <div className="space-y-3">
-                        {stream.careerBreaks.map((breakItem) => (
-                          <div key={breakItem.id} className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                            {/* Description */}
-                            <div className="mb-2">
-                              <label className="block text-xs font-medium text-gray-700 mb-1">
-                                Description
-                              </label>
+                    <div className="space-y-2">
+                      {stream.careerBreaks?.map((breakItem) => (
+                        <div key={breakItem.id} className="flex flex-col gap-2 bg-orange-50/50 p-3 rounded-lg group hover:bg-orange-50 transition border border-orange-100/50">
+                          <div className="flex justify-between items-center">
+                            <input
+                              type="text"
+                              value={breakItem.description}
+                              onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'description', e.target.value)}
+                              className="bg-transparent border-none text-sm text-gray-900 focus:ring-0 p-0 font-medium w-full"
+                              placeholder="Description"
+                            />
+                            <button onClick={() => removeCareerBreak(stream.id, breakItem.id)} className="text-gray-400 hover:text-red-500 px-1 opacity-0 group-hover:opacity-100 transition">×</button>
+                          </div>
+                          <div className="flex gap-2">
+                            <div className="flex-1 flex items-center bg-white rounded px-2 py-1 shadow-sm">
+                              <span className="text-xs text-gray-400 mr-1">Start Yr</span>
                               <input
-                                type="text"
-                                value={breakItem.description}
-                                onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'description', e.target.value)}
-                                placeholder="e.g., Parental Leave, Sabbatical, Layoff"
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-purple-500"
+                                type="number"
+                                value={breakItem.startYear}
+                                onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'startYear', e.target.value ? Number(e.target.value) : '')}
+                                className="w-full text-xs text-right border-none p-0 focus:ring-0"
                               />
                             </div>
-
-                            {/* Start Year, Duration, Reduction % */}
-                            <div className="grid grid-cols-3 gap-2">
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  Start Year
-                                </label>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={breakItem.startYear}
-                                  onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'startYear', e.target.value ? Number(e.target.value) : '')}
-                                  placeholder="5"
-                                  className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:border-purple-500 ${
-                                    errors[`${stream.id}-break-${breakItem.id}-startYear`] ? 'border-red-500' : 'border-gray-300'
-                                  }`}
-                                />
-                                {errors[`${stream.id}-break-${breakItem.id}-startYear`] && (
-                                  <p className="text-xs text-red-600 mt-1">{errors[`${stream.id}-break-${breakItem.id}-startYear`]}</p>
-                                )}
-                              </div>
-
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  Duration (months)
-                                </label>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  step="1"
-                                  value={breakItem.durationMonths}
-                                  onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'durationMonths', e.target.value ? Number(e.target.value) : '')}
-                                  placeholder="18"
-                                  className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:border-purple-500 ${
-                                    errors[`${stream.id}-break-${breakItem.id}-durationMonths`] ? 'border-red-500' : 'border-gray-300'
-                                  }`}
-                                />
-                                {errors[`${stream.id}-break-${breakItem.id}-durationMonths`] && (
-                                  <p className="text-xs text-red-600 mt-1">{errors[`${stream.id}-break-${breakItem.id}-durationMonths`]}</p>
-                                )}
-                              </div>
-
-                              <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                  Reduction %
-                                  <span className="ml-1 text-gray-500">(0-100)</span>
-                                </label>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  step="1"
-                                  value={breakItem.reductionPercent}
-                                  onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'reductionPercent', e.target.value ? Number(e.target.value) : '')}
-                                  placeholder="100"
-                                  className={`w-full px-2 py-1.5 text-sm border rounded focus:outline-none focus:border-purple-500 ${
-                                    errors[`${stream.id}-break-${breakItem.id}-reductionPercent`] ? 'border-red-500' : 'border-gray-300'
-                                  }`}
-                                />
-                                {errors[`${stream.id}-break-${breakItem.id}-reductionPercent`] && (
-                                  <p className="text-xs text-red-600 mt-1">{errors[`${stream.id}-break-${breakItem.id}-reductionPercent`]}</p>
-                                )}
-                              </div>
+                            <div className="flex-1 flex items-center bg-white rounded px-2 py-1 shadow-sm">
+                              <span className="text-xs text-gray-400 mr-1">Months</span>
+                              <input
+                                type="number"
+                                value={breakItem.durationMonths}
+                                onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'durationMonths', e.target.value ? Number(e.target.value) : '')}
+                                className="w-full text-xs text-right border-none p-0 focus:ring-0"
+                              />
                             </div>
-
-                            {/* Duration Helper Text and Remove Button */}
-                            <div className="mt-2 flex items-center justify-between">
-                              <p className="text-[10px] text-gray-600">
-                                {breakItem.durationMonths && breakItem.startYear ? (
-                                  <>
-                                    From <strong>Jan Year {breakItem.startYear}</strong> for{' '}
-                                    <strong>{breakItem.durationMonths} months</strong>{' '}
-                                    ({(breakItem.durationMonths / 12).toFixed(2)} years)
-                                  </>
-                                ) : (
-                                  'Fill in values to see timeline'
-                                )}
-                              </p>
-
-                              <button
-                                onClick={() => removeCareerBreak(stream.id, breakItem.id)}
-                                className="text-xs px-2 py-1 bg-white border border-red-300 text-red-600 rounded hover:bg-red-50"
-                              >
-                                Remove
-                              </button>
+                            <div className="flex-1 flex items-center bg-white rounded px-2 py-1 shadow-sm">
+                              <span className="text-xs text-gray-400 mr-1">Pay %</span>
+                              <input
+                                type="number"
+                                value={breakItem.reductionPercent}
+                                onChange={(e) => handleCareerBreakChange(stream.id, breakItem.id, 'reductionPercent', e.target.value ? Number(e.target.value) : '')}
+                                className="w-full text-xs text-right border-none p-0 focus:ring-0"
+                              />
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-500 italic">
-                        No career breaks added yet. Add one to model layoffs, sabbaticals, or parental leave.
-                      </p>
-                    )}
+                        </div>
+                      ))}
+                      {(!stream.careerBreaks || stream.careerBreaks.length === 0) && (
+                        <div className="text-xs text-gray-400 italic pl-2">No career breaks added.</div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ))}
-
-              {data.incomeStreams.length < INCOME_CONFIG.MAX_STREAMS && (
-                <button
-                  onClick={addIncomeStream}
-                  className="w-full py-2 border-2 border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-600 transition"
-                >
-                  + Add Income Stream
-                </button>
               )}
             </div>
           </div>
-
-          {/* Continue Button (hidden in embedded mode) */}
-          {!embedded && (
-            <button
-              onClick={handleContinue}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-md font-medium hover:bg-blue-700 transition"
-            >
-              Calculate Income Projections →
-            </button>
-          )}
-        </div>
+        ))}
       </div>
-    )
-  }
-
-  // Output View
-  if (!projections) {
-    return <div className="p-8">Loading projections...</div>
-  }
+    </div>
+  )
 
   const { summary } = projections
-
-  // Determine which summary to show based on active tab
   const currentSummary = activeTab === 'all'
     ? summary
     : summary.perStreamSummaries?.find(s => s.streamId === activeTab) || summary
 
-  return (
-    <div className="max-w-6xl mx-auto p-8">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Income Summary</h1>
-          <p className="text-gray-600">Your projected income over {yearsToRetirement} years</p>
+  const OutputSection = (
+    <div className="h-full flex flex-col">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-bold">Income Summary</h2>
+          {/* View Mode Toggle */}
+          <div className="bg-gray-100 p-1 rounded-lg flex text-xs font-medium">
+            <button
+              onClick={() => setViewMode('PV')}
+              className={`px-3 py-1.5 rounded-md transition ${viewMode === 'PV' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Today's Dollars
+            </button>
+            <button
+              onClick={() => setViewMode('Nominal')}
+              className={`px-3 py-1.5 rounded-md transition ${viewMode === 'Nominal' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Future Dollars
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleEdit}
-          className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition"
-        >
-          Edit
-        </button>
-      </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab('all')}
-          className={`px-4 py-2 font-medium transition border-b-2 ${
-            activeTab === 'all'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          All Streams
-        </button>
-        {data.incomeStreams.map(stream => (
+        {/* Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-2">
           <button
-            key={stream.id}
-            onClick={() => setActiveTab(stream.id)}
-            className={`px-4 py-2 font-medium transition border-b-2 ${
-              activeTab === stream.id
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
-            }`}
+            onClick={() => setActiveTab('all')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-full transition whitespace-nowrap ${activeTab === 'all'
+              ? 'bg-blue-100 text-blue-700'
+              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
           >
-            {stream.name}
+            All Streams
           </button>
-        ))}
-      </div>
+          {data.incomeStreams.map(stream => (
+            <button
+              key={stream.id}
+              onClick={() => setActiveTab(stream.id)}
+              className={`px-3 py-1.5 text-sm font-medium rounded-full transition whitespace-nowrap ${activeTab === stream.id
+                ? 'bg-blue-100 text-blue-700'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+            >
+              {stream.name || 'Unnamed'}
+            </button>
+          ))}
+        </div>
 
-      {/* Primary Metrics */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 ${activeTab === 'all' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4 mb-6`}>
-        <SummaryCard
-          title="Current Year Total Comp"
-          value={`$${Math.round(currentSummary.currentYearCompNominal).toLocaleString()}`}
-          subtitle={`PV: $${Math.round(currentSummary.currentYearCompPV).toLocaleString()}`}
-          highlight
-        />
-        <SummaryCard
-          title="Year 10 Projected Comp"
-          value={`$${Math.round(currentSummary.year10CompNominal).toLocaleString()}`}
-          subtitle={`PV: $${Math.round(currentSummary.year10CompPV).toLocaleString()}`}
-        />
-        <SummaryCard
-          title="Lifetime Earnings"
-          subtext={`${yearsToRetirement} years to retirement`}
-          value={`$${(currentSummary.lifetimeEarningsNominal / 1000000).toFixed(2)}M`}
-          subtitle={`PV: $${(currentSummary.lifetimeEarningsPV / 1000000).toFixed(2)}M`}
-          highlight
-        />
-        {activeTab === 'all' && (
+        {/* Primary Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SummaryCard
-            title="Average Annual Growth"
+            title="Lifetime Earnings"
+            value={viewMode === 'PV'
+              ? `$${(currentSummary.lifetimeEarningsPV / 1000000).toFixed(2)}M`
+              : `$${(currentSummary.lifetimeEarningsNominal / 1000000).toFixed(2)}M`
+            }
+            subtitle={viewMode === 'PV'
+              ? `Future Value: $${(currentSummary.lifetimeEarningsNominal / 1000000).toFixed(2)}M`
+              : `Present Value: $${(currentSummary.lifetimeEarningsPV / 1000000).toFixed(2)}M`
+            }
+            highlight
+          />
+          <SummaryCard
+            title="Avg Annual Growth"
             value={`${summary.averageAnnualGrowth.toFixed(1)}%`}
           />
-        )}
-      </div>
+        </div>
 
-      {/* Income Projection Chart */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Income Projection (Present Value)</h2>
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={projections.chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="year"
-              label={{ value: 'Year', position: 'insideBottom', offset: -5 }}
-            />
-            <YAxis
-              label={{ value: 'Annual Income (PV)', angle: -90, position: 'insideLeft' }}
-              tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-            />
-            <Tooltip
-              formatter={(value) => `$${Math.round(value).toLocaleString()}`}
-              labelFormatter={(label) => `Year ${label}`}
-            />
-            <Legend />
-            {activeTab === 'all' ? (
-              // Show all streams as stacks
-              data.incomeStreams.map((stream, index) => {
-                const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
-                return (
-                  <Bar
-                    key={stream.id}
-                    dataKey={stream.name}
-                    stackId="a"
-                    fill={colors[index % colors.length]}
-                  />
-                )
-              })
-            ) : (
-              // Show only the selected stream
-              (() => {
-                const selectedStream = data.incomeStreams.find(s => s.id === activeTab)
-                return selectedStream ? (
-                  <Bar
-                    dataKey={selectedStream.name}
-                    fill="#3b82f6"
-                  />
-                ) : null
-              })()
-            )}
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+        {/* Chart */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <h3 className="text-sm font-semibold mb-4 text-gray-700">
+            Income Projection ({viewMode === 'PV' ? 'Present Value' : 'Nominal'})
+          </h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={viewMode === 'PV' ? projections.chartData.chartDataPV : projections.chartData.chartDataNominal}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis
+                dataKey="year"
+                tick={{ fontSize: 12 }}
+                interval={Math.floor(projections.chartData.length / 5)}
+              />
+              <YAxis
+                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                tick={{ fontSize: 12 }}
+                width={60}
+              />
+              <Tooltip
+                formatter={(value) => `$${Math.round(value).toLocaleString()}`}
+                labelFormatter={(label) => `Year ${label}`}
+              />
+              {activeTab === 'all' ? (
+                data.incomeStreams.map((stream, index) => {
+                  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                  return (
+                    <Bar
+                      key={stream.id}
+                      dataKey={stream.name}
+                      stackId="a"
+                      fill={colors[index % colors.length]}
+                    />
+                  )
+                })
+              ) : (
+                <Bar
+                  dataKey={data.incomeStreams.find(s => s.id === activeTab)?.name}
+                  fill="#3b82f6"
+                />
+              )}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
 
-      {/* Component Breakdown */}
-      <h2 className="text-xl font-semibold mb-4">Lifetime Breakdown by Component</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <ComponentCard
-          title="Salary"
-          nominal={currentSummary.totalSalaryNominal}
-          pv={currentSummary.totalSalaryPV}
-        />
-        <ComponentCard
-          title="Equity (RSU)"
-          nominal={currentSummary.totalEquityNominal}
-          pv={currentSummary.totalEquityPV}
-        />
-        <ComponentCard
-          title="401k Contributions"
-          nominal={currentSummary.total401kNominal}
-          pv={currentSummary.total401kPV}
-        />
-      </div>
-
-      {/* Key Milestones */}
-      {(() => {
-        // Filter milestones based on active tab
-        const filteredMilestones = activeTab === 'all'
-          ? summary.milestones
-          : summary.milestones?.filter(m => {
-              const stream = data.incomeStreams.find(s => s.id === activeTab)
-              return m.label.includes(stream?.name || '')
-            })
-
-        return filteredMilestones && filteredMilestones.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Key Milestones</h2>
-            <div className="space-y-4">
-              {filteredMilestones.map((milestone, index) => (
-                <div key={index} className="py-3 border-b last:border-b-0">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium text-gray-700">{milestone.label}</span>
-                    <span className="text-gray-900 font-semibold">
-                      ${Math.round(milestone.compNominal).toLocaleString()}/year
-                      <span className="text-gray-500 text-sm ml-2 font-normal">
-                        (PV: ${Math.round(milestone.compPV).toLocaleString()})
-                      </span>
-                    </span>
-                  </div>
-                  {milestone.streamBreakdown && milestone.streamBreakdown.length > 0 && (
-                    <div className="ml-4 mt-2 space-y-1">
-                      {milestone.streamBreakdown.map((stream, streamIndex) => (
-                        <div key={streamIndex} className="flex justify-between items-center text-sm">
-                          <span className="text-gray-600">↳ {stream.streamName}</span>
-                          <span className="text-gray-700">
-                            ${Math.round(stream.compNominal).toLocaleString()}/year
-                            <span className="text-gray-500 text-xs ml-2">
-                              (PV: ${Math.round(stream.compPV).toLocaleString()})
-                            </span>
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+        {/* Breakdown */}
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-gray-50 p-2 rounded">
+            <div className="text-xs text-gray-500">Salary</div>
+            <div className="font-semibold text-sm">
+              ${((viewMode === 'PV' ? currentSummary.totalSalaryPV : currentSummary.totalSalaryNominal) / 1000000).toFixed(2)}M
             </div>
           </div>
-        )
-      })()}
+          <div className="bg-gray-50 p-2 rounded">
+            <div className="text-xs text-gray-500">Equity</div>
+            <div className="font-semibold text-sm">
+              ${((viewMode === 'PV' ? currentSummary.totalEquityPV : currentSummary.totalEquityNominal) / 1000000).toFixed(2)}M
+            </div>
+          </div>
+          <div className="bg-gray-50 p-2 rounded">
+            <div className="text-xs text-gray-500">401k</div>
+            <div className="font-semibold text-sm">
+              ${((viewMode === 'PV' ? currentSummary.total401kPV : currentSummary.total401kNominal) / 1000000).toFixed(2)}M
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <button
-        onClick={handleNextFeature}
-        className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition"
-      >
-        Continue to Expenses →
-      </button>
+      <div className="mt-8 pt-2">
+        <button
+          onClick={handleNextFeature}
+          className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition shadow-sm"
+        >
+          Continue to Expenses →
+        </button>
+      </div>
     </div>
   )
+
+  return <SplitLayout inputSection={InputSection} outputSection={OutputSection} />
 }
 
-function SummaryCard({ title, subtext, value, subtitle, highlight }) {
+function SummaryCard({ title, value, subtitle, subtext, highlight }) {
   return (
-    <div className={`bg-white rounded-lg shadow-sm border p-6 ${highlight ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'}`}>
-      <div className="text-sm font-medium text-gray-600 mb-1">{title}</div>
-      {subtext && <div className="text-xs text-gray-500 mb-2">{subtext}</div>}
-      <div className={`text-2xl font-bold ${highlight ? 'text-blue-600' : 'text-gray-900'}`}>
+    <div className={`p-4 rounded-lg border ${highlight ? 'bg-blue-50 border-blue-100' : 'bg-white border-gray-200'}`}>
+      <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">{title}</h3>
+      <div className={`text-2xl font-bold ${highlight ? 'text-blue-700' : 'text-gray-900'}`}>
         {value}
       </div>
       {subtitle && <div className="text-sm text-gray-500 mt-1">{subtitle}</div>}
-    </div>
-  )
-}
-
-function ComponentCard({ title, nominal, pv }) {
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <div className="text-sm font-medium text-gray-600 mb-2">{title}</div>
-      <div className="text-xl font-bold text-gray-900">
-        ${(nominal / 1000000).toFixed(2)}M
-      </div>
-      <div className="text-sm text-gray-500 mt-1">
-        PV: ${(pv / 1000000).toFixed(2)}M
-      </div>
+      {subtext && <div className="text-xs text-gray-400 mt-1">{subtext}</div>}
     </div>
   )
 }
