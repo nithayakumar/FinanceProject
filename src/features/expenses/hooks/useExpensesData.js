@@ -14,13 +14,18 @@ export function useExpensesData() {
     const [data, setData] = useState(() => {
         const saved = storage.load('expenses')
         if (saved && saved.expenseCategories && saved.expenseCategories.length > 0) {
-            // Migration: Ensure amountType exists if loading old data
-            const migratedCategories = saved.expenseCategories.map(cat => ({
-                ...cat,
-                amountType: cat.amountType || 'percent', // Default to percent as requested
-                percentOfIncome: cat.percentOfIncome || '',
-                annualAmount: cat.annualAmount || ''
-            }))
+            // Migration: Ensure amountType exists and update names from schema (to remove emojis)
+            const migratedCategories = saved.expenseCategories.map(cat => {
+                // Find matching default category to get the clean name
+                const defaultCat = DEFAULT_EXPENSE_CATEGORIES.find(d => d.id === cat.id)
+                return {
+                    ...cat,
+                    name: defaultCat ? defaultCat.name : cat.name, // Update name if it's a default category
+                    amountType: cat.amountType || 'percent', // Default to percent as requested
+                    percentOfIncome: cat.percentOfIncome || '',
+                    annualAmount: cat.annualAmount || ''
+                }
+            })
             // Ensure oneTimeExpenses exists
             return {
                 ...saved,

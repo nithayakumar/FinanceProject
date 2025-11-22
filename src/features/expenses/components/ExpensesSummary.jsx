@@ -86,10 +86,10 @@ export function ExpensesSummary({
                     highlight
                 />
                 <SummaryCard
-                    title="Avg Annual Spend"
+                    title="Avg Monthly Spend (This Year)"
                     value={viewMode === 'PV'
-                        ? `$${Math.round(summary.averageAnnualExpensesPV).toLocaleString()}`
-                        : `$${Math.round(summary.averageAnnualExpensesNominal).toLocaleString()}`
+                        ? `$${Math.round(summary.currentYearExpensesPV / 12).toLocaleString()}`
+                        : `$${Math.round(summary.currentYearExpensesNominal / 12).toLocaleString()}`
                     }
                 />
             </div>

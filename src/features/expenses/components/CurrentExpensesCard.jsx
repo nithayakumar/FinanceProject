@@ -16,8 +16,8 @@ export function CurrentExpensesCard({ categories, onUpdate }) {
                         <tr>
                             <th className="px-4 py-3 rounded-l-lg w-1/4">Category</th>
                             <th className="px-4 py-3 w-1/4">Type</th>
-                            <th className="px-4 py-3 w-1/4">Amount / Rate</th>
-                            <th className="px-4 py-3 rounded-r-lg w-1/4">Yearly Expense Growth</th>
+                            <th className="px-4 py-3 w-1/4">Yearly Expense</th>
+                            <th className="px-4 py-3 rounded-r-lg w-1/4">Yearly Growth</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -31,8 +31,8 @@ export function CurrentExpensesCard({ categories, onUpdate }) {
                                         <button
                                             onClick={() => onUpdate(category.id, 'amountType', 'fixed')}
                                             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${category.amountType === 'fixed'
-                                                    ? 'bg-white text-gray-900 shadow-sm'
-                                                    : 'text-gray-500 hover:text-gray-900'
+                                                ? 'bg-white text-gray-900 shadow-sm'
+                                                : 'text-gray-500 hover:text-gray-900'
                                                 }`}
                                         >
                                             $ Fixed
@@ -40,8 +40,8 @@ export function CurrentExpensesCard({ categories, onUpdate }) {
                                         <button
                                             onClick={() => onUpdate(category.id, 'amountType', 'percent')}
                                             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${category.amountType === 'percent'
-                                                    ? 'bg-white text-gray-900 shadow-sm'
-                                                    : 'text-gray-500 hover:text-gray-900'
+                                                ? 'bg-white text-gray-900 shadow-sm'
+                                                : 'text-gray-500 hover:text-gray-900'
                                                 }`}
                                         >
                                             % Income
@@ -59,7 +59,6 @@ export function CurrentExpensesCard({ categories, onUpdate }) {
                                                 placeholder="0"
                                                 className="w-full max-w-[140px]"
                                             />
-                                            <div className="text-xs text-gray-400 mt-1">Per Year</div>
                                         </div>
                                     ) : (
                                         <div className="relative">
@@ -72,7 +71,6 @@ export function CurrentExpensesCard({ categories, onUpdate }) {
                                                 step="0.1"
                                                 className="w-full max-w-[140px]"
                                             />
-                                            <div className="text-xs text-gray-400 mt-1">of Gross Income</div>
                                         </div>
                                     )}
                                 </td>
