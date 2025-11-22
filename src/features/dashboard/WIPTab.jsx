@@ -10,6 +10,10 @@ function WIPTab({ data }) {
   // State for impact analysis
   const [incomeAdjustment, setIncomeAdjustment] = useState(0) // -50% to +50%
   const [expenseAdjustment, setExpenseAdjustment] = useState(0) // -50% to +50%
+
+  // State for sensitivity analysis
+  const [sensitivityGrowthRate, setSensitivityGrowthRate] = useState(7) // 0% to 15%
+  const [sensitivityInflation, setSensitivityInflation] = useState(profile?.inflationRate || 2.7) // 0% to 8%
   const currentAge = profile?.age || 30
   const retirementAge = profile?.retirementAge || 65
   const inflationRate = (profile?.inflationRate || 2.7) / 100
@@ -251,6 +255,116 @@ function WIPTab({ data }) {
       coastFireAgeChange
     }
   }, [projections, fireMetrics, incomeAdjustment, expenseAdjustment, inflationRate, currentAge, retirementAge])
+
+  // Calculate sensitivity analysis
+  const sensitivityAnalysis = useMemo(() => {
+    if (!projections.length || !fireMetrics) return null
+
+    const baselineGrowthRate = 0.07 // Assume 7% baseline
+    const baselineInflationRate = inflationRate
+
+    const adjGrowthRate = sensitivityGrowthRate / 100
+    const adjInflationRate = sensitivityInflation / 100
+
+    // Real return = nominal - inflation (simplified)
+    const baselineRealReturn = baselineGrowthRate - baselineInflationRate
+    const adjustedRealReturn = adjGrowthRate - adjInflationRate
+
+    const yearsToRetirement = retirementAge - currentAge
+    const year1Gap = fireMetrics.year1Gap
+    const startingNetWorth = fireMetrics.year1NetWorth
+
+    // Simulate net worth at retirement with baseline assumptions
+    let baselineNetWorth = startingNetWorth
+    for (let i = 0; i < yearsToRetirement; i++) {
+      baselineNetWorth = baselineNetWorth * (1 + baselineGrowthRate) + year1Gap
+    }
+
+    // Simulate net worth at retirement with adjusted assumptions
+    let adjustedNetWorth = startingNetWorth
+    for (let i = 0; i < yearsToRetirement; i++) {
+      adjustedNetWorth = adjustedNetWorth * (1 + adjGrowthRate) + year1Gap
+    }
+
+    // Calculate FIRE metrics with adjusted parameters
+    const adjustedFireNumber = fireMetrics.year1Expenses * 25 * Math.pow(1 + adjInflationRate, yearsToRetirement)
+    const baselineFireNumber = fireMetrics.year1Expenses * 25 * Math.pow(1 + baselineInflationRate, yearsToRetirement)
+
+    // Years to FIRE with adjusted growth
+    let adjustedYearsToFire = null
+    let simNetWorth = startingNetWorth
+    for (let year = 1; year <= 100; year++) {
+      const inflatedFireNumber = fireMetrics.fireNumber * Math.pow(1 + adjInflationRate, year - 1)
+      if (simNetWorth >= inflatedFireNumber) {
+        adjustedYearsToFire = year
+        break
+      }
+      simNetWorth = simNetWorth * (1 + adjGrowthRate) + year1Gap
+    }
+
+    // Baseline years to FIRE (from fireMetrics)
+    const baselineYearsToFire = fireMetrics.yearsToFire
+
+    // Calculate different scenarios for comparison table
+    const scenarios = [
+      { name: 'Bear Market', growth: 4, inflation: 4 },
+      { name: 'Conservative', growth: 5, inflation: 3 },
+      { name: 'Moderate', growth: 7, inflation: 2.7 },
+      { name: 'Optimistic', growth: 9, inflation: 2 },
+      { name: 'Bull Market', growth: 12, inflation: 2 },
+    ].map(scenario => {
+      const g = scenario.growth / 100
+      const i = scenario.inflation / 100
+
+      // Simulate net worth
+      let nw = startingNetWorth
+      for (let y = 0; y < yearsToRetirement; y++) {
+        nw = nw * (1 + g) + year1Gap
+      }
+
+      // Years to FIRE
+      let ytf = null
+      let simNW = startingNetWorth
+      for (let year = 1; year <= 100; year++) {
+        const target = fireMetrics.fireNumber * Math.pow(1 + i, year - 1)
+        if (simNW >= target) {
+          ytf = year
+          break
+        }
+        simNW = simNW * (1 + g) + year1Gap
+      }
+
+      return {
+        ...scenario,
+        netWorthAtRetirement: nw,
+        yearsToFire: ytf,
+        fireAge: ytf ? currentAge + ytf : null
+      }
+    })
+
+    return {
+      baselineGrowthRate: baselineGrowthRate * 100,
+      baselineInflationRate: baselineInflationRate * 100,
+      baselineRealReturn: baselineRealReturn * 100,
+      baselineNetWorth,
+      baselineFireNumber,
+      baselineYearsToFire,
+
+      adjustedGrowthRate: sensitivityGrowthRate,
+      adjustedInflationRate: sensitivityInflation,
+      adjustedRealReturn: adjustedRealReturn * 100,
+      adjustedNetWorth,
+      adjustedFireNumber,
+      adjustedYearsToFire,
+
+      netWorthChange: adjustedNetWorth - baselineNetWorth,
+      yearsToFireChange: adjustedYearsToFire && baselineYearsToFire
+        ? adjustedYearsToFire - baselineYearsToFire
+        : null,
+
+      scenarios
+    }
+  }, [projections, fireMetrics, sensitivityGrowthRate, sensitivityInflation, inflationRate, currentAge, retirementAge])
 
   // Calculate milestones
   const milestones = useMemo(() => {
@@ -801,20 +915,156 @@ function WIPTab({ data }) {
         </div>
       </div>
 
+      {/* Sensitivity Analysis */}
+      {sensitivityAnalysis && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">🔬 Sensitivity Analysis</h3>
+            <button
+              onClick={() => { setSensitivityGrowthRate(7); setSensitivityInflation(profile?.inflationRate || 2.7); }}
+              className="text-xs text-blue-600 hover:text-blue-800"
+            >
+              Reset to defaults
+            </button>
+          </div>
+          <p className="text-sm text-gray-600 mb-6">
+            See how different market conditions affect your retirement outcomes
+          </p>
+
+          {/* Adjustment Sliders */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Growth Rate */}
+            <div className="bg-purple-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Investment Growth Rate</span>
+                <span className="text-lg font-bold text-purple-600">{sensitivityGrowthRate}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="15"
+                step="0.5"
+                value={sensitivityGrowthRate}
+                onChange={(e) => setSensitivityGrowthRate(Number(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0%</span>
+                <span>7.5%</span>
+                <span>15%</span>
+              </div>
+            </div>
+
+            {/* Inflation Rate */}
+            <div className="bg-orange-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Inflation Rate</span>
+                <span className="text-lg font-bold text-orange-600">{sensitivityInflation}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="8"
+                step="0.1"
+                value={sensitivityInflation}
+                onChange={(e) => setSensitivityInflation(Number(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>0%</span>
+                <span>4%</span>
+                <span>8%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Real Return Display */}
+          <div className="bg-gray-100 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Real Return (Growth - Inflation)</span>
+              <span className={`text-xl font-bold ${sensitivityAnalysis.adjustedRealReturn >= 4 ? 'text-green-600' : sensitivityAnalysis.adjustedRealReturn >= 2 ? 'text-blue-600' : sensitivityAnalysis.adjustedRealReturn >= 0 ? 'text-orange-600' : 'text-red-600'}`}>
+                {sensitivityAnalysis.adjustedRealReturn.toFixed(1)}%
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Historical average real return: ~4-5% for stocks
+            </p>
+          </div>
+
+          {/* Results */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Net Worth at Retirement</p>
+              <p className="text-xl font-bold text-gray-800">{fmtCompact(sensitivityAnalysis.adjustedNetWorth)}</p>
+              <p className={`text-sm font-medium ${sensitivityAnalysis.netWorthChange > 0 ? 'text-green-600' : sensitivityAnalysis.netWorthChange < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                {sensitivityAnalysis.netWorthChange > 0 ? '+' : ''}{fmtCompact(sensitivityAnalysis.netWorthChange)} vs baseline
+              </p>
+            </div>
+
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Years to FIRE</p>
+              <p className="text-xl font-bold text-gray-800">
+                {sensitivityAnalysis.adjustedYearsToFire ? `${sensitivityAnalysis.adjustedYearsToFire} years` : '100+'}
+              </p>
+              {sensitivityAnalysis.yearsToFireChange !== null && (
+                <p className={`text-sm font-medium ${sensitivityAnalysis.yearsToFireChange < 0 ? 'text-green-600' : sensitivityAnalysis.yearsToFireChange > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                  {sensitivityAnalysis.yearsToFireChange > 0 ? '+' : ''}{sensitivityAnalysis.yearsToFireChange} years
+                </p>
+              )}
+            </div>
+
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">FIRE Age</p>
+              <p className="text-xl font-bold text-gray-800">
+                {sensitivityAnalysis.adjustedYearsToFire ? `Age ${currentAge + sensitivityAnalysis.adjustedYearsToFire}` : '—'}
+              </p>
+            </div>
+          </div>
+
+          {/* Scenario Comparison Table */}
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Market Scenario Comparison</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left py-2 px-3 font-semibold text-gray-700">Scenario</th>
+                    <th className="text-center py-2 px-3 font-semibold text-gray-700">Growth</th>
+                    <th className="text-center py-2 px-3 font-semibold text-gray-700">Inflation</th>
+                    <th className="text-center py-2 px-3 font-semibold text-gray-700">Real Return</th>
+                    <th className="text-right py-2 px-3 font-semibold text-gray-700">Net Worth</th>
+                    <th className="text-center py-2 px-3 font-semibold text-gray-700">FIRE Age</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sensitivityAnalysis.scenarios.map((s, i) => (
+                    <tr key={s.name} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${s.name === 'Moderate' ? 'font-medium bg-blue-50' : ''}`}>
+                      <td className="py-2 px-3 text-gray-900">{s.name}</td>
+                      <td className="py-2 px-3 text-center text-purple-700">{s.growth}%</td>
+                      <td className="py-2 px-3 text-center text-orange-700">{s.inflation}%</td>
+                      <td className={`py-2 px-3 text-center ${s.growth - s.inflation >= 4 ? 'text-green-600' : s.growth - s.inflation >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                        {(s.growth - s.inflation).toFixed(1)}%
+                      </td>
+                      <td className="py-2 px-3 text-right text-gray-900">{fmtCompact(s.netWorthAtRetirement)}</td>
+                      <td className="py-2 px-3 text-center text-gray-700">
+                        {s.fireAge ? `Age ${s.fireAge}` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Coming Soon Section */}
       <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-700 mb-4">🔮 Coming Soon</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg p-4 border border-gray-200">
-            <div className="text-2xl mb-2">🔬</div>
-            <h4 className="font-medium text-gray-800">Sensitivity Analysis</h4>
-            <p className="text-xs text-gray-500 mt-1">Test different growth rates and inflation scenarios</p>
-          </div>
-          <div className="bg-white rounded-lg p-4 border border-gray-200">
-            <div className="text-2xl mb-2">👨‍👩‍👧</div>
-            <h4 className="font-medium text-gray-800">Life Planner</h4>
-            <p className="text-xs text-gray-500 mt-1">Plan for children, partners, education, relocations</p>
-          </div>
+        <div className="bg-white rounded-lg p-4 border border-gray-200">
+          <div className="text-2xl mb-2">👨‍👩‍👧</div>
+          <h4 className="font-medium text-gray-800">Life Planner</h4>
+          <p className="text-xs text-gray-500 mt-1">Plan for children, partners, education, relocations</p>
         </div>
       </div>
     </div>
