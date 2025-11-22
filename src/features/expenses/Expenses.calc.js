@@ -461,45 +461,63 @@ function calculateSummary(projections, yearsToRetirement, data, inflationRate) {
  * Prepare chart data for stacked column chart
  */
 function prepareChartData(projections, expenseCategories, yearsToRetirement, inflationRate, oneTimeExpenses) {
-  const chartData = []
+  const chartDataPV = []
+  const chartDataNominal = []
 
   // Aggregate by year (up to retirement)
   for (let year = 1; year <= yearsToRetirement; year++) {
-    const yearData = {
-      year,
-      total: 0
-    }
+    const yearDataPV = { year, total: 0 }
+    const yearDataNominal = { year, total: 0 }
 
     // Get all months for this year
     const yearMonths = projections.filter(p => p.year === year)
 
-    // Calculate annual PV total for each category
+    // Calculate annual totals for each category
     expenseCategories.forEach(category => {
       let categoryAnnualPV = 0
+      let categoryAnnualNominal = 0
 
       yearMonths.forEach(monthProj => {
         if (monthProj.categoryBreakdownPV[category.category]) {
           categoryAnnualPV += monthProj.categoryBreakdownPV[category.category]
         }
+        if (monthProj.categoryBreakdownNominal[category.category]) {
+          categoryAnnualNominal += monthProj.categoryBreakdownNominal[category.category]
+        }
       })
 
-      yearData[category.category] = categoryAnnualPV
-      yearData.total += categoryAnnualPV
+      yearDataPV[category.category] = categoryAnnualPV
+      yearDataPV.total += categoryAnnualPV
+
+      yearDataNominal[category.category] = categoryAnnualNominal
+      yearDataNominal.total += categoryAnnualNominal
     })
 
-    // Add one-time expenses for this year (in today's dollars = PV)
-    let oneTimeForYear = 0
+    // Add one-time expenses for this year
+    let oneTimeForYearPV = 0
+    let oneTimeForYearNominal = 0
+
     oneTimeExpenses.forEach(expense => {
       if (expense.year === year && expense.amount) {
-        oneTimeForYear += expense.amount
+        // PV is the entered amount (today's dollars)
+        oneTimeForYearPV += expense.amount
+
+        // Nominal is inflated amount
+        const yearsOfInflation = year - 1
+        const inflationMultiplier = Math.pow(1 + inflationRate / 100, yearsOfInflation)
+        oneTimeForYearNominal += expense.amount * inflationMultiplier
       }
     })
 
-    yearData['One-Time'] = oneTimeForYear
-    yearData.total += oneTimeForYear
+    yearDataPV['One-Time'] = oneTimeForYearPV
+    yearDataPV.total += oneTimeForYearPV
 
-    chartData.push(yearData)
+    yearDataNominal['One-Time'] = oneTimeForYearNominal
+    yearDataNominal.total += oneTimeForYearNominal
+
+    chartDataPV.push(yearDataPV)
+    chartDataNominal.push(yearDataNominal)
   }
 
-  return chartData
+  return { chartDataPV, chartDataNominal }
 }
