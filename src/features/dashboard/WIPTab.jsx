@@ -6,6 +6,10 @@ function WIPTab({ data }) {
 
   // State for year slider
   const [selectedYear, setSelectedYear] = useState(1)
+
+  // State for impact analysis
+  const [incomeAdjustment, setIncomeAdjustment] = useState(0) // -50% to +50%
+  const [expenseAdjustment, setExpenseAdjustment] = useState(0) // -50% to +50%
   const currentAge = profile?.age || 30
   const retirementAge = profile?.retirementAge || 65
   const inflationRate = (profile?.inflationRate || 2.7) / 100
@@ -143,6 +147,110 @@ function WIPTab({ data }) {
       year1NetWorth
     }
   }, [projections, profile, inflationRate, currentAge, retirementAge])
+
+  // Calculate impact analysis metrics
+  const impactAnalysis = useMemo(() => {
+    if (!projections.length || !fireMetrics) return null
+
+    const incomeMultiplier = 1 + (incomeAdjustment / 100)
+    const expenseMultiplier = 1 + (expenseAdjustment / 100)
+
+    // Adjusted Year 1 values
+    const adjustedIncome = fireMetrics.year1GrossIncome * incomeMultiplier
+    const adjustedExpenses = fireMetrics.year1Expenses * expenseMultiplier
+
+    // Estimate adjusted gap (simplified - assumes taxes scale proportionally)
+    // More accurate would recalculate taxes, but this gives a good approximation
+    const taxRate = fireMetrics.year1GrossIncome > 0
+      ? (projections[0].annualTaxes / fireMetrics.year1GrossIncome)
+      : 0.3
+    const adjustedTaxes = adjustedIncome * taxRate
+    const adjusted401k = projections[0].totalIndividual401k * incomeMultiplier
+    const adjustedGap = adjustedIncome - adjusted401k - adjustedTaxes - adjustedExpenses
+
+    // Adjusted savings rate
+    const adjustedSavingsRate = adjustedIncome > 0 ? (adjustedGap / adjustedIncome) * 100 : 0
+
+    // Adjusted FIRE number (based on adjusted expenses)
+    const adjustedFireNumber = adjustedExpenses * 25
+
+    // Estimate years to FIRE with adjusted values
+    // Simplified calculation: use average growth and savings rate
+    const avgGrowthRate = 0.07 // 7% real return assumption
+    let adjustedYearsToFire = null
+    let simulatedNetWorth = fireMetrics.year1NetWorth
+    const annualSavings = adjustedGap
+
+    for (let year = 1; year <= 100; year++) {
+      // Inflate FIRE number
+      const inflatedFireNumber = adjustedFireNumber * Math.pow(1 + inflationRate, year - 1)
+
+      if (simulatedNetWorth >= inflatedFireNumber) {
+        adjustedYearsToFire = year
+        break
+      }
+
+      // Grow existing wealth and add savings
+      simulatedNetWorth = simulatedNetWorth * (1 + avgGrowthRate) + annualSavings
+    }
+
+    // Calculate Coast FIRE age with adjusted values
+    const yearsToRetirement = retirementAge - currentAge
+    let adjustedCoastFireAge = null
+
+    for (let i = 0; i < Math.min(projections.length, yearsToRetirement); i++) {
+      // Simulate net worth growth with adjusted savings
+      let simNetWorth = fireMetrics.year1NetWorth
+      for (let j = 0; j < i; j++) {
+        simNetWorth = simNetWorth * (1 + avgGrowthRate) + annualSavings
+      }
+
+      const yearsRemaining = yearsToRetirement - i
+      if (yearsRemaining <= 0) break
+
+      const futureValue = simNetWorth * Math.pow(1 + avgGrowthRate, yearsRemaining)
+      const targetFireNumber = adjustedFireNumber * Math.pow(1 + inflationRate, yearsToRetirement)
+
+      if (futureValue >= targetFireNumber) {
+        adjustedCoastFireAge = currentAge + i
+        break
+      }
+    }
+
+    // Calculate changes
+    const savingsRateChange = adjustedSavingsRate - fireMetrics.savingsRate
+    const fireNumberChange = adjustedFireNumber - fireMetrics.fireNumber
+    const yearsToFireChange = adjustedYearsToFire && fireMetrics.yearsToFire
+      ? adjustedYearsToFire - fireMetrics.yearsToFire
+      : null
+    const coastFireAgeChange = adjustedCoastFireAge && fireMetrics.coastFireAge
+      ? adjustedCoastFireAge - fireMetrics.coastFireAge
+      : null
+
+    return {
+      // Baseline
+      baselineIncome: fireMetrics.year1GrossIncome,
+      baselineExpenses: fireMetrics.year1Expenses,
+      baselineSavingsRate: fireMetrics.savingsRate,
+      baselineFireNumber: fireMetrics.fireNumber,
+      baselineYearsToFire: fireMetrics.yearsToFire,
+      baselineCoastFireAge: fireMetrics.coastFireAge,
+
+      // Adjusted
+      adjustedIncome,
+      adjustedExpenses,
+      adjustedSavingsRate,
+      adjustedFireNumber,
+      adjustedYearsToFire,
+      adjustedCoastFireAge,
+
+      // Changes
+      savingsRateChange,
+      fireNumberChange,
+      yearsToFireChange,
+      coastFireAgeChange
+    }
+  }, [projections, fireMetrics, incomeAdjustment, expenseAdjustment, inflationRate, currentAge, retirementAge])
 
   // Calculate milestones
   const milestones = useMemo(() => {
@@ -431,6 +539,181 @@ function WIPTab({ data }) {
         </div>
       )}
 
+      {/* Impact Analysis */}
+      {impactAnalysis && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">📊 Impact Analysis</h3>
+            <button
+              onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(0); }}
+              className="text-xs text-blue-600 hover:text-blue-800"
+            >
+              Reset to baseline
+            </button>
+          </div>
+          <p className="text-sm text-gray-600 mb-6">
+            See how changes to income or expenses affect your FIRE metrics
+          </p>
+
+          {/* Adjustment Sliders */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Income Adjustment */}
+            <div className="bg-green-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Income Adjustment</span>
+                <span className={`text-lg font-bold ${incomeAdjustment > 0 ? 'text-green-600' : incomeAdjustment < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                  {incomeAdjustment > 0 ? '+' : ''}{incomeAdjustment}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="-50"
+                max="50"
+                value={incomeAdjustment}
+                onChange={(e) => setIncomeAdjustment(Number(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>-50%</span>
+                <span>0%</span>
+                <span>+50%</span>
+              </div>
+              <p className="text-xs text-gray-600 mt-2">
+                {fmtCompact(impactAnalysis.baselineIncome)} → {fmtCompact(impactAnalysis.adjustedIncome)}
+              </p>
+            </div>
+
+            {/* Expense Adjustment */}
+            <div className="bg-red-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Expense Adjustment</span>
+                <span className={`text-lg font-bold ${expenseAdjustment < 0 ? 'text-green-600' : expenseAdjustment > 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                  {expenseAdjustment > 0 ? '+' : ''}{expenseAdjustment}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="-50"
+                max="50"
+                value={expenseAdjustment}
+                onChange={(e) => setExpenseAdjustment(Number(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>-50%</span>
+                <span>0%</span>
+                <span>+50%</span>
+              </div>
+              <p className="text-xs text-gray-600 mt-2">
+                {fmtCompact(impactAnalysis.baselineExpenses)} → {fmtCompact(impactAnalysis.adjustedExpenses)}
+              </p>
+            </div>
+          </div>
+
+          {/* Results Comparison */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Savings Rate */}
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Savings Rate</p>
+              <p className="text-xl font-bold text-gray-800">{impactAnalysis.adjustedSavingsRate.toFixed(1)}%</p>
+              <p className={`text-sm font-medium ${impactAnalysis.savingsRateChange > 0 ? 'text-green-600' : impactAnalysis.savingsRateChange < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                {impactAnalysis.savingsRateChange > 0 ? '+' : ''}{impactAnalysis.savingsRateChange.toFixed(1)}%
+              </p>
+              <p className="text-xs text-gray-400 mt-1">was {impactAnalysis.baselineSavingsRate.toFixed(1)}%</p>
+            </div>
+
+            {/* FIRE Number */}
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">FIRE Number</p>
+              <p className="text-xl font-bold text-gray-800">{fmtCompact(impactAnalysis.adjustedFireNumber)}</p>
+              <p className={`text-sm font-medium ${impactAnalysis.fireNumberChange < 0 ? 'text-green-600' : impactAnalysis.fireNumberChange > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                {impactAnalysis.fireNumberChange > 0 ? '+' : ''}{fmtCompact(impactAnalysis.fireNumberChange)}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">was {fmtCompact(impactAnalysis.baselineFireNumber)}</p>
+            </div>
+
+            {/* Years to FIRE */}
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Years to FIRE</p>
+              <p className="text-xl font-bold text-gray-800">
+                {impactAnalysis.adjustedYearsToFire ? `${impactAnalysis.adjustedYearsToFire} yrs` : '—'}
+              </p>
+              {impactAnalysis.yearsToFireChange !== null ? (
+                <p className={`text-sm font-medium ${impactAnalysis.yearsToFireChange < 0 ? 'text-green-600' : impactAnalysis.yearsToFireChange > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                  {impactAnalysis.yearsToFireChange > 0 ? '+' : ''}{impactAnalysis.yearsToFireChange} yrs
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400">—</p>
+              )}
+              <p className="text-xs text-gray-400 mt-1">
+                was {impactAnalysis.baselineYearsToFire ? `${impactAnalysis.baselineYearsToFire} yrs` : '—'}
+              </p>
+            </div>
+
+            {/* Coast FIRE Age */}
+            <div className="text-center p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Coast FIRE Age</p>
+              <p className="text-xl font-bold text-gray-800">
+                {impactAnalysis.adjustedCoastFireAge ? `Age ${impactAnalysis.adjustedCoastFireAge}` : '—'}
+              </p>
+              {impactAnalysis.coastFireAgeChange !== null ? (
+                <p className={`text-sm font-medium ${impactAnalysis.coastFireAgeChange < 0 ? 'text-green-600' : impactAnalysis.coastFireAgeChange > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                  {impactAnalysis.coastFireAgeChange > 0 ? '+' : ''}{impactAnalysis.coastFireAgeChange} yrs
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400">—</p>
+              )}
+              <p className="text-xs text-gray-400 mt-1">
+                was {impactAnalysis.baselineCoastFireAge ? `Age ${impactAnalysis.baselineCoastFireAge}` : '—'}
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Scenarios */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <p className="text-xs text-gray-500 mb-3">Quick scenarios:</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => { setIncomeAdjustment(10); setExpenseAdjustment(0); }}
+                className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200"
+              >
+                +10% raise
+              </button>
+              <button
+                onClick={() => { setIncomeAdjustment(20); setExpenseAdjustment(0); }}
+                className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200"
+              >
+                +20% raise
+              </button>
+              <button
+                onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(-10); }}
+                className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200"
+              >
+                Cut 10% expenses
+              </button>
+              <button
+                onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(-20); }}
+                className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200"
+              >
+                Cut 20% expenses
+              </button>
+              <button
+                onClick={() => { setIncomeAdjustment(-20); setExpenseAdjustment(0); }}
+                className="px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-full hover:bg-red-200"
+              >
+                -20% income (layoff)
+              </button>
+              <button
+                onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(30); }}
+                className="px-3 py-1.5 text-xs bg-orange-100 text-orange-700 rounded-full hover:bg-orange-200"
+              >
+                +30% expenses (kid)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Milestone Tracker */}
       <div>
         <h3 className="text-lg font-semibold text-gray-800 mb-4">🏆 Net Worth Milestones</h3>
@@ -521,12 +804,7 @@ function WIPTab({ data }) {
       {/* Coming Soon Section */}
       <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-700 mb-4">🔮 Coming Soon</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg p-4 border border-gray-200">
-            <div className="text-2xl mb-2">📊</div>
-            <h4 className="font-medium text-gray-800">Impact Analysis</h4>
-            <p className="text-xs text-gray-500 mt-1">See how expense/income changes affect FIRE metrics</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white rounded-lg p-4 border border-gray-200">
             <div className="text-2xl mb-2">🔬</div>
             <h4 className="font-medium text-gray-800">Sensitivity Analysis</h4>
