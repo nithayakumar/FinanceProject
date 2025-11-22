@@ -4,14 +4,89 @@ function WIPTab({ data }) {
   const { gapProjections, profile } = data
   const projections = gapProjections?.projections || []
 
-  // Calculate FIRE metrics
+  // State for year slider
+  const [selectedYear, setSelectedYear] = useState(1)
+  const currentAge = profile?.age || 30
+  const retirementAge = profile?.retirementAge || 65
+  const inflationRate = (profile?.inflationRate || 2.7) / 100
+  const maxYear = projections.length || 30
+
+  // Calculate metrics for selected year
+  const yearMetrics = useMemo(() => {
+    if (!projections.length || selectedYear < 1 || selectedYear > projections.length) return null
+
+    const yearIndex = selectedYear - 1
+    const p = projections[yearIndex]
+    const prevP = yearIndex > 0 ? projections[yearIndex - 1] : null
+
+    // Savings Rate = Gap / Gross Income
+    const savingsRate = p.grossIncome > 0 ? (p.gap / p.grossIncome) * 100 : 0
+
+    // Income - Nominal (future dollars) and Present Value (today's dollars)
+    const incomeNominal = p.grossIncome
+    const incomePV = p.grossIncomePV
+
+    // Tax %
+    const taxRate = p.grossIncome > 0 ? (p.annualTaxes / p.grossIncome) * 100 : 0
+
+    // % of Net Worth Growth from Investment Growth (vs contributions)
+    // Net Worth change this year
+    let netWorthChange = 0
+    let investmentGrowth = 0
+    let contributions = 0
+    let growthPercent = 0
+
+    if (prevP) {
+      // Year 2+: compare to previous year
+      netWorthChange = p.netWorth - prevP.netWorth
+
+      // Investment growth = market value changes minus new contributions
+      // For investments: market value change - cost basis change
+      const investmentMarketGrowth = (p.totalInvestmentValue - prevP.totalInvestmentValue) - p.investedThisYear
+
+      // For 401k: value change - contributions (individual + company)
+      const ret401kGrowth = (p.retirement401kValue - prevP.retirement401kValue) - p.totalIndividual401k - p.annualCompany401k
+
+      investmentGrowth = investmentMarketGrowth + ret401kGrowth
+      contributions = p.cashContribution + p.investedThisYear + p.totalIndividual401k + p.annualCompany401k
+
+      // Percent of growth from investments (not contributions)
+      if (netWorthChange > 0) {
+        growthPercent = (investmentGrowth / netWorthChange) * 100
+      }
+    } else {
+      // Year 1: estimate based on beginning balances
+      // We don't have accurate beginning-of-year data, so show N/A or estimate
+      netWorthChange = p.netWorth // Total at end of year 1
+      contributions = p.cashContribution + p.investedThisYear + p.totalIndividual401k + p.annualCompany401k
+      investmentGrowth = netWorthChange - contributions
+      if (netWorthChange > 0) {
+        growthPercent = (investmentGrowth / netWorthChange) * 100
+      }
+    }
+
+    return {
+      savingsRate,
+      incomeNominal,
+      incomePV,
+      taxRate,
+      netWorthChange,
+      investmentGrowth,
+      contributions,
+      growthPercent,
+      // Additional data for display
+      gap: p.gap,
+      expenses: p.annualExpenses,
+      taxes: p.annualTaxes,
+      netWorth: p.netWorth
+    }
+  }, [projections, selectedYear])
+
+  // Calculate FIRE metrics (static, based on Year 1)
   const fireMetrics = useMemo(() => {
     if (!projections.length) return null
 
     const currentYear = projections[0]
-    const currentAge = profile?.age || 30
-    const retirementAge = profile?.retirementAge || 65
-    const inflationRate = (profile?.inflationRate || 2.7) / 100
 
     // Year 1 values
     const year1GrossIncome = currentYear.grossIncome
@@ -37,12 +112,8 @@ function WIPTab({ data }) {
     }
 
     // Coast FIRE Age calculation
-    // Coast FIRE = Age at which your current investments will grow to FIRE Number by retirement
-    // without any additional contributions
-    // Formula: PV * (1 + r)^n = FV, solve for n where PV = current net worth, FV = FIRE number at retirement
     const assumedGrowthRate = 0.07 // 7% real return
     const yearsToRetirement = retirementAge - currentAge
-    const fireNumberAtRetirement = fireNumber * Math.pow(1 + inflationRate, yearsToRetirement)
 
     // Find coast FIRE age by simulating when current investments can coast
     let coastFireAge = null
@@ -51,7 +122,6 @@ function WIPTab({ data }) {
       const yearsRemaining = yearsToRetirement - i
       if (yearsRemaining <= 0) break
 
-      // Will this net worth grow to FIRE number by retirement?
       const futureValue = yearNetWorth * Math.pow(1 + assumedGrowthRate, yearsRemaining)
       const targetFireNumber = fireNumber * Math.pow(1 + inflationRate, yearsToRetirement)
 
@@ -72,7 +142,7 @@ function WIPTab({ data }) {
       year1Gap,
       year1NetWorth
     }
-  }, [projections, profile])
+  }, [projections, profile, inflationRate, currentAge, retirementAge])
 
   // Calculate milestones
   const milestones = useMemo(() => {
@@ -128,31 +198,142 @@ function WIPTab({ data }) {
         </div>
       </div>
 
-      {/* FIRE KPI Cards */}
-      {fireMetrics && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">🔥 FIRE Metrics</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Key Metrics with Year Slider */}
+      {yearMetrics && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">📊 Key Metrics</h3>
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">Year {selectedYear}</span>
+              <span className="text-gray-400 ml-2">(Age {currentAge + selectedYear - 1})</span>
+            </div>
+          </div>
+
+          {/* Year Slider */}
+          <div className="mb-6">
+            <div className="flex items-center gap-4">
+              <span className="text-xs text-gray-500 w-12">Year 1</span>
+              <input
+                type="range"
+                min="1"
+                max={maxYear}
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              />
+              <span className="text-xs text-gray-500 w-16 text-right">Year {maxYear}</span>
+            </div>
+            <div className="flex justify-between mt-1 px-12">
+              <span className="text-xs text-gray-400">Age {currentAge}</span>
+              <span className="text-xs text-gray-400">Age {currentAge + maxYear - 1}</span>
+            </div>
+          </div>
+
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Savings Rate */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Savings Rate</span>
-                <span className="text-2xl">💰</span>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Savings Rate</span>
+                <span className="text-lg">💰</span>
               </div>
-              <p className={`text-3xl font-bold ${fireMetrics.savingsRate >= 50 ? 'text-green-600' : fireMetrics.savingsRate >= 25 ? 'text-blue-600' : 'text-orange-600'}`}>
-                {fireMetrics.savingsRate.toFixed(1)}%
+              <p className={`text-2xl font-bold ${yearMetrics.savingsRate >= 50 ? 'text-green-600' : yearMetrics.savingsRate >= 25 ? 'text-blue-600' : yearMetrics.savingsRate >= 0 ? 'text-orange-600' : 'text-red-600'}`}>
+                {yearMetrics.savingsRate.toFixed(1)}%
               </p>
-              <p className="text-xs text-gray-500 mt-2">
-                {fmtCompact(fireMetrics.year1Gap)} of {fmtCompact(fireMetrics.year1GrossIncome)} (Year 1)
+              <p className="text-xs text-gray-500 mt-1">
+                {fmtCompact(yearMetrics.gap)} saved
               </p>
-              <div className="mt-3 h-2 bg-gray-200 rounded-full">
+              <div className="mt-2 h-1.5 bg-gray-200 rounded-full">
                 <div
-                  className={`h-2 rounded-full ${fireMetrics.savingsRate >= 50 ? 'bg-green-500' : fireMetrics.savingsRate >= 25 ? 'bg-blue-500' : 'bg-orange-500'}`}
-                  style={{ width: `${Math.min(fireMetrics.savingsRate, 100)}%` }}
+                  className={`h-1.5 rounded-full ${yearMetrics.savingsRate >= 50 ? 'bg-green-500' : yearMetrics.savingsRate >= 25 ? 'bg-blue-500' : yearMetrics.savingsRate >= 0 ? 'bg-orange-500' : 'bg-red-500'}`}
+                  style={{ width: `${Math.min(Math.max(yearMetrics.savingsRate, 0), 100)}%` }}
                 />
               </div>
             </div>
 
+            {/* Income - Nominal (Future Dollars) */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Income (Future $)</span>
+                <span className="text-lg">💵</span>
+              </div>
+              <p className="text-2xl font-bold text-gray-800">
+                {fmtCompact(yearMetrics.incomeNominal)}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Nominal value in Year {selectedYear}
+              </p>
+            </div>
+
+            {/* Income - Present Value (Today's Dollars) */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Income (Today's $)</span>
+                <span className="text-lg">💰</span>
+              </div>
+              <p className="text-2xl font-bold text-blue-700">
+                {fmtCompact(yearMetrics.incomePV)}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Present value (inflation-adjusted)
+              </p>
+            </div>
+
+            {/* Tax Rate */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tax Rate</span>
+                <span className="text-lg">🏛️</span>
+              </div>
+              <p className={`text-2xl font-bold ${yearMetrics.taxRate < 25 ? 'text-green-600' : yearMetrics.taxRate < 35 ? 'text-orange-600' : 'text-red-600'}`}>
+                {yearMetrics.taxRate.toFixed(1)}%
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {fmtCompact(yearMetrics.taxes)} in taxes
+              </p>
+            </div>
+
+            {/* % Growth from Investments */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Growth from Investing</span>
+                <span className="text-lg">📈</span>
+              </div>
+              <p className={`text-2xl font-bold ${yearMetrics.growthPercent >= 50 ? 'text-purple-600' : yearMetrics.growthPercent >= 25 ? 'text-blue-600' : 'text-gray-600'}`}>
+                {yearMetrics.growthPercent.toFixed(0)}%
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                {fmtCompact(yearMetrics.investmentGrowth)} from returns
+              </p>
+              <p className="text-xs text-gray-400">
+                vs {fmtCompact(yearMetrics.contributions)} contributed
+              </p>
+            </div>
+          </div>
+
+          {/* Summary Row */}
+          <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center text-sm">
+            <div className="text-gray-600">
+              <span className="font-medium">Net Worth:</span> {fmtCompact(yearMetrics.netWorth)}
+            </div>
+            <div className="text-gray-600">
+              <span className="font-medium">YoY Change:</span>{' '}
+              <span className={yearMetrics.netWorthChange >= 0 ? 'text-green-600' : 'text-red-600'}>
+                {yearMetrics.netWorthChange >= 0 ? '+' : ''}{fmtCompact(yearMetrics.netWorthChange)}
+              </span>
+            </div>
+            <div className="text-gray-500 text-xs">
+              Slide to explore different years →
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FIRE Metrics Summary */}
+      {fireMetrics && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🔥 FIRE Metrics</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* FIRE Number */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-2">
@@ -225,6 +406,26 @@ function WIPTab({ data }) {
               <p className="text-xs text-gray-400 mt-1">
                 Assumes 7% real returns
               </p>
+            </div>
+
+            {/* Current Progress */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">FIRE Progress</span>
+                <span className="text-2xl">🚀</span>
+              </div>
+              <p className="text-3xl font-bold text-blue-600">
+                {((fireMetrics.year1NetWorth / fireMetrics.fireNumber) * 100).toFixed(0)}%
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                {fmtCompact(fireMetrics.year1NetWorth)} of {fmtCompact(fireMetrics.fireNumber)}
+              </p>
+              <div className="mt-3 h-2 bg-gray-200 rounded-full">
+                <div
+                  className="h-2 rounded-full bg-blue-500"
+                  style={{ width: `${Math.min((fireMetrics.year1NetWorth / fireMetrics.fireNumber) * 100, 100)}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>
