@@ -21,7 +21,7 @@ export const EXPENSE_FIELDS = {
         step: '0.1'
     },
     growthRate: {
-        label: 'Inflation Rate 📈',
+        label: 'Yearly Expense Growth 📈',
         suffix: '%',
         type: 'number',
         step: '0.1'
