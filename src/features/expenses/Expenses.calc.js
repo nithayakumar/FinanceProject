@@ -90,6 +90,7 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
   console.log('Inflation Rate:', inflationRate + '%')
   console.log('Years to Retirement:', yearsToRetirement)
   console.log('🔴 Income projections provided:', incomeProjections ? `Yes (${incomeProjections.length} months)` : 'NO - THIS IS THE PROBLEM')
+  console.log('🔴 One-time expenses:', data.oneTimeExpenses)
 
   // Log percent of income categories
   const percentCategories = data.expenseCategories.filter(c => c.amountType === 'percentOfIncome')
@@ -245,18 +246,23 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
     // Add one-time expenses for this month
     let oneTimeNominal = 0
     let oneTimeTodayDollars = 0
-    data.oneTimeExpenses.forEach(expense => {
-      // One-time expenses occur in January of their specified year
-      // Amounts are entered in today's dollars, so inflate to nominal
-      if (expense.year === year && month === 1) {
-        oneTimeTodayDollars += expense.amount / 12  // Spread over the year for monthly view
+    if (data.oneTimeExpenses && data.oneTimeExpenses.length > 0) {
+      data.oneTimeExpenses.forEach(expense => {
+        // One-time expenses occur in January of their specified year
+        // Amounts are entered in today's dollars, so inflate to nominal
+        const expenseYear = Number(expense.year)
+        const expenseAmount = Number(expense.amount) || 0
 
-        // Inflate to nominal dollars for this year
-        const yearsOfInflation = year - 1
-        const inflationMultiplier = Math.pow(1 + inflationRate / 100, yearsOfInflation)
-        oneTimeNominal += (expense.amount * inflationMultiplier) / 12
-      }
-    })
+        if (expenseYear === year && month === 1 && expenseAmount > 0) {
+          oneTimeTodayDollars += expenseAmount / 12  // Spread over the year for monthly view
+
+          // Inflate to nominal dollars for this year
+          const yearsOfInflation = year - 1
+          const inflationMultiplier = Math.pow(1 + inflationRate / 100, yearsOfInflation)
+          oneTimeNominal += (expenseAmount * inflationMultiplier) / 12
+        }
+      })
+    }
 
     const totalExpensesNominal = totalRecurringNominal + oneTimeNominal
 

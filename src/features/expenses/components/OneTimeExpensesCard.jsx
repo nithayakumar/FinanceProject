@@ -7,7 +7,7 @@ export function OneTimeExpensesCard({ oneTimeExpenses, onAdd, onUpdate, onRemove
             <div className="flex justify-between items-center mb-4">
                 <div>
                     <h2 className="text-xl font-bold text-gray-900">One-Time Expenses</h2>
-                    <p className="text-sm text-gray-500">Large one-off purchases (e.g. car, home down payment)</p>
+                    <p className="text-sm text-gray-500">Typically large one-time costs like weddings</p>
                 </div>
                 <Button onClick={onAdd} variant="secondary" size="sm">
                     + One-Time Expense
