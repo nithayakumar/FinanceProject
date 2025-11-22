@@ -254,12 +254,13 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
         const expenseAmount = Number(expense.amount) || 0
 
         if (expenseYear === year && month === 1 && expenseAmount > 0) {
-          oneTimeTodayDollars += expenseAmount / 12  // Spread over the year for monthly view
+          // One-time expense is the full amount in this month (not spread across the year)
+          oneTimeTodayDollars += expenseAmount
 
           // Inflate to nominal dollars for this year
           const yearsOfInflation = year - 1
           const inflationMultiplier = Math.pow(1 + inflationRate / 100, yearsOfInflation)
-          oneTimeNominal += (expenseAmount * inflationMultiplier) / 12
+          oneTimeNominal += expenseAmount * inflationMultiplier
         }
       })
     }
@@ -520,17 +521,22 @@ function prepareChartData(projections, expenseCategories, yearsToRetirement, inf
     let oneTimeForYearPV = 0
     let oneTimeForYearNominal = 0
 
-    oneTimeExpenses.forEach(expense => {
-      if (expense.year === year && expense.amount) {
-        // PV is the entered amount (today's dollars)
-        oneTimeForYearPV += expense.amount
+    if (oneTimeExpenses && oneTimeExpenses.length > 0) {
+      oneTimeExpenses.forEach(expense => {
+        const expenseYear = Number(expense.year)
+        const expenseAmount = Number(expense.amount) || 0
 
-        // Nominal is inflated amount
-        const yearsOfInflation = year - 1
-        const inflationMultiplier = Math.pow(1 + inflationRate / 100, yearsOfInflation)
-        oneTimeForYearNominal += expense.amount * inflationMultiplier
-      }
-    })
+        if (expenseYear === year && expenseAmount > 0) {
+          // PV is the entered amount (today's dollars)
+          oneTimeForYearPV += expenseAmount
+
+          // Nominal is inflated amount
+          const yearsOfInflation = year - 1
+          const inflationMultiplier = Math.pow(1 + inflationRate / 100, yearsOfInflation)
+          oneTimeForYearNominal += expenseAmount * inflationMultiplier
+        }
+      })
+    }
 
     yearDataPV['One-Time'] = oneTimeForYearPV
     yearDataPV.total += oneTimeForYearPV
