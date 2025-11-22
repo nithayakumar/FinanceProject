@@ -25,17 +25,26 @@ export function ExpensesChart({ data, activeTab, expenseCategories, viewMode }) 
                         labelFormatter={(label) => `Year ${label}`}
                     />
                     {activeTab === 'all' ? (
-                        expenseCategories.map((category, index) => {
-                            const colors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef']
-                            return (
-                                <Bar
-                                    key={category.id}
-                                    dataKey={category.category}
-                                    stackId="a"
-                                    fill={colors[index % colors.length]}
-                                />
-                            )
-                        })
+                        <>
+                            {expenseCategories.map((category, index) => {
+                                const colors = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef']
+                                return (
+                                    <Bar
+                                        key={category.id}
+                                        dataKey={category.category}
+                                        stackId="a"
+                                        fill={colors[index % colors.length]}
+                                    />
+                                )
+                            })}
+                            {/* Add One-Time expenses bar */}
+                            <Bar
+                                key="one-time"
+                                dataKey="One-Time"
+                                stackId="a"
+                                fill="#dc2626"
+                            />
+                        </>
                     ) : (
                         <Bar
                             dataKey={expenseCategories.find(c => c.id === activeTab)?.category}
