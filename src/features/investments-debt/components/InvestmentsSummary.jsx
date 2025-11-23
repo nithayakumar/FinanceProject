@@ -29,7 +29,11 @@ export function InvestmentsSummary({ summary, yearsToRetirement, chartData, inve
     const year10NetWorth = isReal ? summary.year10NetWorthPV : summary.year10NetWorth
     const retirementNetWorth = isReal ? summary.retirementNetWorthPV : summary.retirementNetWorth
 
-    const growthAmount = retirementNetWorth - currentNetWorth
+    // Calculate CAGR
+    // (Ending / Beginning)^(1/n) - 1
+    const cagr = yearsToRetirement > 0 && currentNetWorth > 0
+        ? (Math.pow(retirementNetWorth / currentNetWorth, 1 / yearsToRetirement) - 1) * 100
+        : 0
 
     return (
         <div className="space-y-6">
@@ -58,9 +62,8 @@ export function InvestmentsSummary({ summary, yearsToRetirement, chartData, inve
             {/* Primary Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <SummaryCard
-                    title="Current Total Savings"
+                    title="Savings & Investments"
                     value={formatCompact(currentNetWorth)}
-                    subtitle="Cash + 401k + Investments"
                     highlight
                 />
                 <SummaryCard
@@ -75,9 +78,9 @@ export function InvestmentsSummary({ summary, yearsToRetirement, chartData, inve
                     highlight
                 />
                 <SummaryCard
-                    title="Total Growth"
-                    value={`+${summary.netWorthGrowthPercent.toFixed(0)}%`}
-                    subtitle={`${formatCompact(growthAmount)} gains`}
+                    title="CAGR"
+                    value={`${cagr.toFixed(1)}%`}
+                    subtitle="Annual Growth"
                 />
             </div>
         </div>

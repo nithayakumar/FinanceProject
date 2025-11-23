@@ -8,8 +8,8 @@ function NetWorthTab({ data }) {
   const { gapProjections, profile } = data
   const { projections, summary } = gapProjections
 
-  // Format currency
-  const fmt = (val) => `$${Math.abs(val).toLocaleString()}`
+  // Format currency - compact format
+  const fmt = (val) => formatSmart(val)
 
   // Prepare stacked area chart data
   const chartData = projections.map(p => ({
