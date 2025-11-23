@@ -18,6 +18,9 @@ function WIPTab({ data }) {
   // State for life planner
   const [lifeEvents, setLifeEvents] = useState([])
 
+  // State for withdrawal calculator
+  const [retirementWithdrawal, setRetirementWithdrawal] = useState('')
+
   // Life event templates
   const lifeEventTemplates = {
     child: { name: 'Have a Child', expenseImpact: 15000, incomeImpact: 0, duration: 18, icon: '👶' },
@@ -64,8 +67,13 @@ function WIPTab({ data }) {
     const incomeMultiplier = 1 + (incomeAdjustment / 100)
     const expenseMultiplier = 1 + (expenseAdjustment / 100)
 
-    // Check if any adjustments are active (no longer uses sensitivity sliders - those are in What If section)
-    const noAdjustments = incomeAdjustment === 0 && expenseAdjustment === 0
+    // Use global sensitivity sliders
+    const growthRate = sensitivityGrowthRate / 100
+    const adjInflationRate = sensitivityInflation / 100
+
+    // Check if any adjustments are active
+    const noAdjustments = incomeAdjustment === 0 && expenseAdjustment === 0 &&
+                          sensitivityGrowthRate === 7 && sensitivityInflation === (profile?.inflationRate || 2.7)
 
     // Adjusted values
     const adjustedIncome = p.grossIncome * incomeMultiplier
@@ -83,18 +91,17 @@ function WIPTab({ data }) {
     // Simulate adjusted net worth for this year
     // Start from year 1 and compound with adjusted gap
     let adjustedNetWorth = projections[0].netWorth
-    const defaultGrowthRate = 0.07
     for (let i = 1; i <= yearIndex; i++) {
       const yearP = projections[i]
       const yearAdjustedGap = (yearP.grossIncome * incomeMultiplier) -
                               (yearP.annualTaxes * incomeMultiplier) -
                               (yearP.annualExpenses * expenseMultiplier) -
                               (yearP.totalIndividual401k * incomeMultiplier)
-      adjustedNetWorth = adjustedNetWorth * (1 + defaultGrowthRate) + yearAdjustedGap
+      adjustedNetWorth = adjustedNetWorth * (1 + growthRate) + yearAdjustedGap
     }
 
-    // Calculate adjusted net worth PV
-    const discountFactor = Math.pow(1 + inflationRate, yearIndex)
+    // Calculate adjusted net worth PV using sensitivity inflation
+    const discountFactor = Math.pow(1 + adjInflationRate, yearIndex)
     const adjustedNetWorthPV = adjustedNetWorth / discountFactor
 
     // % of Net Worth Growth from Investment Growth (vs contributions)
@@ -136,11 +143,15 @@ function WIPTab({ data }) {
       netWorth: noAdjustments ? p.netWorth : adjustedNetWorth,
       netWorthPV: noAdjustments ? p.netWorthPV : adjustedNetWorthPV
     }
-  }, [projections, selectedYear, incomeAdjustment, expenseAdjustment, inflationRate])
+  }, [projections, selectedYear, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, profile])
 
-  // Calculate FIRE metrics (static, based on Year 1)
+  // Calculate FIRE metrics (uses global sensitivity sliders)
   const fireMetrics = useMemo(() => {
     if (!projections.length) return null
+
+    // Use global sensitivity sliders
+    const growthRate = sensitivityGrowthRate / 100
+    const adjInflationRate = sensitivityInflation / 100
 
     const currentYear = projections[0]
 
@@ -156,36 +167,44 @@ function WIPTab({ data }) {
     // FIRE Number = Annual Expenses × 25 (4% safe withdrawal rate)
     const fireNumber = year1Expenses * 25
 
-    // Years to FIRE = Find first year where Net Worth >= FIRE Number (inflation-adjusted)
+    // Simulate net worth trajectory with sensitivity growth rate
+    const yearsToRetirement = retirementAge - currentAge
+    const simulatedNetWorths = [year1NetWorth]
+    let simNetWorth = year1NetWorth
+    for (let i = 1; i <= Math.max(projections.length, yearsToRetirement); i++) {
+      simNetWorth = simNetWorth * (1 + growthRate) + year1Gap
+      simulatedNetWorths.push(simNetWorth)
+    }
+
+    // Years to FIRE = Find first year where simulated Net Worth >= FIRE Number (inflation-adjusted)
     let yearsToFire = null
-    for (let i = 0; i < projections.length; i++) {
-      const yearProjection = projections[i]
-      const inflatedFireNumber = fireNumber * Math.pow(1 + inflationRate, i)
-      if (yearProjection.netWorth >= inflatedFireNumber) {
+    for (let i = 0; i < simulatedNetWorths.length; i++) {
+      const inflatedFireNumber = fireNumber * Math.pow(1 + adjInflationRate, i)
+      if (simulatedNetWorths[i] >= inflatedFireNumber) {
         yearsToFire = i + 1
         break
       }
     }
 
     // Coast FIRE Age calculation
-    const assumedGrowthRate = 0.07 // 7% real return
-    const yearsToRetirement = retirementAge - currentAge
-
-    // Find coast FIRE age by simulating when current investments can coast
     let coastFireAge = null
-    for (let i = 0; i < projections.length; i++) {
-      const yearNetWorth = projections[i].netWorth
+    for (let i = 0; i < Math.min(simulatedNetWorths.length, yearsToRetirement); i++) {
+      const yearNetWorth = simulatedNetWorths[i]
       const yearsRemaining = yearsToRetirement - i
       if (yearsRemaining <= 0) break
 
-      const futureValue = yearNetWorth * Math.pow(1 + assumedGrowthRate, yearsRemaining)
-      const targetFireNumber = fireNumber * Math.pow(1 + inflationRate, yearsToRetirement)
+      const futureValue = yearNetWorth * Math.pow(1 + growthRate, yearsRemaining)
+      const targetFireNumber = fireNumber * Math.pow(1 + adjInflationRate, yearsToRetirement)
 
       if (futureValue >= targetFireNumber) {
         coastFireAge = currentAge + i
         break
       }
     }
+
+    // Net worth at retirement
+    const netWorthAtRetirement = simulatedNetWorths[yearsToRetirement] || simNetWorth
+    const netWorthAtRetirementPV = netWorthAtRetirement / Math.pow(1 + adjInflationRate, yearsToRetirement)
 
     return {
       savingsRate,
@@ -196,9 +215,11 @@ function WIPTab({ data }) {
       year1GrossIncome,
       year1Expenses,
       year1Gap,
-      year1NetWorth
+      year1NetWorth,
+      netWorthAtRetirement,
+      netWorthAtRetirementPV
     }
-  }, [projections, profile, inflationRate, currentAge, retirementAge])
+  }, [projections, sensitivityGrowthRate, sensitivityInflation, currentAge, retirementAge])
 
   // Calculate impact analysis metrics
   const impactAnalysis = useMemo(() => {
@@ -342,12 +363,15 @@ function WIPTab({ data }) {
   const lifePlannerImpact = useMemo(() => {
     if (!projections.length || !fireMetrics || lifeEvents.length === 0) return null
 
+    // Use global sensitivity sliders
+    const growthRate = sensitivityGrowthRate / 100
+    const adjInflationRate = sensitivityInflation / 100
+
     const yearsToRetirement = retirementAge - currentAge
     const year1Gap = fireMetrics.year1Gap
     const year1Income = fireMetrics.year1GrossIncome
     const year1Expenses = fireMetrics.year1Expenses
     const startingNetWorth = fireMetrics.year1NetWorth
-    const growthRate = 0.07
 
     // Simulate without life events (baseline)
     let baselineNetWorth = startingNetWorth
@@ -400,7 +424,7 @@ function WIPTab({ data }) {
       })
 
       const adjustedGap = year1Gap + yearlyIncomeImpact - yearlyExpenseImpact
-      const inflatedFireNumber = fireMetrics.fireNumber * Math.pow(1 + inflationRate, year - 1)
+      const inflatedFireNumber = fireMetrics.fireNumber * Math.pow(1 + adjInflationRate, year - 1)
 
       if (simNetWorth >= inflatedFireNumber) {
         adjustedYearsToFire = year
@@ -426,7 +450,55 @@ function WIPTab({ data }) {
       totalExtraIncome,
       eventCount: lifeEvents.length
     }
-  }, [projections, fireMetrics, lifeEvents, inflationRate, currentAge, retirementAge])
+  }, [projections, fireMetrics, lifeEvents, sensitivityGrowthRate, sensitivityInflation, currentAge, retirementAge])
+
+  // Calculate withdrawal duration (how long money will last)
+  const withdrawalCalculation = useMemo(() => {
+    if (!fireMetrics || !retirementWithdrawal) return null
+
+    const withdrawal = parseFloat(retirementWithdrawal)
+    if (isNaN(withdrawal) || withdrawal <= 0) return null
+
+    // Use global sensitivity sliders for retirement growth (typically lower than accumulation)
+    const retirementGrowthRate = sensitivityGrowthRate / 100
+    const adjInflationRate = sensitivityInflation / 100
+
+    const netWorthAtRetirement = fireMetrics.netWorthAtRetirement
+
+    // Simple calculation: years = net worth / withdrawal (no growth)
+    const simpleYears = netWorthAtRetirement / withdrawal
+
+    // With growth calculation: simulate year by year
+    let currentNetWorth = netWorthAtRetirement
+    let yearsWithGrowth = 0
+    const maxYears = 100
+
+    while (currentNetWorth > 0 && yearsWithGrowth < maxYears) {
+      // Apply growth first, then withdraw
+      currentNetWorth = currentNetWorth * (1 + retirementGrowthRate) - withdrawal
+      yearsWithGrowth++
+    }
+
+    if (currentNetWorth > 0) {
+      yearsWithGrowth = Infinity // Money never runs out
+    }
+
+    // Calculate safe withdrawal rate (what % is the withdrawal of net worth)
+    const withdrawalRate = (withdrawal / netWorthAtRetirement) * 100
+
+    // Calculate max sustainable withdrawal (4% rule)
+    const sustainableWithdrawal = netWorthAtRetirement * 0.04
+
+    return {
+      withdrawal,
+      netWorthAtRetirement,
+      simpleYears: Math.round(simpleYears),
+      yearsWithGrowth: yearsWithGrowth === Infinity ? 'Forever' : Math.round(yearsWithGrowth),
+      withdrawalRate,
+      sustainableWithdrawal,
+      isSustainable: withdrawalRate <= 4
+    }
+  }, [fireMetrics, retirementWithdrawal, sensitivityGrowthRate, sensitivityInflation])
 
   // Calculate milestones
   const milestones = useMemo(() => {
@@ -479,6 +551,67 @@ function WIPTab({ data }) {
               Experimental features and FIRE calculations
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Global Sensitivity Settings */}
+      <div className="bg-gradient-to-r from-purple-50 to-orange-50 rounded-lg border border-purple-200 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⚙️</span>
+            <h3 className="text-sm font-semibold text-gray-800">Global Assumptions</h3>
+          </div>
+          <p className="text-xs text-gray-500">These settings affect all calculations below</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Growth Rate */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-600 w-24">Growth Rate</span>
+            <input
+              type="range"
+              min="0"
+              max="15"
+              step="0.5"
+              value={sensitivityGrowthRate}
+              onChange={(e) => setSensitivityGrowthRate(Number(e.target.value))}
+              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+            />
+            <span className={`text-sm font-bold w-14 text-right ${sensitivityGrowthRate > 7 ? 'text-green-600' : sensitivityGrowthRate < 7 ? 'text-orange-600' : 'text-purple-600'}`}>
+              {sensitivityGrowthRate}%
+            </span>
+          </div>
+          {/* Inflation Rate */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-600 w-24">Inflation Rate</span>
+            <input
+              type="range"
+              min="0"
+              max="8"
+              step="0.1"
+              value={sensitivityInflation}
+              onChange={(e) => setSensitivityInflation(Number(e.target.value))}
+              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+            />
+            <span className={`text-sm font-bold w-14 text-right ${sensitivityInflation < 2.7 ? 'text-green-600' : sensitivityInflation > 4 ? 'text-red-600' : 'text-orange-600'}`}>
+              {sensitivityInflation.toFixed(1)}%
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-purple-200">
+          <div className="flex items-center gap-4 text-xs text-gray-600">
+            <span>Real Return: <span className={`font-bold ${(sensitivityGrowthRate - sensitivityInflation) >= 4 ? 'text-green-600' : (sensitivityGrowthRate - sensitivityInflation) >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{(sensitivityGrowthRate - sensitivityInflation).toFixed(1)}%</span></span>
+          </div>
+          {(sensitivityGrowthRate !== 7 || sensitivityInflation !== (profile?.inflationRate || 2.7)) && (
+            <button
+              onClick={() => {
+                setSensitivityGrowthRate(7);
+                setSensitivityInflation(profile?.inflationRate || 2.7);
+              }}
+              className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+            >
+              Reset to defaults
+            </button>
+          )}
         </div>
       </div>
 
@@ -722,20 +855,20 @@ function WIPTab({ data }) {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">🤔 What If...</h3>
-            <button
-              onClick={() => {
-                setIncomeAdjustment(0);
-                setExpenseAdjustment(0);
-                setSensitivityGrowthRate(7);
-                setSensitivityInflation(profile?.inflationRate || 2.7);
-              }}
-              className="text-xs text-blue-600 hover:text-blue-800"
-            >
-              Reset to baseline
-            </button>
+            {(incomeAdjustment !== 0 || expenseAdjustment !== 0) && (
+              <button
+                onClick={() => {
+                  setIncomeAdjustment(0);
+                  setExpenseAdjustment(0);
+                }}
+                className="text-xs text-blue-600 hover:text-blue-800"
+              >
+                Reset adjustments
+              </button>
+            )}
           </div>
           <p className="text-sm text-gray-600 mb-6">
-            See how changes to income, expenses, growth, or inflation affect your FIRE metrics
+            See how changes to income or expenses affect your FIRE metrics
           </p>
 
           {/* Adjustment Sliders */}
@@ -791,62 +924,6 @@ function WIPTab({ data }) {
                 {fmtCompact(impactAnalysis.baselineExpenses)} → {fmtCompact(impactAnalysis.adjustedExpenses)}
               </p>
             </div>
-
-            {/* Growth Rate */}
-            <div className="bg-purple-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Investment Growth Rate</span>
-                <span className={`text-lg font-bold ${sensitivityGrowthRate > 7 ? 'text-green-600' : sensitivityGrowthRate < 7 ? 'text-orange-600' : 'text-purple-600'}`}>
-                  {sensitivityGrowthRate}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="15"
-                step="0.5"
-                value={sensitivityGrowthRate}
-                onChange={(e) => setSensitivityGrowthRate(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>0%</span>
-                <span>7%</span>
-                <span>15%</span>
-              </div>
-            </div>
-
-            {/* Inflation Rate */}
-            <div className="bg-orange-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Inflation Rate</span>
-                <span className={`text-lg font-bold ${sensitivityInflation < 2.7 ? 'text-green-600' : sensitivityInflation > 4 ? 'text-red-600' : 'text-orange-600'}`}>
-                  {sensitivityInflation.toFixed(1)}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="0"
-                max="8"
-                step="0.1"
-                value={sensitivityInflation}
-                onChange={(e) => setSensitivityInflation(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>0%</span>
-                <span>4%</span>
-                <span>8%</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Real Return Display */}
-          <div className="bg-gray-100 rounded-lg p-3 mb-6 flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">Real Return (Growth - Inflation)</span>
-            <span className={`text-lg font-bold ${impactAnalysis.realReturn * 100 >= 4 ? 'text-green-600' : impactAnalysis.realReturn * 100 >= 2 ? 'text-blue-600' : impactAnalysis.realReturn * 100 >= 0 ? 'text-orange-600' : 'text-red-600'}`}>
-              {(impactAnalysis.realReturn * 100).toFixed(1)}%
-            </span>
           </div>
 
           {/* Results Comparison */}
@@ -1059,6 +1136,85 @@ function WIPTab({ data }) {
           )}
         </div>
       </div>
+
+      {/* Withdrawal Calculator */}
+      {fireMetrics && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🧮 Retirement Withdrawal Calculator</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Enter your desired annual withdrawal (pre-tax) to see how long your money will last
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Input Section */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Annual Withdrawal Amount (Pre-Tax)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <input
+                  type="number"
+                  value={retirementWithdrawal}
+                  onChange={(e) => setRetirementWithdrawal(e.target.value)}
+                  placeholder="e.g., 80000"
+                  className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Your projected net worth at retirement: <span className="font-semibold">{fmtCompact(fireMetrics.netWorthAtRetirement)}</span>
+              </p>
+              <p className="text-xs text-gray-500">
+                In today's dollars: <span className="font-semibold">{fmtCompact(fireMetrics.netWorthAtRetirementPV)}</span>
+              </p>
+            </div>
+
+            {/* Results Section */}
+            <div>
+              {withdrawalCalculation ? (
+                <div className="space-y-4">
+                  <div className={`p-4 rounded-lg ${withdrawalCalculation.isSustainable ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Years Money Will Last</span>
+                      <span className={`text-2xl font-bold ${withdrawalCalculation.isSustainable ? 'text-green-600' : 'text-red-600'}`}>
+                        {withdrawalCalculation.yearsWithGrowth === 'Forever' ? '∞' : `${withdrawalCalculation.yearsWithGrowth} years`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600">
+                      With {sensitivityGrowthRate}% growth during retirement
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Withdrawal Rate</p>
+                      <p className={`text-lg font-bold ${withdrawalCalculation.withdrawalRate <= 4 ? 'text-green-600' : withdrawalCalculation.withdrawalRate <= 5 ? 'text-orange-600' : 'text-red-600'}`}>
+                        {withdrawalCalculation.withdrawalRate.toFixed(1)}%
+                      </p>
+                      <p className="text-xs text-gray-400">{withdrawalCalculation.withdrawalRate <= 4 ? 'Safe' : withdrawalCalculation.withdrawalRate <= 5 ? 'Moderate risk' : 'High risk'}</p>
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">4% SWR Suggests</p>
+                      <p className="text-lg font-bold text-blue-600">
+                        {fmtCompact(withdrawalCalculation.sustainableWithdrawal)}
+                      </p>
+                      <p className="text-xs text-gray-400">Annual withdrawal</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-gray-500">
+                    Without growth (simple division): {withdrawalCalculation.simpleYears} years
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                  Enter an amount to see results
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Life Planner */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
