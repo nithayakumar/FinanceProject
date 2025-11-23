@@ -26,7 +26,7 @@ export function InvestmentCard({
                 )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Input
                     {...INVESTMENT_FIELDS.currentBalance}
                     value={investment.currentValue}
@@ -36,6 +36,11 @@ export function InvestmentCard({
                     {...INVESTMENT_FIELDS.growthRate}
                     value={investment.growthRate}
                     onChange={(val) => onUpdate(investment.id, 'growthRate', val ? Number(val) : '')}
+                />
+                <Input
+                    {...INVESTMENT_FIELDS.portfolioPercent}
+                    value={investment.portfolioPercent}
+                    onChange={(val) => onUpdate(investment.id, 'portfolioPercent', val ? Number(val) : '')}
                 />
             </div>
         </Card>

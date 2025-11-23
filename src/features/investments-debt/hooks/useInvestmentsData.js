@@ -28,7 +28,7 @@ export function useInvestmentsData() {
             // Ensure at least one investment always exists
             const investments = saved.investments && saved.investments.length > 0
                 ? saved.investments
-                : [createDefaultInvestment(1, 0, 7)]
+                : [createDefaultInvestment(1, 0, 100)]
 
             return {
                 ...saved,
@@ -50,7 +50,7 @@ export function useInvestmentsData() {
                 createDefaultInvestment(1, investmentValue, 33.33),
                 createDefaultInvestment(2, investmentValue, 33.33),
                 createDefaultInvestment(3, investmentValue, 33.34)
-            ] : [createDefaultInvestment(1, 0, 7)] // Always start with at least one
+            ] : [createDefaultInvestment(1, 0, 100)] // Always start with at least one (100% allocation)
 
             return {
                 currentCash: currentCash,

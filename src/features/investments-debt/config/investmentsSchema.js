@@ -18,6 +18,13 @@ export const INVESTMENT_FIELDS = {
         suffix: '%',
         type: 'number',
         step: '0.1'
+    },
+    portfolioPercent: {
+        label: 'Allocation %',
+        suffix: '%',
+        type: 'number',
+        step: '0.1',
+        tooltip: 'Percentage of new investments allocated here. Should sum to 100% across all investments.'
     }
 }
 
