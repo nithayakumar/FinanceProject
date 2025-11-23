@@ -119,7 +119,8 @@ function WIPTab({ data }) {
       gap: p.gap,
       expenses: p.annualExpenses,
       taxes: p.annualTaxes,
-      netWorth: p.netWorth
+      netWorth: p.netWorth,
+      netWorthPV: p.netWorthPV
     }
   }, [projections, selectedYear])
 
@@ -575,7 +576,7 @@ function WIPTab({ data }) {
           </div>
 
           {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Savings Rate */}
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-1">
@@ -596,28 +597,28 @@ function WIPTab({ data }) {
               </div>
             </div>
 
-            {/* Income - Nominal (Future Dollars) */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Income (Future $)</span>
-                <span className="text-lg">💵</span>
-              </div>
-              <p className="text-2xl font-bold text-gray-800">
-                {fmtCompact(yearMetrics.incomeNominal)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                Nominal value in Year {selectedYear}
-              </p>
-            </div>
-
             {/* Income - Present Value (Today's Dollars) */}
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Income (Today's $)</span>
-                <span className="text-lg">💰</span>
+                <span className="text-lg">💵</span>
               </div>
               <p className="text-2xl font-bold text-blue-700">
                 {fmtCompact(yearMetrics.incomePV)}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Present value (inflation-adjusted)
+              </p>
+            </div>
+
+            {/* Net Worth - Present Value (Today's Dollars) */}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Net Worth (Today's $)</span>
+                <span className="text-lg">💎</span>
+              </div>
+              <p className="text-2xl font-bold text-purple-700">
+                {fmtCompact(yearMetrics.netWorthPV)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 Present value (inflation-adjusted)
@@ -654,6 +655,28 @@ function WIPTab({ data }) {
                 vs {fmtCompact(yearMetrics.contributions)} contributed
               </p>
             </div>
+
+            {/* FIRE Progress */}
+            {fireMetrics && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">FIRE Progress</span>
+                  <span className="text-lg">🚀</span>
+                </div>
+                <p className="text-2xl font-bold text-green-600">
+                  {((yearMetrics.netWorth / fireMetrics.fireNumber) * 100).toFixed(0)}%
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {fmtCompact(yearMetrics.netWorth)} of {fmtCompact(fireMetrics.fireNumber)}
+                </p>
+                <div className="mt-2 h-1.5 bg-gray-200 rounded-full">
+                  <div
+                    className="h-1.5 rounded-full bg-green-500"
+                    style={{ width: `${Math.min((yearMetrics.netWorth / fireMetrics.fireNumber) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Summary Row */}
