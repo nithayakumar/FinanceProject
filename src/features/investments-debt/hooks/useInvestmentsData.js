@@ -24,9 +24,16 @@ export function useInvestmentsData() {
 
         if (saved) {
             const profileTargetCash = profile.targetCash || saved.targetCash || 0
+
+            // Ensure at least one investment always exists
+            const investments = saved.investments && saved.investments.length > 0
+                ? saved.investments
+                : [createDefaultInvestment(1, 0, 7)]
+
             return {
                 ...saved,
                 targetCash: profileTargetCash,
+                investments,
                 retirement401k: {
                     ...saved.retirement401k,
                     companyContribution: totalCompany401k
@@ -43,7 +50,7 @@ export function useInvestmentsData() {
                 createDefaultInvestment(1, investmentValue, 33.33),
                 createDefaultInvestment(2, investmentValue, 33.33),
                 createDefaultInvestment(3, investmentValue, 33.34)
-            ] : []
+            ] : [createDefaultInvestment(1, 0, 7)] // Always start with at least one
 
             return {
                 currentCash: currentCash,
@@ -148,6 +155,8 @@ export function useInvestmentsData() {
     }
 
     const removeInvestment = (id) => {
+        // Don't allow removing the last investment
+        if (data.investments.length <= 1) return
         setData(prev => ({ ...prev, investments: prev.investments.filter(i => i.id !== id) }))
     }
 

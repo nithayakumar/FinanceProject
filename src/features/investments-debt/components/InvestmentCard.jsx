@@ -11,8 +11,10 @@ export function InvestmentCard({
     onRemove,
     canRemove
 }) {
+    const isEmpty = !investment.currentValue || Number(investment.currentValue) === 0
+
     return (
-        <Card>
+        <Card className={isEmpty ? 'opacity-50' : ''}>
             <div className="flex justify-between items-start mb-4">
                 <h3 className="text-sm font-semibold text-gray-900">Investment {index + 1}</h3>
                 {canRemove && (
