@@ -198,7 +198,6 @@ function WIPTab({ data }) {
     const adjustedExpenses = fireMetrics.year1Expenses * expenseMultiplier
 
     // Estimate adjusted gap (simplified - assumes taxes scale proportionally)
-    // More accurate would recalculate taxes, but this gives a good approximation
     const taxRate = fireMetrics.year1GrossIncome > 0
       ? (projections[0].annualTaxes / fireMetrics.year1GrossIncome)
       : 0.3
@@ -212,46 +211,52 @@ function WIPTab({ data }) {
     // Adjusted FIRE number (based on adjusted expenses)
     const adjustedFireNumber = adjustedExpenses * 25
 
-    // Estimate years to FIRE with adjusted values
-    // Simplified calculation: use average growth and savings rate
-    const avgGrowthRate = 0.07 // 7% real return assumption
+    // If no adjustments, use actual values from fireMetrics
+    const noAdjustments = incomeAdjustment === 0 && expenseAdjustment === 0
+
     let adjustedYearsToFire = null
-    let simulatedNetWorth = fireMetrics.year1NetWorth
-    const annualSavings = adjustedGap
-
-    for (let year = 1; year <= 100; year++) {
-      // Inflate FIRE number
-      const inflatedFireNumber = adjustedFireNumber * Math.pow(1 + inflationRate, year - 1)
-
-      if (simulatedNetWorth >= inflatedFireNumber) {
-        adjustedYearsToFire = year
-        break
-      }
-
-      // Grow existing wealth and add savings
-      simulatedNetWorth = simulatedNetWorth * (1 + avgGrowthRate) + annualSavings
-    }
-
-    // Calculate Coast FIRE age with adjusted values
-    const yearsToRetirement = retirementAge - currentAge
     let adjustedCoastFireAge = null
 
-    for (let i = 0; i < Math.min(projections.length, yearsToRetirement); i++) {
-      // Simulate net worth growth with adjusted savings
-      let simNetWorth = fireMetrics.year1NetWorth
-      for (let j = 0; j < i; j++) {
-        simNetWorth = simNetWorth * (1 + avgGrowthRate) + annualSavings
+    if (noAdjustments) {
+      // Use actual values from fireMetrics when no adjustments
+      adjustedYearsToFire = fireMetrics.yearsToFire
+      adjustedCoastFireAge = fireMetrics.coastFireAge
+    } else {
+      // Simulate years to FIRE with adjusted values
+      const avgGrowthRate = 0.07 // 7% real return assumption
+      let simulatedNetWorth = fireMetrics.year1NetWorth
+      const annualSavings = adjustedGap
+
+      for (let year = 1; year <= 100; year++) {
+        const inflatedFireNumber = adjustedFireNumber * Math.pow(1 + inflationRate, year - 1)
+
+        if (simulatedNetWorth >= inflatedFireNumber) {
+          adjustedYearsToFire = year
+          break
+        }
+
+        simulatedNetWorth = simulatedNetWorth * (1 + avgGrowthRate) + annualSavings
       }
 
-      const yearsRemaining = yearsToRetirement - i
-      if (yearsRemaining <= 0) break
+      // Calculate Coast FIRE age with adjusted values
+      const yearsToRetirement = retirementAge - currentAge
 
-      const futureValue = simNetWorth * Math.pow(1 + avgGrowthRate, yearsRemaining)
-      const targetFireNumber = adjustedFireNumber * Math.pow(1 + inflationRate, yearsToRetirement)
+      for (let i = 0; i < Math.min(projections.length, yearsToRetirement); i++) {
+        let simNetWorth = fireMetrics.year1NetWorth
+        for (let j = 0; j < i; j++) {
+          simNetWorth = simNetWorth * (1 + avgGrowthRate) + annualSavings
+        }
 
-      if (futureValue >= targetFireNumber) {
-        adjustedCoastFireAge = currentAge + i
-        break
+        const yearsRemaining = yearsToRetirement - i
+        if (yearsRemaining <= 0) break
+
+        const futureValue = simNetWorth * Math.pow(1 + avgGrowthRate, yearsRemaining)
+        const targetFireNumber = adjustedFireNumber * Math.pow(1 + inflationRate, yearsToRetirement)
+
+        if (futureValue >= targetFireNumber) {
+          adjustedCoastFireAge = currentAge + i
+          break
+        }
       }
     }
 
@@ -774,26 +779,6 @@ function WIPTab({ data }) {
               <p className="text-xs text-gray-400 mt-1">
                 Assumes 7% real returns
               </p>
-            </div>
-
-            {/* Current Progress */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">FIRE Progress</span>
-                <span className="text-2xl">🚀</span>
-              </div>
-              <p className="text-3xl font-bold text-blue-600">
-                {((fireMetrics.year1NetWorth / fireMetrics.fireNumber) * 100).toFixed(0)}%
-              </p>
-              <p className="text-xs text-gray-500 mt-2">
-                {fmtCompact(fireMetrics.year1NetWorth)} of {fmtCompact(fireMetrics.fireNumber)}
-              </p>
-              <div className="mt-3 h-2 bg-gray-200 rounded-full">
-                <div
-                  className="h-2 rounded-full bg-blue-500"
-                  style={{ width: `${Math.min((fireMetrics.year1NetWorth / fireMetrics.fireNumber) * 100, 100)}%` }}
-                />
-              </div>
             </div>
           </div>
         </div>
