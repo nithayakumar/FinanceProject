@@ -152,13 +152,17 @@ function WIPTab({ data }) {
     // Use global sensitivity sliders
     const growthRate = sensitivityGrowthRate / 100
     const adjInflationRate = sensitivityInflation / 100
+    const incomeMultiplier = 1 + (incomeAdjustment / 100)
+    const expenseMultiplier = 1 + (expenseAdjustment / 100)
 
     const currentYear = projections[0]
 
-    // Year 1 values
-    const year1GrossIncome = currentYear.grossIncome
-    const year1Expenses = currentYear.annualExpenses
-    const year1Gap = currentYear.gap
+    // Year 1 values (adjusted)
+    const year1GrossIncome = currentYear.grossIncome * incomeMultiplier
+    const year1Expenses = currentYear.annualExpenses * expenseMultiplier
+    const year1Taxes = currentYear.annualTaxes * incomeMultiplier
+    const year1_401k = currentYear.totalIndividual401k * incomeMultiplier
+    const year1Gap = year1GrossIncome - year1Taxes - year1Expenses - year1_401k
     const year1NetWorth = currentYear.netWorth
 
     // Savings Rate = Gap / Gross Income (what % of income you're saving)
@@ -219,7 +223,7 @@ function WIPTab({ data }) {
       netWorthAtRetirement,
       netWorthAtRetirementPV
     }
-  }, [projections, sensitivityGrowthRate, sensitivityInflation, currentAge, retirementAge])
+  }, [projections, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, currentAge, retirementAge])
 
   // Calculate impact analysis metrics
   const impactAnalysis = useMemo(() => {
@@ -564,6 +568,36 @@ function WIPTab({ data }) {
           <p className="text-xs text-gray-500">These settings affect all calculations below</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Income Adjustment */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-600 w-24">Income</span>
+            <input
+              type="range"
+              min="-50"
+              max="50"
+              value={incomeAdjustment}
+              onChange={(e) => setIncomeAdjustment(Number(e.target.value))}
+              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+            />
+            <span className={`text-sm font-bold w-14 text-right ${incomeAdjustment > 0 ? 'text-green-600' : incomeAdjustment < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+              {incomeAdjustment > 0 ? '+' : ''}{incomeAdjustment}%
+            </span>
+          </div>
+          {/* Expense Adjustment */}
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-600 w-24">Expenses</span>
+            <input
+              type="range"
+              min="-50"
+              max="50"
+              value={expenseAdjustment}
+              onChange={(e) => setExpenseAdjustment(Number(e.target.value))}
+              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
+            />
+            <span className={`text-sm font-bold w-14 text-right ${expenseAdjustment < 0 ? 'text-green-600' : expenseAdjustment > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+              {expenseAdjustment > 0 ? '+' : ''}{expenseAdjustment}%
+            </span>
+          </div>
           {/* Growth Rate */}
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-600 w-24">Growth Rate</span>
@@ -601,9 +635,11 @@ function WIPTab({ data }) {
           <div className="flex items-center gap-4 text-xs text-gray-600">
             <span>Real Return: <span className={`font-bold ${(sensitivityGrowthRate - sensitivityInflation) >= 4 ? 'text-green-600' : (sensitivityGrowthRate - sensitivityInflation) >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{(sensitivityGrowthRate - sensitivityInflation).toFixed(1)}%</span></span>
           </div>
-          {(sensitivityGrowthRate !== 7 || sensitivityInflation !== (profile?.inflationRate || 2.7)) && (
+          {(incomeAdjustment !== 0 || expenseAdjustment !== 0 || sensitivityGrowthRate !== 7 || sensitivityInflation !== (profile?.inflationRate || 2.7)) && (
             <button
               onClick={() => {
+                setIncomeAdjustment(0);
+                setExpenseAdjustment(0);
                 setSensitivityGrowthRate(7);
                 setSensitivityInflation(profile?.inflationRate || 2.7);
               }}
@@ -855,75 +891,62 @@ function WIPTab({ data }) {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">🤔 What If...</h3>
-            {(incomeAdjustment !== 0 || expenseAdjustment !== 0) && (
-              <button
-                onClick={() => {
-                  setIncomeAdjustment(0);
-                  setExpenseAdjustment(0);
-                }}
-                className="text-xs text-blue-600 hover:text-blue-800"
-              >
-                Reset adjustments
-              </button>
-            )}
+            <p className="text-xs text-gray-500">Use global sliders above to adjust assumptions</p>
           </div>
-          <p className="text-sm text-gray-600 mb-6">
-            See how changes to income or expenses affect your FIRE metrics
+          <p className="text-sm text-gray-600 mb-4">
+            Quick scenarios to try:
           </p>
 
-          {/* Adjustment Sliders */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Income Adjustment */}
-            <div className="bg-green-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Income Adjustment</span>
-                <span className={`text-lg font-bold ${incomeAdjustment > 0 ? 'text-green-600' : incomeAdjustment < 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                  {incomeAdjustment > 0 ? '+' : ''}{incomeAdjustment}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="-50"
-                max="50"
-                value={incomeAdjustment}
-                onChange={(e) => setIncomeAdjustment(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>-50%</span>
-                <span>0%</span>
-                <span>+50%</span>
-              </div>
-              <p className="text-xs text-gray-600 mt-2">
-                {fmtCompact(impactAnalysis.baselineIncome)} → {fmtCompact(impactAnalysis.adjustedIncome)}
-              </p>
-            </div>
-
-            {/* Expense Adjustment */}
-            <div className="bg-red-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">Expense Adjustment</span>
-                <span className={`text-lg font-bold ${expenseAdjustment < 0 ? 'text-green-600' : expenseAdjustment > 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                  {expenseAdjustment > 0 ? '+' : ''}{expenseAdjustment}%
-                </span>
-              </div>
-              <input
-                type="range"
-                min="-50"
-                max="50"
-                value={expenseAdjustment}
-                onChange={(e) => setExpenseAdjustment(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
-              />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                <span>-50%</span>
-                <span>0%</span>
-                <span>+50%</span>
-              </div>
-              <p className="text-xs text-gray-600 mt-2">
-                {fmtCompact(impactAnalysis.baselineExpenses)} → {fmtCompact(impactAnalysis.adjustedExpenses)}
-              </p>
-            </div>
+          {/* Quick Scenarios */}
+          <div className="flex flex-wrap gap-2 mb-6">
+            <button
+              onClick={() => { setIncomeAdjustment(10); setExpenseAdjustment(0); }}
+              className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200"
+            >
+              +10% raise
+            </button>
+            <button
+              onClick={() => { setIncomeAdjustment(20); setExpenseAdjustment(0); }}
+              className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200"
+            >
+              +20% raise
+            </button>
+            <button
+              onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(-10); }}
+              className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200"
+            >
+              Cut 10% expenses
+            </button>
+            <button
+              onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(-20); }}
+              className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200"
+            >
+              Cut 20% expenses
+            </button>
+            <button
+              onClick={() => { setIncomeAdjustment(-20); setExpenseAdjustment(0); }}
+              className="px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-full hover:bg-red-200"
+            >
+              -20% income (layoff)
+            </button>
+            <button
+              onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(30); }}
+              className="px-3 py-1.5 text-xs bg-orange-100 text-orange-700 rounded-full hover:bg-orange-200"
+            >
+              +30% expenses (kid)
+            </button>
+            <button
+              onClick={() => { setSensitivityGrowthRate(4); setSensitivityInflation(4); }}
+              className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200"
+            >
+              Bear market (4%/4%)
+            </button>
+            <button
+              onClick={() => { setSensitivityGrowthRate(10); setSensitivityInflation(2); }}
+              className="px-3 py-1.5 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200"
+            >
+              Bull market (10%/2%)
+            </button>
           </div>
 
           {/* Results Comparison */}
@@ -1005,48 +1028,6 @@ function WIPTab({ data }) {
             </div>
           </div>
 
-          {/* Quick Scenarios */}
-          <div className="mt-6 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500 mb-3">Quick scenarios:</p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => { setIncomeAdjustment(10); setExpenseAdjustment(0); }}
-                className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200"
-              >
-                +10% raise
-              </button>
-              <button
-                onClick={() => { setIncomeAdjustment(20); setExpenseAdjustment(0); }}
-                className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200"
-              >
-                +20% raise
-              </button>
-              <button
-                onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(-10); }}
-                className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200"
-              >
-                Cut 10% expenses
-              </button>
-              <button
-                onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(-20); }}
-                className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200"
-              >
-                Cut 20% expenses
-              </button>
-              <button
-                onClick={() => { setIncomeAdjustment(-20); setExpenseAdjustment(0); }}
-                className="px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-full hover:bg-red-200"
-              >
-                -20% income (layoff)
-              </button>
-              <button
-                onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(30); }}
-                className="px-3 py-1.5 text-xs bg-orange-100 text-orange-700 rounded-full hover:bg-orange-200"
-              >
-                +30% expenses (kid)
-              </button>
-            </div>
-          </div>
         </div>
       )}
 
