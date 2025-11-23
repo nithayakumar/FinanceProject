@@ -7,21 +7,41 @@
 
 export const storage = {
   /**
+   * Get the actual storage key based on active scenario
+   * @param {string} key - Base key
+   * @param {string} [scenarioId] - Optional scenario ID to force specific scenario
+   * @returns {string} Scenario-specific key
+   */
+  getScenarioKey(key, scenarioId) {
+    const SCENARIO_SPECIFIC_KEYS = ['income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'gap', 'profile']
+    if (!SCENARIO_SPECIFIC_KEYS.includes(key)) return key
+
+    try {
+      const activeId = scenarioId || localStorage.getItem('activeScenarioId') || '1'
+      return activeId === '1' ? key : `${key}_${activeId}`
+    } catch (e) {
+      return key
+    }
+  },
+
+  /**
    * Save data to localStorage
    * @param {string} key - Storage key
    * @param {any} data - Data to save (will be JSON stringified)
+   * @param {string} [scenarioId] - Optional scenario ID
    */
-  save(key, data) {
+  save(key, data, scenarioId) {
     try {
-      localStorage.setItem(key, JSON.stringify(data))
-      console.log(`✅ Saved ${key}:`, data)
+      const actualKey = this.getScenarioKey(key, scenarioId)
+      localStorage.setItem(actualKey, JSON.stringify(data))
+      console.log(`✅ Saved ${actualKey}:`, data)
 
       // Update last modified timestamp for Dashboard refresh detection
       localStorage.setItem('lastModified', Date.now().toString())
 
       // Dispatch custom event for same-tab updates (native storage event doesn't fire in same tab)
       window.dispatchEvent(new CustomEvent('localStorageChange', {
-        detail: { key, data }
+        detail: { key, data, scenarioKey: actualKey }
       }))
     } catch (error) {
       console.error(`❌ Error saving ${key}:`, error)
@@ -31,11 +51,13 @@ export const storage = {
   /**
    * Load data from localStorage
    * @param {string} key - Storage key
+   * @param {string} [scenarioId] - Optional scenario ID
    * @returns {any} Parsed data or null if not found
    */
-  load(key) {
+  load(key, scenarioId) {
     try {
-      const data = localStorage.getItem(key)
+      const actualKey = this.getScenarioKey(key, scenarioId)
+      const data = localStorage.getItem(actualKey)
       return data ? JSON.parse(data) : null
     } catch (error) {
       console.error(`❌ Error loading ${key}:`, error)
@@ -78,8 +100,8 @@ export const storage = {
    * Clear all app data from localStorage
    */
   clearAll() {
-    const keys = ['profile', 'income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'scenarios', 'filingStatusRemapping', 'customTaxLadder']
-    keys.forEach(key => localStorage.removeItem(key))
+    // Clear all keys from localStorage (including scenario-specific ones)
+    localStorage.clear()
     console.log('✅ All data cleared')
   }
 }

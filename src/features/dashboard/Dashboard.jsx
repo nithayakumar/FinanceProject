@@ -325,7 +325,7 @@ function Dashboard() {
   const tabs = [
     { id: 'networth', label: 'Net Worth' },
     { id: 'forecast', label: 'Forecast' },
-    { id: 'whatif', label: 'What If...' }
+    { id: 'whatif', label: 'Simulation' }
   ]
 
   return (

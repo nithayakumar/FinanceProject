@@ -543,113 +543,152 @@ function ForecastTab({ data }) {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
-        <div className="flex items-center">
-          <span className="text-2xl mr-3">🚧</span>
-          <div>
-            <h2 className="text-lg font-semibold text-yellow-900">
-              Work In Progress Dashboard
-            </h2>
-            <p className="text-xs text-yellow-700">
-              Experimental features and FIRE calculations
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Early Retirement Metrics Summary */}
+      {fireMetrics && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🎯 Early Retirement Targets</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Net Worth for Early Retirement */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Net Worth for Early Retirement</span>
+                <span className="text-2xl">🎯</span>
+              </div>
+              <p className="text-3xl font-bold text-purple-600">
+                {fmtCompact(fireMetrics.fireNumber)}
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                25× annual expenses ({fmtCompact(fireMetrics.year1Expenses)})
+              </p>
+            </div>
 
-      {/* Global Sensitivity Settings */}
-      <div className="bg-gradient-to-r from-purple-50 to-orange-50 rounded-lg border border-purple-200 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">⚙️</span>
-            <h3 className="text-sm font-semibold text-gray-800">Global Assumptions</h3>
+            {/* Years to Early Retirement */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Years to Early Retirement</span>
+                <span className="text-2xl">📅</span>
+              </div>
+              {fireMetrics.yearsToFire ? (
+                <>
+                  <p className="text-3xl font-bold text-green-600">
+                    {fireMetrics.yearsToFire} years
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Retire early at age {fireMetrics.fireAge}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-gray-400">
+                    {projections.length}+ years
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Beyond projection window
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Investments Cover Expenses */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Investments Cover Expenses</span>
+                <span className="text-2xl">🏖️</span>
+              </div>
+              {fireMetrics.coastFireAge ? (
+                <>
+                  <p className="text-3xl font-bold text-teal-600">
+                    Age {fireMetrics.coastFireAge}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Stop saving, still retire on time
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-3xl font-bold text-gray-400">
+                    Not reached
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Within projection window
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Net Worth Percentile */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Net Worth Percentile</span>
+                <span className="text-2xl">📊</span>
+              </div>
+              {(() => {
+                const netWorthPV = fireMetrics.netWorthAtRetirementPV
+                let percentile = 'Below Top 50%'
+                let color = 'text-gray-600'
+                if (netWorthPV >= 11600000) {
+                  percentile = 'Top 1%'
+                  color = 'text-purple-600'
+                } else if (netWorthPV >= 2700000) {
+                  percentile = 'Top 2%'
+                  color = 'text-indigo-600'
+                } else if (netWorthPV >= 1170000) {
+                  percentile = 'Top 5%'
+                  color = 'text-blue-600'
+                } else if (netWorthPV >= 970900) {
+                  percentile = 'Top 10%'
+                  color = 'text-teal-600'
+                } else if (netWorthPV >= 585000) {
+                  percentile = 'Top 50%'
+                  color = 'text-green-600'
+                }
+                return (
+                  <>
+                    <p className={`text-3xl font-bold ${color}`}>
+                      {percentile}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {fmtCompact(netWorthPV)} at retirement
+                    </p>
+                  </>
+                )
+              })()}
+            </div>
+
+            {/* Withdrawal Calculator - Compact */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Withdrawal Calculator</span>
+                <span className="text-2xl">🧮</span>
+              </div>
+              <div className="relative mb-2">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                <input
+                  type="number"
+                  value={retirementWithdrawal}
+                  onChange={(e) => setRetirementWithdrawal(e.target.value)}
+                  placeholder="Annual withdrawal"
+                  className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              {withdrawalCalculation ? (
+                <>
+                  <p className={`text-2xl font-bold ${withdrawalCalculation.isSustainable ? 'text-green-600' : 'text-red-600'}`}>
+                    {withdrawalCalculation.yearsWithGrowth === 'Forever' ? '∞ years' : `${withdrawalCalculation.yearsWithGrowth} years`}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {withdrawalCalculation.withdrawalRate.toFixed(1)}% rate • {withdrawalCalculation.isSustainable ? 'Sustainable' : 'High risk'}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-gray-400 mt-2">
+                  Enter amount to calculate
+                </p>
+              )}
+            </div>
           </div>
-          <p className="text-xs text-gray-500">These settings affect all calculations below</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Income Adjustment */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-600 w-24">Income</span>
-            <input
-              type="range"
-              min="-50"
-              max="50"
-              value={incomeAdjustment}
-              onChange={(e) => setIncomeAdjustment(Number(e.target.value))}
-              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-600"
-            />
-            <span className={`text-sm font-bold w-14 text-right ${incomeAdjustment > 0 ? 'text-green-600' : incomeAdjustment < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-              {incomeAdjustment > 0 ? '+' : ''}{incomeAdjustment}%
-            </span>
-          </div>
-          {/* Expense Adjustment */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-600 w-24">Expenses</span>
-            <input
-              type="range"
-              min="-50"
-              max="50"
-              value={expenseAdjustment}
-              onChange={(e) => setExpenseAdjustment(Number(e.target.value))}
-              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-600"
-            />
-            <span className={`text-sm font-bold w-14 text-right ${expenseAdjustment < 0 ? 'text-green-600' : expenseAdjustment > 0 ? 'text-red-600' : 'text-gray-500'}`}>
-              {expenseAdjustment > 0 ? '+' : ''}{expenseAdjustment}%
-            </span>
-          </div>
-          {/* Growth Rate */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-600 w-24">Growth Rate</span>
-            <input
-              type="range"
-              min="0"
-              max="15"
-              step="0.5"
-              value={sensitivityGrowthRate}
-              onChange={(e) => setSensitivityGrowthRate(Number(e.target.value))}
-              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
-            />
-            <span className={`text-sm font-bold w-14 text-right ${sensitivityGrowthRate > 7 ? 'text-green-600' : sensitivityGrowthRate < 7 ? 'text-orange-600' : 'text-purple-600'}`}>
-              {sensitivityGrowthRate}%
-            </span>
-          </div>
-          {/* Inflation Rate */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-600 w-24">Inflation Rate</span>
-            <input
-              type="range"
-              min="0"
-              max="8"
-              step="0.1"
-              value={sensitivityInflation}
-              onChange={(e) => setSensitivityInflation(Number(e.target.value))}
-              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-            />
-            <span className={`text-sm font-bold w-14 text-right ${sensitivityInflation < 2.7 ? 'text-green-600' : sensitivityInflation > 4 ? 'text-red-600' : 'text-orange-600'}`}>
-              {sensitivityInflation.toFixed(1)}%
-            </span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-purple-200">
-          <div className="flex items-center gap-4 text-xs text-gray-600">
-            <span>Real Return: <span className={`font-bold ${(sensitivityGrowthRate - sensitivityInflation) >= 4 ? 'text-green-600' : (sensitivityGrowthRate - sensitivityInflation) >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{(sensitivityGrowthRate - sensitivityInflation).toFixed(1)}%</span></span>
-          </div>
-          {(incomeAdjustment !== 0 || expenseAdjustment !== 0 || sensitivityGrowthRate !== 7 || sensitivityInflation !== (profile?.inflationRate || 2.7)) && (
-            <button
-              onClick={() => {
-                setIncomeAdjustment(0);
-                setExpenseAdjustment(0);
-                setSensitivityGrowthRate(7);
-                setSensitivityInflation(profile?.inflationRate || 2.7);
-              }}
-              className="text-xs text-purple-600 hover:text-purple-800 font-medium"
-            >
-              Reset to defaults
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Key Metrics with Year Slider */}
       {yearMetrics && (
@@ -763,11 +802,11 @@ function ForecastTab({ data }) {
               </p>
             </div>
 
-            {/* FIRE Progress */}
+            {/* Early Retirement Progress */}
             {fireMetrics && (
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">FIRE Progress</span>
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Early Retirement Progress</span>
                   <span className="text-lg">🚀</span>
                 </div>
                 <p className="text-2xl font-bold text-green-600">
@@ -797,410 +836,14 @@ function ForecastTab({ data }) {
                 {yearMetrics.netWorthChange >= 0 ? '+' : ''}{fmtCompact(yearMetrics.netWorthChange)}
               </span>
             </div>
-            <div className="text-gray-500 text-xs">
-              Slide to explore different years →
-            </div>
           </div>
         </div>
       )}
 
-      {/* FIRE Metrics Summary */}
-      {fireMetrics && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">🎯 Financial Independence Targets</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* FIRE Number */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">FIRE Number</span>
-                <span className="text-2xl">🎯</span>
-              </div>
-              <p className="text-3xl font-bold text-purple-600">
-                {fmtCompact(fireMetrics.fireNumber)}
-              </p>
-              <p className="text-xs text-gray-500 mt-2">
-                25× annual expenses ({fmtCompact(fireMetrics.year1Expenses)})
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Based on 4% safe withdrawal rate
-              </p>
-            </div>
-
-            {/* Years to FIRE */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Years to FIRE</span>
-                <span className="text-2xl">📅</span>
-              </div>
-              {fireMetrics.yearsToFire ? (
-                <>
-                  <p className="text-3xl font-bold text-green-600">
-                    {fireMetrics.yearsToFire} years
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    FIRE at age {fireMetrics.fireAge}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-3xl font-bold text-gray-400">
-                    {projections.length}+ years
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Beyond projection window
-                  </p>
-                </>
-              )}
-            </div>
-
-            {/* Coast FIRE Age */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Coast FIRE Age</span>
-                <span className="text-2xl">🏖️</span>
-              </div>
-              {fireMetrics.coastFireAge ? (
-                <>
-                  <p className="text-3xl font-bold text-teal-600">
-                    Age {fireMetrics.coastFireAge}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Stop saving, still retire on time
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-3xl font-bold text-gray-400">
-                    Not reached
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Within projection window
-                  </p>
-                </>
-              )}
-              <p className="text-xs text-gray-400 mt-1">
-                Assumes 7% real returns
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Impact Analysis */}
-      {impactAnalysis && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">🤔 What If...</h3>
-            <p className="text-xs text-gray-500">Use global sliders above to adjust assumptions</p>
-          </div>
-          <p className="text-sm text-gray-600 mb-4">
-            Quick scenarios to try:
-          </p>
-
-          {/* Quick Scenarios */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            <button
-              onClick={() => { setIncomeAdjustment(10); setExpenseAdjustment(0); }}
-              className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200"
-            >
-              +10% raise
-            </button>
-            <button
-              onClick={() => { setIncomeAdjustment(20); setExpenseAdjustment(0); }}
-              className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200"
-            >
-              +20% raise
-            </button>
-            <button
-              onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(-10); }}
-              className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200"
-            >
-              Cut 10% expenses
-            </button>
-            <button
-              onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(-20); }}
-              className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200"
-            >
-              Cut 20% expenses
-            </button>
-            <button
-              onClick={() => { setIncomeAdjustment(-20); setExpenseAdjustment(0); }}
-              className="px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-full hover:bg-red-200"
-            >
-              -20% income (layoff)
-            </button>
-            <button
-              onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(30); }}
-              className="px-3 py-1.5 text-xs bg-orange-100 text-orange-700 rounded-full hover:bg-orange-200"
-            >
-              +30% expenses (kid)
-            </button>
-            <button
-              onClick={() => { setSensitivityGrowthRate(4); setSensitivityInflation(4); }}
-              className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-full hover:bg-gray-200"
-            >
-              Bear market (4%/4%)
-            </button>
-            <button
-              onClick={() => { setSensitivityGrowthRate(10); setSensitivityInflation(2); }}
-              className="px-3 py-1.5 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200"
-            >
-              Bull market (10%/2%)
-            </button>
-          </div>
-
-          {/* Results Comparison */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {/* Savings Rate */}
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Savings Rate</p>
-              <p className="text-xl font-bold text-gray-800">{impactAnalysis.adjustedSavingsRate.toFixed(1)}%</p>
-              <p className={`text-sm font-medium ${impactAnalysis.savingsRateChange > 0 ? 'text-green-600' : impactAnalysis.savingsRateChange < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                {impactAnalysis.savingsRateChange > 0 ? '+' : ''}{impactAnalysis.savingsRateChange.toFixed(1)}%
-              </p>
-              <p className="text-xs text-gray-400 mt-1">was {impactAnalysis.baselineSavingsRate.toFixed(1)}%</p>
-            </div>
-
-            {/* FIRE Number */}
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">FIRE Number</p>
-              <p className="text-xl font-bold text-gray-800">{fmtCompact(impactAnalysis.adjustedFireNumber)}</p>
-              <p className={`text-sm font-medium ${impactAnalysis.fireNumberChange < 0 ? 'text-green-600' : impactAnalysis.fireNumberChange > 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                {impactAnalysis.fireNumberChange > 0 ? '+' : ''}{fmtCompact(impactAnalysis.fireNumberChange)}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">was {fmtCompact(impactAnalysis.baselineFireNumber)}</p>
-            </div>
-
-            {/* Years to FIRE */}
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Years to FIRE</p>
-              <p className="text-xl font-bold text-gray-800">
-                {impactAnalysis.adjustedYearsToFire ? `${impactAnalysis.adjustedYearsToFire} yrs` : '—'}
-              </p>
-              {impactAnalysis.yearsToFireChange !== null ? (
-                <p className={`text-sm font-medium ${impactAnalysis.yearsToFireChange < 0 ? 'text-green-600' : impactAnalysis.yearsToFireChange > 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                  {impactAnalysis.yearsToFireChange > 0 ? '+' : ''}{impactAnalysis.yearsToFireChange} yrs
-                </p>
-              ) : (
-                <p className="text-sm text-gray-400">—</p>
-              )}
-              <p className="text-xs text-gray-400 mt-1">
-                was {impactAnalysis.baselineYearsToFire ? `${impactAnalysis.baselineYearsToFire} yrs` : '—'}
-              </p>
-            </div>
-
-            {/* Coast FIRE Age */}
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Coast FIRE Age</p>
-              <p className="text-xl font-bold text-gray-800">
-                {impactAnalysis.adjustedCoastFireAge ? `Age ${impactAnalysis.adjustedCoastFireAge}` : '—'}
-              </p>
-              {impactAnalysis.coastFireAgeChange !== null ? (
-                <p className={`text-sm font-medium ${impactAnalysis.coastFireAgeChange < 0 ? 'text-green-600' : impactAnalysis.coastFireAgeChange > 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                  {impactAnalysis.coastFireAgeChange > 0 ? '+' : ''}{impactAnalysis.coastFireAgeChange} yrs
-                </p>
-              ) : (
-                <p className="text-sm text-gray-400">—</p>
-              )}
-              <p className="text-xs text-gray-400 mt-1">
-                was {impactAnalysis.baselineCoastFireAge ? `Age ${impactAnalysis.baselineCoastFireAge}` : '—'}
-              </p>
-            </div>
-
-            {/* Net Worth at Retirement (Future $) */}
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Net Worth at Retirement</p>
-              <p className="text-xl font-bold text-gray-800">{fmtCompact(impactAnalysis.netWorthAtRetirement)}</p>
-              <p className={`text-sm font-medium ${impactAnalysis.netWorthAtRetirementChange > 0 ? 'text-green-600' : impactAnalysis.netWorthAtRetirementChange < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                {impactAnalysis.netWorthAtRetirementChange > 0 ? '+' : ''}{fmtCompact(impactAnalysis.netWorthAtRetirementChange)}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">was {fmtCompact(impactAnalysis.baselineNetWorthAtRetirement)}</p>
-            </div>
-
-            {/* Net Worth at Retirement (Today's $) */}
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Net Worth (Today's $)</p>
-              <p className="text-xl font-bold text-blue-700">{fmtCompact(impactAnalysis.netWorthAtRetirementPV)}</p>
-              <p className={`text-sm font-medium ${impactAnalysis.netWorthAtRetirementPVChange > 0 ? 'text-green-600' : impactAnalysis.netWorthAtRetirementPVChange < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                {impactAnalysis.netWorthAtRetirementPVChange > 0 ? '+' : ''}{fmtCompact(impactAnalysis.netWorthAtRetirementPVChange)}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">was {fmtCompact(impactAnalysis.baselineNetWorthAtRetirementPV)}</p>
-            </div>
-          </div>
-
-        </div>
-      )}
-
-      {/* Milestone Tracker */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">🏆 Net Worth Milestones</h3>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Milestone</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-700">Year</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-700">Age</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Actual Value</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-700">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {milestones.map((m, i) => (
-                <tr key={m.target} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                  <td className="py-3 px-4 font-medium text-gray-900">{fmtCompact(m.target)}</td>
-                  <td className="py-3 px-4 text-center text-gray-700">
-                    {m.year ? `Year ${m.year}` : '—'}
-                  </td>
-                  <td className="py-3 px-4 text-center text-gray-700">
-                    {m.age ? `Age ${m.age}` : '—'}
-                  </td>
-                  <td className="py-3 px-4 text-right text-gray-700">
-                    {m.actualValue ? fmt(m.actualValue) : '—'}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    {m.year ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        ✓ Achieved
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                        Beyond scope
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Income Sources Table */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">💵 Income Sources Breakdown</h3>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left py-3 px-4 font-semibold text-gray-700">Year</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Salary</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Equity</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Company 401k</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700 bg-blue-50">Total Income</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Salary %</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-700">Equity %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {projections.slice(0, 10).map((p, i) => {
-                const salaryPct = p.grossIncome > 0 ? (p.annualSalary / p.grossIncome) * 100 : 0
-                const equityPct = p.grossIncome > 0 ? (p.annualEquity / p.grossIncome) * 100 : 0
-                return (
-                  <tr key={p.year} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="py-2 px-4 font-medium text-gray-900">Year {p.year}</td>
-                    <td className="py-2 px-4 text-right text-gray-700">{fmtCompact(p.annualSalary)}</td>
-                    <td className="py-2 px-4 text-right text-purple-700">{fmtCompact(p.annualEquity)}</td>
-                    <td className="py-2 px-4 text-right text-green-700">{fmtCompact(p.annualCompany401k)}</td>
-                    <td className="py-2 px-4 text-right font-semibold text-gray-900 bg-blue-50">{fmtCompact(p.grossIncome)}</td>
-                    <td className="py-2 px-4 text-right text-gray-600">{salaryPct.toFixed(0)}%</td>
-                    <td className="py-2 px-4 text-right text-purple-600">{equityPct.toFixed(0)}%</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-          {projections.length > 10 && (
-            <div className="text-center py-2 text-xs text-gray-500 bg-gray-50 border-t">
-              Showing first 10 years of {projections.length}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Withdrawal Calculator */}
-      {fireMetrics && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">🧮 Retirement Withdrawal Calculator</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Enter your desired annual withdrawal (pre-tax) to see how long your money will last
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Input Section */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Annual Withdrawal Amount (Pre-Tax)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                <input
-                  type="number"
-                  value={retirementWithdrawal}
-                  onChange={(e) => setRetirementWithdrawal(e.target.value)}
-                  placeholder="e.g., 80000"
-                  className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Your projected net worth at retirement: <span className="font-semibold">{fmtCompact(fireMetrics.netWorthAtRetirement)}</span>
-              </p>
-              <p className="text-xs text-gray-500">
-                In today's dollars: <span className="font-semibold">{fmtCompact(fireMetrics.netWorthAtRetirementPV)}</span>
-              </p>
-            </div>
-
-            {/* Results Section */}
-            <div>
-              {withdrawalCalculation ? (
-                <div className="space-y-4">
-                  <div className={`p-4 rounded-lg ${withdrawalCalculation.isSustainable ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Years Money Will Last</span>
-                      <span className={`text-2xl font-bold ${withdrawalCalculation.isSustainable ? 'text-green-600' : 'text-red-600'}`}>
-                        {withdrawalCalculation.yearsWithGrowth === 'Forever' ? '∞' : `${withdrawalCalculation.yearsWithGrowth} years`}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-600">
-                      With {sensitivityGrowthRate}% growth during retirement
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Withdrawal Rate</p>
-                      <p className={`text-lg font-bold ${withdrawalCalculation.withdrawalRate <= 4 ? 'text-green-600' : withdrawalCalculation.withdrawalRate <= 5 ? 'text-orange-600' : 'text-red-600'}`}>
-                        {withdrawalCalculation.withdrawalRate.toFixed(1)}%
-                      </p>
-                      <p className="text-xs text-gray-400">{withdrawalCalculation.withdrawalRate <= 4 ? 'Safe' : withdrawalCalculation.withdrawalRate <= 5 ? 'Moderate risk' : 'High risk'}</p>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">4% SWR Suggests</p>
-                      <p className="text-lg font-bold text-blue-600">
-                        {fmtCompact(withdrawalCalculation.sustainableWithdrawal)}
-                      </p>
-                      <p className="text-xs text-gray-400">Annual withdrawal</p>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-gray-500">
-                    Without growth (simple division): {withdrawalCalculation.simpleYears} years
-                  </p>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                  Enter an amount to see results
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Life Planner */}
+      {/* What happens when life happens */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">👨‍👩‍👧 Life Planner</h3>
+          <h3 className="text-lg font-semibold text-gray-800">👨‍👩‍👧 What happens when life happens</h3>
           {lifeEvents.length > 0 && (
             <button
               onClick={() => setLifeEvents([])}
@@ -1211,7 +854,7 @@ function ForecastTab({ data }) {
           )}
         </div>
         <p className="text-sm text-gray-600 mb-6">
-          Add life events to see how they impact your FIRE timeline
+          Add life events to see how they impact your retirement timeline
         </p>
 
         {/* Event Templates */}

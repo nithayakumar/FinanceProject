@@ -5,6 +5,7 @@ import { exportAsJSON, triggerJSONImport } from '../jsonExport'
 import { clearAllData } from '../devTools'
 import { generateCSVExport, downloadCSV, generateFilename } from '../../features/export/CSVExporter'
 import { storage } from '../../core/storage'
+import { useScenarioData } from '../../features/scenarios/hooks/useScenarioData'
 import ConfirmModal from './ConfirmModal'
 
 function Navigation() {
@@ -12,6 +13,7 @@ function Navigation() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [notification, setNotification] = useState(null)
   const [confirmModal, setConfirmModal] = useState(null)
+  const { scenarios, activeScenarioId, setActiveScenario } = useScenarioData()
 
   const navItems = [
     { path: '/', label: 'Home' },
@@ -23,6 +25,13 @@ function Navigation() {
     { path: '/investments-debt', label: 'Investments' },
     { path: '/scenarios', label: 'Scenarios' },
   ]
+
+  const colorMap = {
+    blue: 'bg-blue-600',
+    green: 'bg-green-600',
+    purple: 'bg-purple-600',
+    gray: 'bg-gray-600'
+  }
 
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type })
@@ -47,27 +56,6 @@ function Navigation() {
       setDropdownOpen(false)
     } catch (error) {
       showNotification(error.message || 'Failed to export JSON', 'error')
-    }
-  }
-
-  const handleExportCSV = () => {
-    try {
-      // Get all required data for CSV export
-      const profile = storage.load('profile')
-      const incomeData = storage.load('income')
-      const expensesData = storage.load('expenses')
-      const investmentsData = storage.load('investmentsDebt')
-
-      // These would need to be calculated - for now, show error if missing
-      if (!profile || !incomeData || !expensesData || !investmentsData) {
-        showNotification('Please fill out all required data before exporting CSV', 'error')
-        return
-      }
-
-      showNotification('CSV export requires Dashboard calculations. Please use Dashboard export.', 'error')
-      setDropdownOpen(false)
-    } catch (error) {
-      showNotification(error.message || 'Failed to export CSV', 'error')
     }
   }
 
@@ -116,20 +104,37 @@ function Navigation() {
             💰 Finance Project
           </Link>
 
-          <div className="hidden md:flex space-x-1">
+          <div className="hidden md:flex items-center space-x-1">
             {navItems.slice(1).map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition ${
-                  location.pathname === item.path
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition ${location.pathname === item.path
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
               >
                 {item.label}
               </Link>
             ))}
+
+            {/* Scenario Switcher */}
+            <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-200">
+              <span className="text-xs font-medium text-gray-500 uppercase hidden lg:inline">Scenario</span>
+              {scenarios.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => setActiveScenario(s.id)}
+                  className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center transition-colors ${activeScenarioId === s.id
+                    ? `${colorMap[s.color] || 'bg-gray-600'} text-white shadow-sm ring-2 ring-offset-1 ring-${s.color}-200`
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  title={s.name}
+                >
+                  {s.id}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Tools Dropdown */}
@@ -199,11 +204,10 @@ function Navigation() {
       {notification && (
         <div className="fixed bottom-4 right-4 z-50">
           <div
-            className={`px-6 py-3 rounded-md shadow-lg ${
-              notification.type === 'error'
-                ? 'bg-red-500 text-white'
-                : 'bg-green-500 text-white'
-            }`}
+            className={`px-6 py-3 rounded-md shadow-lg ${notification.type === 'error'
+              ? 'bg-red-500 text-white'
+              : 'bg-green-500 text-white'
+              }`}
           >
             {notification.message}
           </div>

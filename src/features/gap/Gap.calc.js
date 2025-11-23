@@ -95,12 +95,55 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     let annualEquity = 0
     let annualCompany401k = 0
 
+    // Track income by stream for detailed view
+    const incomeByStream = {}
+    incomeData.incomeStreams.forEach(stream => {
+      incomeByStream[stream.id] = { name: stream.name, salary: 0, equity: 0, company401k: 0, total: 0 }
+    })
+
     for (let month = 0; month < 12; month++) {
       const monthIndex = (year - 1) * 12 + month
       const monthProjection = incomeData.projections[monthIndex] || {}
       annualIncome += (monthProjection.totalCompNominal || 0)
       annualEquity += (monthProjection.equityNominal || 0)
       annualCompany401k += (monthProjection.company401kNominal || 0)
+
+      // Calculate per-stream income for this month
+      incomeData.incomeStreams.forEach(stream => {
+        if (year <= stream.endWorkYear && monthProjection.activeStreams?.includes(stream.id)) {
+          const yearsOfGrowth = year - 1
+          const growthMultiplier = Math.pow(1 + stream.growthRate / 100, yearsOfGrowth)
+
+          // Get jump multiplier for this stream up to this year
+          let jumpMultiplier = 1.0
+          if (stream.jumps && stream.jumps.length > 0) {
+            stream.jumps
+              .filter(j => j.year && j.jumpPercent && j.year <= year)
+              .forEach(j => { jumpMultiplier *= (1 + j.jumpPercent / 100) })
+          }
+
+          // Check career break reduction for this month
+          let careerBreakMultiplier = 1.0
+          if (stream.careerBreaks && stream.careerBreaks.length > 0) {
+            stream.careerBreaks.forEach(breakItem => {
+              const breakStartMonthIndex = (breakItem.startYear - 1) * 12
+              const breakEndMonthIndex = breakStartMonthIndex + breakItem.durationMonths - 1
+              if (monthIndex >= breakStartMonthIndex && monthIndex <= breakEndMonthIndex) {
+                careerBreakMultiplier = Math.min(careerBreakMultiplier, 1 - (breakItem.reductionPercent || 0) / 100)
+              }
+            })
+          }
+
+          const monthSalary = (stream.annualIncome / 12) * growthMultiplier * jumpMultiplier * careerBreakMultiplier
+          const monthEquity = (stream.equity / 12) * growthMultiplier * jumpMultiplier * careerBreakMultiplier
+          const month401k = (stream.company401k / 12) * growthMultiplier * jumpMultiplier * careerBreakMultiplier
+
+          incomeByStream[stream.id].salary += monthSalary
+          incomeByStream[stream.id].equity += monthEquity
+          incomeByStream[stream.id].company401k += month401k
+          incomeByStream[stream.id].total += monthSalary + monthEquity + month401k
+        }
+      })
     }
 
     // Debug logging for first 5 years
@@ -130,10 +173,20 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     // Get annual expenses from expenses projections (SUM all 12 months, not January * 12)
     // This is critical for expense patterns that vary by month
     let annualExpenses = 0
+    const expensesByCategory = {}
+
     for (let month = 0; month < 12; month++) {
       const monthIndex = (year - 1) * 12 + month
       const expenseProjection = expensesData.projections[monthIndex] || {}
       annualExpenses += (expenseProjection.totalExpensesNominal || 0)
+
+      // Track expenses by category for detailed view
+      if (expenseProjection.categoryBreakdownNominal) {
+        Object.keys(expenseProjection.categoryBreakdownNominal).forEach(category => {
+          expensesByCategory[category] = (expensesByCategory[category] || 0) +
+            (expenseProjection.categoryBreakdownNominal[category] || 0)
+        })
+      }
     }
 
     // Calculate taxes on income after 401k deduction
@@ -183,6 +236,9 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     let investedThisYear = 0
     let cashContribution = 0
     const investmentAllocations = {}
+
+    // Capture previous market values BEFORE allocations (for accurate growth calculation)
+    const previousMarketValues = investments.map(inv => inv.marketValue)
 
     if (gap > 0) {
       // Positive gap - allocate funds
@@ -242,8 +298,17 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     }
 
     // Apply growth to investments (at end of year)
-    investments.forEach(inv => {
-      inv.marketValue = inv.costBasis * Math.pow(1 + inv.growthRate / 100, year)
+    // Existing balance gets full year growth, new allocation gets half year growth (mid-year assumption)
+    investments.forEach((inv, index) => {
+      const growthRate = inv.growthRate / 100
+      const fullYearMultiplier = 1 + growthRate
+      const halfYearMultiplier = Math.pow(1 + growthRate, 0.5) // ~6 months growth for new contributions
+
+      const previousValue = previousMarketValues[index]
+      const allocation = investmentAllocations[`investment${index + 1}`] || 0
+
+      // Previous balance grows full year, new allocation grows half year
+      inv.marketValue = (previousValue * fullYearMultiplier) + (allocation * halfYearMultiplier)
     })
 
     // Apply growth to 401k and add contributions
@@ -306,10 +371,35 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       netWorth,
 
       // Individual investments (full precision)
-      investments: investments.map(inv => ({
+      investments: investments.map((inv, index) => ({
+        id: inv.id,
         costBasis: inv.costBasis,
         marketValue: inv.marketValue,
-        marketValuePV: inv.marketValue / discountFactor
+        marketValuePV: inv.marketValue / discountFactor,
+        allocation: investmentAllocations[`investment${index + 1}`] || 0,
+        allocationPV: (investmentAllocations[`investment${index + 1}`] || 0) / discountFactor,
+        growth: inv.marketValue - inv.costBasis,
+        growthPV: (inv.marketValue - inv.costBasis) / discountFactor
+      })),
+
+      // Income by stream (for detailed view)
+      incomeByStream: Object.values(incomeByStream).map(stream => ({
+        name: stream.name,
+        salary: stream.salary,
+        equity: stream.equity,
+        company401k: stream.company401k,
+        total: stream.total,
+        salaryPV: stream.salary / discountFactor,
+        equityPV: stream.equity / discountFactor,
+        company401kPV: stream.company401k / discountFactor,
+        totalPV: stream.total / discountFactor
+      })),
+
+      // Expenses by category (for detailed view)
+      expensesByCategory: Object.entries(expensesByCategory).map(([category, amount]) => ({
+        category,
+        amount,
+        amountPV: amount / discountFactor
       })),
 
       // Present values - Income Components (full precision)

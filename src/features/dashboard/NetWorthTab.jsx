@@ -3,9 +3,10 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 
 function NetWorthTab({ data }) {
   const [viewMode, setViewMode] = useState('nominal')
+  const [tableViewMode, setTableViewMode] = useState('simple') // 'simple' or 'detailed'
   const isPV = viewMode === 'pv'
 
-  const { gapProjections, profile } = data
+  const { gapProjections, profile, expenseProjections, incomeProjections, investmentsData } = data
   const { projections, summary } = gapProjections
 
   // Format currency - compact format
@@ -186,7 +187,16 @@ function NetWorthTab({ data }) {
       </div>
 
       {/* Net Worth Component Breakdown Table */}
-      <NetWorthBreakdownTable projections={projections} isPV={isPV} fmt={fmt} />
+      <NetWorthBreakdownTable
+        projections={projections}
+        isPV={isPV}
+        fmt={fmt}
+        tableViewMode={tableViewMode}
+        setTableViewMode={setTableViewMode}
+        expenseProjections={expenseProjections}
+        incomeProjections={incomeProjections}
+        investmentsData={investmentsData}
+      />
     </div>
   )
 }
@@ -212,7 +222,17 @@ function formatSmart(val) {
 }
 
 // Net Worth Breakdown Table Component
-function NetWorthBreakdownTable({ projections, isPV, fmt }) {
+function NetWorthBreakdownTable({ projections, isPV, fmt, tableViewMode, setTableViewMode, expenseProjections, incomeProjections, investmentsData }) {
+  // Get investment names for detailed view (use numbered names like the rest of the app)
+  const investments = investmentsData?.investments || []
+  const investmentNames = investments.map((inv, index) => `Investment ${index + 1}`)
+
+  // Get expense categories for detailed view
+  const expenseCategories = expenseProjections?.expenseCategories || []
+
+  // Get income streams for detailed view
+  const incomeStreams = incomeProjections?.incomeStreams || []
+
   // Calculate year-over-year changes
   const breakdownData = projections.map((p, index) => {
     // Current year values
@@ -321,7 +341,25 @@ function NetWorthBreakdownTable({ projections, isPV, fmt }) {
         ret401kChange,
         investmentsChange,
         costBasisChange,
-        ret401kContribution
+        ret401kContribution,
+
+        // Granular breakdowns from Gap.calc.js
+        incomeByStream: p.incomeByStream || [],
+        expensesByCategory: p.expensesByCategory || [],
+        investmentDetails: (p.investments || []).map((inv, invIndex) => {
+          // For Year 1, calculate beginning value by working backwards
+          const allocation = isPV ? inv.allocationPV : inv.allocation
+          const marketValue = isPV ? inv.marketValuePV : inv.marketValue
+          const beginValue = marketValue - allocation - (inv.growth || 0) // Approximate beginning
+          // Annual growth = ending - beginning - new contributions
+          const annualGrowth = marketValue - beginValue - allocation
+          return {
+            ...inv,
+            allocation,
+            growth: annualGrowth, // Annual capital gains only
+            marketValue
+          }
+        })
       }
     }
 
@@ -393,7 +431,38 @@ function NetWorthBreakdownTable({ projections, isPV, fmt }) {
       ret401kChange,
       investmentsChange,
       costBasisChange,
-      ret401kContribution
+      ret401kContribution,
+
+      // Granular breakdowns from Gap.calc.js
+      incomeByStream: p.incomeByStream || [],
+      expensesByCategory: p.expensesByCategory || [],
+      investmentDetails: (p.investments || []).map((inv, invIndex) => {
+        // Get previous year's market value for this investment
+        const prevInv = prev.investments?.[invIndex]
+        const prevMarketValue = isPV ? (prevInv?.marketValuePV || 0) : (prevInv?.marketValue || 0)
+        const allocation = isPV ? inv.allocationPV : inv.allocation
+        const marketValue = isPV ? inv.marketValuePV : inv.marketValue
+        // Annual growth = ending - beginning - new contributions (capital gains only)
+        const annualGrowth = marketValue - prevMarketValue - allocation
+        return {
+          ...inv,
+          allocation,
+          growth: annualGrowth,
+          marketValue
+        }
+      })
+    }
+  })
+
+  // Add total growth (investments + 401k) and combined investments end
+  // Recalculate investmentGrowth as sum of individual investment growths for consistency
+  const enhancedBreakdownData = breakdownData.map(row => {
+    const summedInvestmentGrowth = row.investmentDetails.reduce((sum, inv) => sum + (inv.growth || 0), 0)
+    return {
+      ...row,
+      investmentGrowth: summedInvestmentGrowth, // Override with sum of individual growths
+      totalGrowth: summedInvestmentGrowth + row.ret401kGrowth,
+      investmentsAnd401kEnd: row.investmentBalance + row.ret401kBalance
     }
   })
 
@@ -405,23 +474,192 @@ function NetWorthBreakdownTable({ projections, isPV, fmt }) {
             Net Worth Component Breakdown {isPV && <span className="text-sm font-normal text-gray-500">(Present Value)</span>}
           </h2>
           <p className="text-sm text-gray-600 mt-1">
-            Year-over-year changes in net worth components and asset allocation
+            {tableViewMode === 'simple' ? 'Simplified cash flow summary' : 'Detailed year-over-year changes in net worth components'}
           </p>
         </div>
-        <button
-          onClick={() => exportBreakdownToCSV(breakdownData, isPV)}
-          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition"
-        >
-          Export Table
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Simple/Detailed Toggle */}
+          <div className="flex gap-1 bg-gray-100 rounded-md p-1">
+            <button
+              onClick={() => setTableViewMode('simple')}
+              className={`px-3 py-1 text-xs font-medium rounded transition ${
+                tableViewMode === 'simple'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Simple
+            </button>
+            <button
+              onClick={() => setTableViewMode('detailed')}
+              className={`px-3 py-1 text-xs font-medium rounded transition ${
+                tableViewMode === 'detailed'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Detailed
+            </button>
+          </div>
+          <button
+            onClick={() => exportBreakdownToCSV(breakdownData, isPV)}
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition"
+          >
+            Export Table
+          </button>
+        </div>
       </div>
 
+      {/* Simple View */}
+      {tableViewMode === 'simple' && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b-2 border-gray-300">
+                <th className="text-left py-2 px-3 font-semibold text-gray-700 sticky left-0 bg-white z-10">Metric</th>
+                {enhancedBreakdownData.map((row) => (
+                  <th key={row.year} className="text-right py-2 px-2 font-semibold text-gray-700 whitespace-nowrap">
+                    Year {row.year}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {/* Net Worth Begin */}
+              <tr className="border-b border-gray-100 hover:bg-gray-50 bg-blue-50">
+                <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-blue-50">Net Worth Begin</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
+                    {formatSmart(row.netWorthBegin)}
+                  </td>
+                ))}
+              </tr>
+              {/* Total Gross Income */}
+              <tr className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Gross Income</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className="text-right py-2 px-2 text-green-700">
+                    {formatSmart(row.grossIncome)}
+                  </td>
+                ))}
+              </tr>
+              {/* 401k Contribution (Self) */}
+              <tr className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">401k Contribution (Self)</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className="text-right py-2 px-2 text-orange-700">
+                    -{formatSmart(row.individual401k)}
+                  </td>
+                ))}
+              </tr>
+              {/* Taxable Income */}
+              <tr className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Taxable Income</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className="text-right py-2 px-2 text-gray-700">
+                    {formatSmart(row.taxableIncome)}
+                  </td>
+                ))}
+              </tr>
+              {/* After Tax Income */}
+              <tr className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">After Tax Income</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className="text-right py-2 px-2 text-gray-700">
+                    {formatSmart(row.afterTaxIncome)}
+                  </td>
+                ))}
+              </tr>
+              {/* Disposable Income */}
+              <tr className="border-b border-gray-100 hover:bg-gray-50 bg-purple-50">
+                <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-purple-50">Disposable Income</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className={`text-right py-2 px-2 font-bold ${row.disposableIncome >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    {formatSmart(row.disposableIncome)}
+                  </td>
+                ))}
+              </tr>
+              {/* Allocation to Cash */}
+              <tr className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Allocation to Cash</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className={`text-right py-2 px-2 ${row.toCash >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                    {formatSmart(row.toCash)}
+                  </td>
+                ))}
+              </tr>
+              {/* Allocation to Investments */}
+              <tr className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Allocation to Investments</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className="text-right py-2 px-2 text-purple-700">
+                    {formatSmart(row.toInvestments)}
+                  </td>
+                ))}
+              </tr>
+              {/* Investments Growth (401k + Investments) */}
+              <tr className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Investments Growth (401k + Investments)</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className={`text-right py-2 px-2 ${row.totalGrowth >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    {formatSmart(row.totalGrowth)}
+                  </td>
+                ))}
+              </tr>
+              {/* Cash End */}
+              <tr className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Cash End</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className="text-right py-2 px-2 text-blue-700">
+                    {formatSmart(row.cash)}
+                  </td>
+                ))}
+              </tr>
+              {/* Investments + 401k End */}
+              <tr className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Investments + 401k End</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className="text-right py-2 px-2 text-purple-700">
+                    {formatSmart(row.investmentsAnd401kEnd)}
+                  </td>
+                ))}
+              </tr>
+              {/* Net Worth End */}
+              <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-green-50">
+                <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-green-50">Net Worth End</td>
+                {enhancedBreakdownData.map((row) => (
+                  <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
+                    {formatSmart(row.netWorthEnd)}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Detailed View */}
+      {tableViewMode === 'detailed' && (() => {
+        // Get unique income stream names across all years
+        const incomeStreamNames = [...new Set(enhancedBreakdownData.flatMap(row =>
+          row.incomeByStream.map(s => s.name)
+        ))].filter(Boolean)
+
+        // Get unique expense categories across all years
+        const expenseCategories = [...new Set(enhancedBreakdownData.flatMap(row =>
+          row.expensesByCategory.map(e => e.category)
+        ))].filter(Boolean)
+
+        // Get investment names from the first year that has data
+        const investmentCount = enhancedBreakdownData[0]?.investmentDetails?.length || 0
+
+        return (
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b-2 border-gray-300">
               <th className="text-left py-2 px-3 font-semibold text-gray-700 sticky left-0 bg-white z-10">Metric</th>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <th key={row.year} className="text-right py-2 px-2 font-semibold text-gray-700 whitespace-nowrap">
                   Year {row.year}
                 </th>
@@ -431,29 +669,39 @@ function NetWorthBreakdownTable({ projections, isPV, fmt }) {
           <tbody>
             {/* Starting Balances Section */}
             <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={breakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
+              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
                 Starting Balances
               </td>
             </tr>
             <tr className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Cash Begin</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-blue-700">
                   {formatSmart(row.cashBegin)}
                 </td>
               ))}
             </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Investments Begin</td>
-              {breakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-purple-700">
-                  {formatSmart(row.investmentsBegin)}
-                </td>
-              ))}
-            </tr>
+            {/* Individual Investment Beginning Balances */}
+            {investmentNames.map((name, invIndex) => (
+              <tr key={`inv-begin-${invIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-600 pl-6 sticky left-0 bg-white">{name} Begin</td>
+                {enhancedBreakdownData.map((row, rowIndex) => {
+                  // For Year 1, calculate beginning by working backwards
+                  const inv = row.investmentDetails?.[invIndex]
+                  const beginValue = rowIndex === 0
+                    ? (inv?.marketValue || 0) - (inv?.allocation || 0) - (inv?.growth || 0)
+                    : breakdownData[rowIndex - 1]?.investmentDetails?.[invIndex]?.marketValue || 0
+                  return (
+                    <td key={row.year} className="text-right py-2 px-2 text-purple-600">
+                      {formatSmart(beginValue)}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
             <tr className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">401k Begin</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-green-700">
                   {formatSmart(row.ret401kBegin)}
                 </td>
@@ -461,46 +709,36 @@ function NetWorthBreakdownTable({ projections, isPV, fmt }) {
             </tr>
             <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-blue-50">
               <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-blue-50">Net Worth Begin</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
                   {formatSmart(row.netWorthBegin)}
                 </td>
               ))}
             </tr>
 
-            {/* Income Section */}
+            {/* Income by Stream Section */}
             <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={breakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
-                Income (Inflows)
+              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
+                Income by Source
               </td>
             </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Salary</td>
-              {breakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-gray-700">
-                  {formatSmart(row.salary)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Equity Vesting</td>
-              {breakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-gray-700">
-                  {formatSmart(row.equity)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Company 401k Match</td>
-              {breakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-gray-700">
-                  {formatSmart(row.company401k)}
-                </td>
-              ))}
-            </tr>
+            {incomeStreamNames.map((streamName, streamIndex) => (
+              <tr key={`stream-${streamIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">{streamName}</td>
+                {enhancedBreakdownData.map((row) => {
+                  const stream = row.incomeByStream.find(s => s.name === streamName)
+                  const value = isPV ? (stream?.totalPV || 0) : (stream?.total || 0)
+                  return (
+                    <td key={row.year} className="text-right py-2 px-2 text-gray-700">
+                      {formatSmart(value)}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
             <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-green-50">
               <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-green-50">Total Gross Income</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
                   {formatSmart(row.grossIncome)}
                 </td>
@@ -509,21 +747,21 @@ function NetWorthBreakdownTable({ projections, isPV, fmt }) {
 
             {/* Pre-Tax Savings Section */}
             <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={breakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
+              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
                 Pre-Tax Savings
               </td>
             </tr>
             <tr className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Individual 401k</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-orange-700">
-                  {formatSmart(row.individual401k)}
+                  -{formatSmart(row.individual401k)}
                 </td>
               ))}
             </tr>
             <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-yellow-50">
               <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-yellow-50">Taxable Income</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
                   {formatSmart(row.taxableIncome)}
                 </td>
@@ -532,114 +770,141 @@ function NetWorthBreakdownTable({ projections, isPV, fmt }) {
 
             {/* Taxes Section */}
             <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={breakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
+              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
                 Taxes
               </td>
             </tr>
             <tr className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Federal Tax</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-red-700">
-                  {formatSmart(row.federalTax)}
+                  -{formatSmart(row.federalTax)}
                 </td>
               ))}
             </tr>
             <tr className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">State Tax</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-red-700">
-                  {formatSmart(row.stateTax)}
+                  -{formatSmart(row.stateTax)}
                 </td>
               ))}
             </tr>
             <tr className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">FICA (SS + Medicare)</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-red-700">
-                  {formatSmart(row.fica)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Taxes</td>
-              {breakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-red-700 font-medium">
-                  {formatSmart(row.totalTaxes)}
+                  -{formatSmart(row.fica)}
                 </td>
               ))}
             </tr>
             <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-blue-50">
               <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-blue-50">After-Tax Income</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
                   {formatSmart(row.afterTaxIncome)}
                 </td>
               ))}
             </tr>
 
-            {/* Living Expenses Section */}
+            {/* Expenses by Category Section */}
             <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={breakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
-                Living Expenses
+              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
+                Expenses by Category
               </td>
             </tr>
+            {expenseCategories.map((category, catIndex) => (
+              <tr key={`expense-${catIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">{category}</td>
+                {enhancedBreakdownData.map((row) => {
+                  const expense = row.expensesByCategory.find(e => e.category === category)
+                  const value = isPV ? (expense?.amountPV || 0) : (expense?.amount || 0)
+                  return (
+                    <td key={row.year} className="text-right py-2 px-2 text-red-700">
+                      -{formatSmart(value)}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
             <tr className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Expenses</td>
-              {breakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-red-700">
-                  {formatSmart(row.expenses)}
+              {enhancedBreakdownData.map((row) => (
+                <td key={row.year} className="text-right py-2 px-2 text-red-700 font-medium">
+                  -{formatSmart(row.expenses)}
                 </td>
               ))}
             </tr>
             <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-purple-50">
               <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-purple-50">Disposable Income</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className={`text-right py-2 px-2 font-bold ${row.disposableIncome >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                   {formatSmart(row.disposableIncome)}
                 </td>
               ))}
             </tr>
 
-            {/* Allocation Section */}
+            {/* Allocation by Investment Section */}
             <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={breakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
+              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
                 Allocation of Disposable Income
               </td>
             </tr>
             <tr className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">To Cash</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className={`text-right py-2 px-2 ${row.toCash >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
                   {formatSmart(row.toCash)}
                 </td>
               ))}
             </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">To Investments</td>
-              {breakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-purple-700">
+            {/* Individual Investment Allocations */}
+            {investmentNames.map((name, invIndex) => (
+              <tr key={`inv-alloc-${invIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-600 pl-6 sticky left-0 bg-white">To {name}</td>
+                {enhancedBreakdownData.map((row) => {
+                  const inv = row.investmentDetails?.[invIndex]
+                  return (
+                    <td key={row.year} className="text-right py-2 px-2 text-purple-600">
+                      {formatSmart(inv?.allocation || 0)}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+            <tr className="border-b-2 border-gray-300 hover:bg-gray-50">
+              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Invested</td>
+              {enhancedBreakdownData.map((row) => (
+                <td key={row.year} className="text-right py-2 px-2 text-purple-700 font-medium">
                   {formatSmart(row.toInvestments)}
                 </td>
               ))}
             </tr>
-            <tr className="border-b-2 border-gray-300 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Allocated</td>
-              {breakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-gray-700 font-medium">
-                  {formatSmart(row.totalAllocated)}
-                </td>
-              ))}
-            </tr>
 
-            {/* Growth Section */}
+            {/* Growth by Investment Section */}
             <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={breakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
-                Growth
+              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
+                Investment Growth
               </td>
             </tr>
+            {/* Individual Investment Growth */}
+            {investmentNames.map((name, invIndex) => (
+              <tr key={`inv-growth-${invIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-600 pl-6 sticky left-0 bg-white">{name} Growth</td>
+                {enhancedBreakdownData.map((row) => {
+                  const inv = row.investmentDetails?.[invIndex]
+                  const growth = inv?.growth || 0
+                  return (
+                    <td key={row.year} className={`text-right py-2 px-2 ${growth >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+                      {formatSmart(growth)}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
             <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Investments Growth</td>
-              {breakdownData.map((row) => (
+              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Investments Growth</td>
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className={`text-right py-2 px-2 ${row.investmentGrowth >= 0 ? 'text-purple-700' : 'text-red-700'}`}>
                   {formatSmart(row.investmentGrowth)}
                 </td>
@@ -647,30 +912,44 @@ function NetWorthBreakdownTable({ projections, isPV, fmt }) {
             </tr>
             <tr className="border-b-2 border-gray-300 hover:bg-gray-50">
               <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">401k Growth</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className={`text-right py-2 px-2 ${row.ret401kGrowth >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                   {formatSmart(row.ret401kGrowth)}
                 </td>
               ))}
             </tr>
 
-            {/* Ending Balances Section */}
+            {/* Ending Balances by Investment Section */}
             <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={breakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
+              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
                 Ending Balances
               </td>
             </tr>
             <tr className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Cash End</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-blue-700 font-medium">
                   {formatSmart(row.cash)}
                 </td>
               ))}
             </tr>
+            {/* Individual Investment Ending Balances */}
+            {investmentNames.map((name, invIndex) => (
+              <tr key={`inv-end-${invIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
+                <td className="py-2 px-3 text-gray-600 pl-6 sticky left-0 bg-white">{name} End</td>
+                {enhancedBreakdownData.map((row) => {
+                  const inv = row.investmentDetails?.[invIndex]
+                  return (
+                    <td key={row.year} className="text-right py-2 px-2 text-purple-600 font-medium">
+                      {formatSmart(inv?.marketValue || 0)}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
             <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Investments End</td>
-              {breakdownData.map((row) => (
+              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Investments End</td>
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-purple-700 font-medium">
                   {formatSmart(row.investmentBalance)}
                 </td>
@@ -678,7 +957,7 @@ function NetWorthBreakdownTable({ projections, isPV, fmt }) {
             </tr>
             <tr className="border-b border-gray-100 hover:bg-gray-50">
               <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">401k End</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-green-700 font-medium">
                   {formatSmart(row.ret401kBalance)}
                 </td>
@@ -686,7 +965,7 @@ function NetWorthBreakdownTable({ projections, isPV, fmt }) {
             </tr>
             <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-green-50">
               <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-green-50">Net Worth End</td>
-              {breakdownData.map((row) => (
+              {enhancedBreakdownData.map((row) => (
                 <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
                   {formatSmart(row.netWorthEnd)}
                 </td>
@@ -695,6 +974,8 @@ function NetWorthBreakdownTable({ projections, isPV, fmt }) {
           </tbody>
         </table>
       </div>
+        )
+      })()}
 
       <div className="mt-4 text-xs text-gray-500 space-y-1">
         <p><strong>Cash Flow Statement Format:</strong> This table shows how money flows through your finances each year</p>
