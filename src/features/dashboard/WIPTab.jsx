@@ -64,6 +64,10 @@ function WIPTab({ data }) {
     const incomeMultiplier = 1 + (incomeAdjustment / 100)
     const expenseMultiplier = 1 + (expenseAdjustment / 100)
 
+    // Check if any adjustments are active
+    const noAdjustments = incomeAdjustment === 0 && expenseAdjustment === 0 &&
+                          sensitivityGrowthRate === 7 && sensitivityInflation === (profile?.inflationRate || 2.7)
+
     // Adjusted values
     const adjustedIncome = p.grossIncome * incomeMultiplier
     const adjustedIncomePV = p.grossIncomePV * incomeMultiplier
@@ -80,7 +84,8 @@ function WIPTab({ data }) {
     // Simulate adjusted net worth for this year
     // Start from year 1 and compound with adjusted gap
     let adjustedNetWorth = projections[0].netWorth
-    const growthRate = 0.07
+    const growthRate = sensitivityGrowthRate / 100
+    const adjInflationRate = sensitivityInflation / 100
     for (let i = 1; i <= yearIndex; i++) {
       const yearP = projections[i]
       const yearAdjustedGap = (yearP.grossIncome * incomeMultiplier) -
@@ -90,8 +95,8 @@ function WIPTab({ data }) {
       adjustedNetWorth = adjustedNetWorth * (1 + growthRate) + yearAdjustedGap
     }
 
-    // Calculate adjusted net worth PV
-    const discountFactor = Math.pow(1 + inflationRate, yearIndex)
+    // Calculate adjusted net worth PV using sensitivity inflation
+    const discountFactor = Math.pow(1 + adjInflationRate, yearIndex)
     const adjustedNetWorthPV = adjustedNetWorth / discountFactor
 
     // % of Net Worth Growth from Investment Growth (vs contributions)
@@ -130,10 +135,10 @@ function WIPTab({ data }) {
       gap: adjustedGap,
       expenses: adjustedExpenses,
       taxes: adjustedTaxes,
-      netWorth: incomeAdjustment === 0 && expenseAdjustment === 0 ? p.netWorth : adjustedNetWorth,
-      netWorthPV: incomeAdjustment === 0 && expenseAdjustment === 0 ? p.netWorthPV : adjustedNetWorthPV
+      netWorth: noAdjustments ? p.netWorth : adjustedNetWorth,
+      netWorthPV: noAdjustments ? p.netWorthPV : adjustedNetWorthPV
     }
-  }, [projections, selectedYear, incomeAdjustment, expenseAdjustment, inflationRate])
+  }, [projections, selectedYear, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, profile])
 
   // Calculate FIRE metrics (static, based on Year 1)
   const fireMetrics = useMemo(() => {
@@ -621,12 +626,47 @@ function WIPTab({ data }) {
                 {expenseAdjustment > 0 ? '+' : ''}{expenseAdjustment}%
               </span>
             </div>
-            {(incomeAdjustment !== 0 || expenseAdjustment !== 0) && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-600 w-20">Growth</span>
+              <input
+                type="range"
+                min="0"
+                max="15"
+                step="0.5"
+                value={sensitivityGrowthRate}
+                onChange={(e) => setSensitivityGrowthRate(Number(e.target.value))}
+                className="flex-1 h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-purple-600"
+              />
+              <span className={`text-xs font-medium w-12 text-right ${sensitivityGrowthRate > 7 ? 'text-green-600' : sensitivityGrowthRate < 7 ? 'text-orange-600' : 'text-gray-500'}`}>
+                {sensitivityGrowthRate}%
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-600 w-20">Inflation</span>
+              <input
+                type="range"
+                min="0"
+                max="8"
+                step="0.1"
+                value={sensitivityInflation}
+                onChange={(e) => setSensitivityInflation(Number(e.target.value))}
+                className="flex-1 h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-orange-600"
+              />
+              <span className={`text-xs font-medium w-12 text-right ${sensitivityInflation < 2.7 ? 'text-green-600' : sensitivityInflation > 4 ? 'text-red-600' : 'text-gray-500'}`}>
+                {sensitivityInflation.toFixed(1)}%
+              </span>
+            </div>
+            {(incomeAdjustment !== 0 || expenseAdjustment !== 0 || sensitivityGrowthRate !== 7 || sensitivityInflation !== (profile?.inflationRate || 2.7)) && (
               <button
-                onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(0); }}
+                onClick={() => {
+                  setIncomeAdjustment(0);
+                  setExpenseAdjustment(0);
+                  setSensitivityGrowthRate(7);
+                  setSensitivityInflation(profile?.inflationRate || 2.7);
+                }}
                 className="text-xs text-blue-600 hover:text-blue-800 md:col-span-2 text-center"
               >
-                Reset adjustments
+                Reset all adjustments
               </button>
             )}
           </div>
