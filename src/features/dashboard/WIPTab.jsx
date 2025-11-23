@@ -52,7 +52,7 @@ function WIPTab({ data }) {
   const inflationRate = (profile?.inflationRate || 2.7) / 100
   const maxYear = projections.length || 30
 
-  // Calculate metrics for selected year
+  // Calculate metrics for selected year (with adjustments applied)
   const yearMetrics = useMemo(() => {
     if (!projections.length || selectedYear < 1 || selectedYear > projections.length) return null
 
@@ -60,45 +60,57 @@ function WIPTab({ data }) {
     const p = projections[yearIndex]
     const prevP = yearIndex > 0 ? projections[yearIndex - 1] : null
 
-    // Savings Rate = Gap / Gross Income
-    const savingsRate = p.grossIncome > 0 ? (p.gap / p.grossIncome) * 100 : 0
+    // Apply income and expense adjustments
+    const incomeMultiplier = 1 + (incomeAdjustment / 100)
+    const expenseMultiplier = 1 + (expenseAdjustment / 100)
 
-    // Income - Nominal (future dollars) and Present Value (today's dollars)
-    const incomeNominal = p.grossIncome
-    const incomePV = p.grossIncomePV
+    // Adjusted values
+    const adjustedIncome = p.grossIncome * incomeMultiplier
+    const adjustedIncomePV = p.grossIncomePV * incomeMultiplier
+    const adjustedExpenses = p.annualExpenses * expenseMultiplier
+    const adjustedTaxes = p.annualTaxes * incomeMultiplier // Taxes scale with income
+    const adjustedGap = adjustedIncome - adjustedTaxes - adjustedExpenses - (p.totalIndividual401k * incomeMultiplier)
+
+    // Savings Rate = Gap / Gross Income
+    const savingsRate = adjustedIncome > 0 ? (adjustedGap / adjustedIncome) * 100 : 0
 
     // Tax %
-    const taxRate = p.grossIncome > 0 ? (p.annualTaxes / p.grossIncome) * 100 : 0
+    const taxRate = adjustedIncome > 0 ? (adjustedTaxes / adjustedIncome) * 100 : 0
+
+    // Simulate adjusted net worth for this year
+    // Start from year 1 and compound with adjusted gap
+    let adjustedNetWorth = projections[0].netWorth
+    const growthRate = 0.07
+    for (let i = 1; i <= yearIndex; i++) {
+      const yearP = projections[i]
+      const yearAdjustedGap = (yearP.grossIncome * incomeMultiplier) -
+                              (yearP.annualTaxes * incomeMultiplier) -
+                              (yearP.annualExpenses * expenseMultiplier) -
+                              (yearP.totalIndividual401k * incomeMultiplier)
+      adjustedNetWorth = adjustedNetWorth * (1 + growthRate) + yearAdjustedGap
+    }
+
+    // Calculate adjusted net worth PV
+    const discountFactor = Math.pow(1 + inflationRate, yearIndex)
+    const adjustedNetWorthPV = adjustedNetWorth / discountFactor
 
     // % of Net Worth Growth from Investment Growth (vs contributions)
-    // Net Worth change this year
     let netWorthChange = 0
     let investmentGrowth = 0
     let contributions = 0
     let growthPercent = 0
 
     if (prevP) {
-      // Year 2+: compare to previous year
       netWorthChange = p.netWorth - prevP.netWorth
-
-      // Investment growth = market value changes minus new contributions
-      // For investments: market value change - cost basis change
       const investmentMarketGrowth = (p.totalInvestmentValue - prevP.totalInvestmentValue) - p.investedThisYear
-
-      // For 401k: value change - contributions (individual + company)
       const ret401kGrowth = (p.retirement401kValue - prevP.retirement401kValue) - p.totalIndividual401k - p.annualCompany401k
-
       investmentGrowth = investmentMarketGrowth + ret401kGrowth
       contributions = p.cashContribution + p.investedThisYear + p.totalIndividual401k + p.annualCompany401k
-
-      // Percent of growth from investments (not contributions)
       if (netWorthChange > 0) {
         growthPercent = (investmentGrowth / netWorthChange) * 100
       }
     } else {
-      // Year 1: estimate based on beginning balances
-      // We don't have accurate beginning-of-year data, so show N/A or estimate
-      netWorthChange = p.netWorth // Total at end of year 1
+      netWorthChange = p.netWorth
       contributions = p.cashContribution + p.investedThisYear + p.totalIndividual401k + p.annualCompany401k
       investmentGrowth = netWorthChange - contributions
       if (netWorthChange > 0) {
@@ -108,21 +120,20 @@ function WIPTab({ data }) {
 
     return {
       savingsRate,
-      incomeNominal,
-      incomePV,
+      incomeNominal: adjustedIncome,
+      incomePV: adjustedIncomePV,
       taxRate,
       netWorthChange,
       investmentGrowth,
       contributions,
       growthPercent,
-      // Additional data for display
-      gap: p.gap,
-      expenses: p.annualExpenses,
-      taxes: p.annualTaxes,
-      netWorth: p.netWorth,
-      netWorthPV: p.netWorthPV
+      gap: adjustedGap,
+      expenses: adjustedExpenses,
+      taxes: adjustedTaxes,
+      netWorth: incomeAdjustment === 0 && expenseAdjustment === 0 ? p.netWorth : adjustedNetWorth,
+      netWorthPV: incomeAdjustment === 0 && expenseAdjustment === 0 ? p.netWorthPV : adjustedNetWorthPV
     }
-  }, [projections, selectedYear])
+  }, [projections, selectedYear, incomeAdjustment, expenseAdjustment, inflationRate])
 
   // Calculate FIRE metrics (static, based on Year 1)
   const fireMetrics = useMemo(() => {
@@ -561,7 +572,7 @@ function WIPTab({ data }) {
           </div>
 
           {/* Year Slider */}
-          <div className="mb-6">
+          <div className="mb-4">
             <div className="flex items-center gap-4">
               <span className="text-xs text-gray-500 w-12">Year 1</span>
               <input
@@ -578,6 +589,46 @@ function WIPTab({ data }) {
               <span className="text-xs text-gray-400">Age {currentAge}</span>
               <span className="text-xs text-gray-400">Age {currentAge + maxYear - 1}</span>
             </div>
+          </div>
+
+          {/* Adjustment Sliders */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-600 w-20">Income</span>
+              <input
+                type="range"
+                min="-50"
+                max="50"
+                value={incomeAdjustment}
+                onChange={(e) => setIncomeAdjustment(Number(e.target.value))}
+                className="flex-1 h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-green-600"
+              />
+              <span className={`text-xs font-medium w-12 text-right ${incomeAdjustment > 0 ? 'text-green-600' : incomeAdjustment < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                {incomeAdjustment > 0 ? '+' : ''}{incomeAdjustment}%
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-600 w-20">Expenses</span>
+              <input
+                type="range"
+                min="-50"
+                max="50"
+                value={expenseAdjustment}
+                onChange={(e) => setExpenseAdjustment(Number(e.target.value))}
+                className="flex-1 h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-red-600"
+              />
+              <span className={`text-xs font-medium w-12 text-right ${expenseAdjustment < 0 ? 'text-green-600' : expenseAdjustment > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                {expenseAdjustment > 0 ? '+' : ''}{expenseAdjustment}%
+              </span>
+            </div>
+            {(incomeAdjustment !== 0 || expenseAdjustment !== 0) && (
+              <button
+                onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(0); }}
+                className="text-xs text-blue-600 hover:text-blue-800 md:col-span-2 text-center"
+              >
+                Reset adjustments
+              </button>
+            )}
           </div>
 
           {/* Metrics Grid */}
