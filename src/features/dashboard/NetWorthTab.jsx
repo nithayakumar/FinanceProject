@@ -158,19 +158,19 @@ function NetWorthTab({ data }) {
                 return (
                   <tr key={p.year} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-2 px-2 font-medium text-gray-900">{p.year}</td>
-                    <td className="text-right py-2 px-2 text-gray-700">${Math.round(income).toLocaleString()}</td>
-                    <td className="text-right py-2 px-2 text-orange-700">-${Math.round(isPV ? p.totalIndividual401kPV : p.totalIndividual401k).toLocaleString()}</td>
-                    <td className="text-right py-2 px-2 text-red-700">-${Math.round(taxes).toLocaleString()}</td>
+                    <td className="text-right py-2 px-2 text-gray-700">{formatSmart(income)}</td>
+                    <td className="text-right py-2 px-2 text-orange-700">-{formatSmart(isPV ? p.totalIndividual401kPV : p.totalIndividual401k)}</td>
+                    <td className="text-right py-2 px-2 text-red-700">-{formatSmart(taxes)}</td>
                     <td className="text-right py-2 px-2 text-red-600 font-medium">{taxPercent}%</td>
-                    <td className="text-right py-2 px-2 text-red-700">-${Math.round(expenses).toLocaleString()}</td>
+                    <td className="text-right py-2 px-2 text-red-700">-{formatSmart(expenses)}</td>
                     <td className="text-right py-2 px-2 text-red-600 font-medium">{expensePercent}%</td>
                     <td className={`text-right py-2 px-2 font-semibold bg-blue-50 ${(isPV ? p.gapPV : p.gap) >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                      {(isPV ? p.gapPV : p.gap) >= 0 ? '+' : ''}${Math.round(isPV ? p.gapPV : p.gap).toLocaleString()}
+                      {(isPV ? p.gapPV : p.gap) >= 0 ? '+' : ''}{formatSmart(isPV ? p.gapPV : p.gap)}
                     </td>
-                    <td className="text-right py-2 px-2 text-gray-700">${Math.round(isPV ? p.cashPV : p.cash).toLocaleString()}</td>
-                    <td className="text-right py-2 px-2 text-purple-700">${Math.round(isPV ? p.totalInvestmentValuePV : p.totalInvestmentValue).toLocaleString()}</td>
-                    <td className="text-right py-2 px-2 text-green-700">${Math.round(isPV ? p.retirement401kValuePV : p.retirement401kValue).toLocaleString()}</td>
-                    <td className="text-right py-2 px-2 font-bold text-gray-900 bg-green-50">${Math.round(isPV ? p.netWorthPV : p.netWorth).toLocaleString()}</td>
+                    <td className="text-right py-2 px-2 text-gray-700">{formatSmart(isPV ? p.cashPV : p.cash)}</td>
+                    <td className="text-right py-2 px-2 text-purple-700">{formatSmart(isPV ? p.totalInvestmentValuePV : p.totalInvestmentValue)}</td>
+                    <td className="text-right py-2 px-2 text-green-700">{formatSmart(isPV ? p.retirement401kValuePV : p.retirement401kValue)}</td>
+                    <td className="text-right py-2 px-2 font-bold text-gray-900 bg-green-50">{formatSmart(isPV ? p.netWorthPV : p.netWorth)}</td>
                   </tr>
                 )
               })}
