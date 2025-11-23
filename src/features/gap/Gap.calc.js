@@ -229,7 +229,7 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
           })
           remainingGap = 0  // All allocated
         } else if (remainingGap > 0) {
-          // No investments defined - excess goes to cash (even if above target)
+          // No investments defined OR no allocation % defined - excess goes to cash (even if above target)
           cash += remainingGap
           cashContribution += remainingGap
           remainingGap = 0
@@ -308,7 +308,8 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       // Individual investments (full precision)
       investments: investments.map(inv => ({
         costBasis: inv.costBasis,
-        marketValue: inv.marketValue
+        marketValue: inv.marketValue,
+        marketValuePV: inv.marketValue / discountFactor
       })),
 
       // Present values - Income Components (full precision)

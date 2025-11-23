@@ -1,18 +1,22 @@
 import React from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
-export function InvestmentsChart({ data, investments }) {
+export function InvestmentsChart({ data, investments, viewMode }) {
+    const isReal = viewMode === 'real'
+
     // Transform gap projections to chart data format
     const chartData = data.map(p => {
         const chartPoint = {
             year: p.year,
-            cash: p.cash,
-            retirement401k: p.retirement401kValue
+            cash: isReal ? p.cashPV : p.cash,
+            retirement401k: isReal ? p.retirement401kValuePV : p.retirement401kValue
         }
 
         // Add individual investments
         p.investments.forEach((inv, idx) => {
-            chartPoint[`investment${idx + 1}`] = inv.marketValue
+            chartPoint[`investment${idx + 1}`] = isReal
+                ? (inv.marketValuePV || 0)
+                : inv.marketValue
         })
 
         return chartPoint

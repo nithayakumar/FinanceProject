@@ -19,6 +19,8 @@ function InvestmentsDebt() {
     actions
   } = useInvestmentsData()
 
+  const [viewMode, setViewMode] = useState('nominal') // 'nominal' or 'real'
+
   const handleNextFeature = () => {
     navigate('/taxes')
   }
@@ -72,12 +74,15 @@ function InvestmentsDebt() {
             yearsToRetirement={projections.projections.length}
             chartData={projections.projections}
             investments={data.investments}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
           />
 
           <div className="mt-6">
             <InvestmentsChart
               data={projections.projections}
               investments={data.investments}
+              viewMode={viewMode}
             />
           </div>
         </>

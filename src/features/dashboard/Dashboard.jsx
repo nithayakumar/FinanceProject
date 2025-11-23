@@ -4,10 +4,8 @@ import { calculateIncomeProjections } from '../income/Income.calc'
 import { calculateExpenseProjections } from '../expenses/Expenses.calc'
 import { calculateGapProjections } from '../gap/Gap.calc'
 import NetWorthTab from './NetWorthTab'
-import IncomeTab from './IncomeTab'
-import ExpensesTab from './ExpensesTab'
-import RetirementTab from './RetirementTab'
-import WIPTab from './WIPTab'
+import ForecastTab from './ForecastTab'
+import WhatIfTab from './WhatIfTab'
 import ExportButton from '../../components/ExportButton'
 
 function Dashboard() {
@@ -326,10 +324,8 @@ function Dashboard() {
 
   const tabs = [
     { id: 'networth', label: 'Net Worth' },
-    { id: 'income', label: 'Income' },
-    { id: 'expenses', label: 'Expenses' },
-    { id: 'retirement', label: 'Retirement' },
-    { id: 'wip', label: '🚧 WIP' }
+    { id: 'forecast', label: 'Forecast' },
+    { id: 'whatif', label: 'What If...' }
   ]
 
   return (
@@ -369,10 +365,8 @@ function Dashboard() {
       {/* Tab Content */}
       <div>
         {activeTab === 'networth' && <NetWorthTab data={data} />}
-        {activeTab === 'income' && <IncomeTab data={data} />}
-        {activeTab === 'expenses' && <ExpensesTab data={data} />}
-        {activeTab === 'retirement' && <RetirementTab data={data} />}
-        {activeTab === 'wip' && <WIPTab data={data} />}
+        {activeTab === 'forecast' && <ForecastTab data={data} />}
+        {activeTab === 'whatif' && <WhatIfTab data={data} />}
       </div>
     </div>
   )
