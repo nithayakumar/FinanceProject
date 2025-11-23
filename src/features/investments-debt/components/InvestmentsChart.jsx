@@ -22,6 +22,23 @@ export function InvestmentsChart({ data, investments, viewMode }) {
         return chartPoint
     })
 
+    // Calculate max value to determine formatting unit
+    const maxValue = Math.max(...chartData.map(d => {
+        let sum = (d.cash || 0) + (d.retirement401k || 0)
+        investments.forEach((_, i) => {
+            sum += (d[`investment${i + 1}`] || 0)
+        })
+        return sum
+    }))
+
+    const useMillions = maxValue >= 1000000
+
+    const formatYAxis = (value) => {
+        if (value === 0) return '$0'
+        if (useMillions) return `$${(value / 1000000).toFixed(1)}M`
+        return `$${(value / 1000).toFixed(0)}k`
+    }
+
     return (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold mb-4 text-gray-700">Portfolio Growth Over Time</h2>
@@ -33,7 +50,7 @@ export function InvestmentsChart({ data, investments, viewMode }) {
                         tick={{ fontSize: 12 }}
                     />
                     <YAxis
-                        tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                        tickFormatter={formatYAxis}
                         tick={{ fontSize: 12 }}
                         width={60}
                     />
