@@ -30,12 +30,12 @@ export function InvestmentCard({
                 <Input
                     {...INVESTMENT_FIELDS.currentBalance}
                     value={investment.currentValue}
-                    onChange={(e) => onUpdate(investment.id, 'currentValue', e.target.value ? Number(e.target.value) : '')}
+                    onChange={(val) => onUpdate(investment.id, 'currentValue', val ? Number(val) : '')}
                 />
                 <Input
                     {...INVESTMENT_FIELDS.growthRate}
                     value={investment.growthRate}
-                    onChange={(e) => onUpdate(investment.id, 'growthRate', e.target.value ? Number(e.target.value) : '')}
+                    onChange={(val) => onUpdate(investment.id, 'growthRate', val ? Number(val) : '')}
                 />
             </div>
         </Card>

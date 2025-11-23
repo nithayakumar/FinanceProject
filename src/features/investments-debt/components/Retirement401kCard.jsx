@@ -11,7 +11,7 @@ export function Retirement401kCard({ data, onUpdate, errors }) {
                     label="Individual Limit (2025)"
                     prefix="$"
                     value={data.individualLimit}
-                    onChange={(e) => onUpdate('individualLimit', e.target.value ? Number(e.target.value) : '')}
+                    onChange={(val) => onUpdate('individualLimit', val ? Number(val) : '')}
                     placeholder="23500"
                     className={errors['401k-individualLimit'] ? 'border-red-500' : ''}
                 />
@@ -19,7 +19,7 @@ export function Retirement401kCard({ data, onUpdate, errors }) {
                     label="Annual Limit Growth"
                     suffix="%"
                     value={data.limitGrowth}
-                    onChange={(e) => onUpdate('limitGrowth', e.target.value ? Number(e.target.value) : '')}
+                    onChange={(val) => onUpdate('limitGrowth', val ? Number(val) : '')}
                     placeholder="3.0"
                     step="0.1"
                     className={errors['401k-limitGrowth'] ? 'border-red-500' : ''}
@@ -36,7 +36,7 @@ export function Retirement401kCard({ data, onUpdate, errors }) {
                     label="Current 401(k) Value"
                     prefix="$"
                     value={data.currentValue}
-                    onChange={(e) => onUpdate('currentValue', e.target.value ? Number(e.target.value) : '')}
+                    onChange={(val) => onUpdate('currentValue', val ? Number(val) : '')}
                     placeholder="250000"
                     className={errors['401k-currentValue'] ? 'border-red-500' : ''}
                 />
@@ -44,7 +44,7 @@ export function Retirement401kCard({ data, onUpdate, errors }) {
                     label="401(k) Growth Rate"
                     suffix="%"
                     value={data.growthRate}
-                    onChange={(e) => onUpdate('growthRate', e.target.value ? Number(e.target.value) : '')}
+                    onChange={(val) => onUpdate('growthRate', val ? Number(val) : '')}
                     placeholder="7.0"
                     step="0.1"
                     className={errors['401k-growthRate'] ? 'border-red-500' : ''}

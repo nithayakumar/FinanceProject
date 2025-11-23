@@ -11,7 +11,7 @@ export function CashCard({ data, onUpdate, errors }) {
                     label="Current Cash"
                     prefix="$"
                     value={data.currentCash}
-                    onChange={(e) => onUpdate('currentCash', e.target.value ? Number(e.target.value) : '')}
+                    onChange={(val) => onUpdate('currentCash', val ? Number(val) : '')}
                     placeholder="50000"
                     className={errors.currentCash ? 'border-red-500' : ''}
                 />
@@ -19,7 +19,7 @@ export function CashCard({ data, onUpdate, errors }) {
                     label="Target Cash"
                     prefix="$"
                     value={data.targetCash}
-                    onChange={(e) => onUpdate('targetCash', e.target.value ? Number(e.target.value) : '')}
+                    onChange={(val) => onUpdate('targetCash', val ? Number(val) : '')}
                     placeholder="100000"
                     className={errors.targetCash ? 'border-red-500' : ''}
                 />
