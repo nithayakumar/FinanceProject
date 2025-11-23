@@ -34,7 +34,7 @@ export const storage = {
     try {
       const actualKey = this.getScenarioKey(key, scenarioId)
       localStorage.setItem(actualKey, JSON.stringify(data))
-      console.log(`✅ Saved ${actualKey}:`, data)
+      // console.log(`✅ Saved ${actualKey}:`, data) // Commented out to reduce console spam
 
       // Update last modified timestamp for Dashboard refresh detection
       localStorage.setItem('lastModified', Date.now().toString())

@@ -17,6 +17,7 @@ export function Retirement401kCard({ data, onUpdate, errors }) {
                 />
                 <Input
                     label="Annual Limit Growth"
+                    type="number"
                     suffix="%"
                     value={data.limitGrowth}
                     onChange={(val) => onUpdate('limitGrowth', val ? Number(val) : '')}

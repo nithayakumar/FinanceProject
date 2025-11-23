@@ -105,7 +105,7 @@ export function IncomeStreamCard({
                                         <input
                                             type="text"
                                             value={jump.description}
-                                            onChange={(val) => onUpdateJump(stream.id, jump.id, 'description', e.target.value)}
+                                            onChange={(e) => onUpdateJump(stream.id, jump.id, 'description', e.target.value)}
                                             className="flex-1 bg-transparent border-none text-sm text-gray-900 focus:ring-0 p-0"
                                             placeholder="Description"
                                         />
@@ -114,7 +114,7 @@ export function IncomeStreamCard({
                                             <input
                                                 type="number"
                                                 value={jump.year}
-                                                onChange={(val) => onUpdateJump(stream.id, jump.id, 'year', val ? Number(val) : '')}
+                                                onChange={(e) => onUpdateJump(stream.id, jump.id, 'year', e.target.value ? Number(e.target.value) : '')}
                                                 className="w-12 text-xs text-right border-none p-0 focus:ring-0"
                                                 placeholder="5"
                                             />
@@ -123,7 +123,7 @@ export function IncomeStreamCard({
                                             <input
                                                 type="number"
                                                 value={jump.jumpPercent}
-                                                onChange={(val) => onUpdateJump(stream.id, jump.id, 'jumpPercent', val ? Number(val) : '')}
+                                                onChange={(e) => onUpdateJump(stream.id, jump.id, 'jumpPercent', e.target.value ? Number(e.target.value) : '')}
                                                 className="w-10 text-xs text-right border-none p-0 focus:ring-0"
                                                 placeholder="10"
                                             />
@@ -155,7 +155,7 @@ export function IncomeStreamCard({
                                             <input
                                                 type="text"
                                                 value={breakItem.description}
-                                                onChange={(val) => onUpdateBreak(stream.id, breakItem.id, 'description', e.target.value)}
+                                                onChange={(e) => onUpdateBreak(stream.id, breakItem.id, 'description', e.target.value)}
                                                 className="bg-transparent border-none text-sm text-gray-900 focus:ring-0 p-0 font-medium w-full"
                                                 placeholder="Description"
                                             />
@@ -167,7 +167,7 @@ export function IncomeStreamCard({
                                                 <input
                                                     type="number"
                                                     value={breakItem.startYear}
-                                                    onChange={(val) => onUpdateBreak(stream.id, breakItem.id, 'startYear', val ? Number(val) : '')}
+                                                    onChange={(e) => onUpdateBreak(stream.id, breakItem.id, 'startYear', e.target.value ? Number(e.target.value) : '')}
                                                     className="w-full text-xs text-right border-none p-0 focus:ring-0"
                                                 />
                                             </div>
@@ -176,7 +176,7 @@ export function IncomeStreamCard({
                                                 <input
                                                     type="number"
                                                     value={breakItem.durationMonths}
-                                                    onChange={(val) => onUpdateBreak(stream.id, breakItem.id, 'durationMonths', val ? Number(val) : '')}
+                                                    onChange={(e) => onUpdateBreak(stream.id, breakItem.id, 'durationMonths', e.target.value ? Number(e.target.value) : '')}
                                                     className="w-full text-xs text-right border-none p-0 focus:ring-0"
                                                 />
                                             </div>
@@ -185,7 +185,7 @@ export function IncomeStreamCard({
                                                 <input
                                                     type="number"
                                                     value={breakItem.reductionPercent}
-                                                    onChange={(val) => onUpdateBreak(stream.id, breakItem.id, 'reductionPercent', val ? Number(val) : '')}
+                                                    onChange={(e) => onUpdateBreak(stream.id, breakItem.id, 'reductionPercent', e.target.value ? Number(e.target.value) : '')}
                                                     className="w-full text-xs text-right border-none p-0 focus:ring-0"
                                                 />
                                             </div>
