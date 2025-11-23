@@ -30,7 +30,6 @@ export function InvestmentsChart({ data, investments, viewMode }) {
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis
                         dataKey="year"
-                        label={{ value: 'Year', position: 'insideBottom', offset: -5, fontSize: 12 }}
                         tick={{ fontSize: 12 }}
                     />
                     <YAxis

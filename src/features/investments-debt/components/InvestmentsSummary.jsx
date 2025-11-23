@@ -80,58 +80,6 @@ export function InvestmentsSummary({ summary, yearsToRetirement, chartData, inve
                     subtitle={`${formatCompact(growthAmount)} gains`}
                 />
             </div>
-
-            {/* Milestones Table */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-700">Projected Values at Key Milestones</h3>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="text-left py-3 px-6 font-semibold text-gray-600">Milestone</th>
-                                <th className="text-right py-3 px-6 font-semibold text-gray-600">Cash</th>
-                                <th className="text-right py-3 px-6 font-semibold text-gray-600">401(k)</th>
-                                <th className="text-right py-3 px-6 font-semibold text-gray-600">Investments</th>
-                                <th className="text-right py-3 px-6 font-semibold text-gray-600">Total Net Worth</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {[
-                                { label: 'Today', data: chartData[0] },
-                                { label: 'Year 5', data: chartData[4] },
-                                { label: 'Year 10', data: chartData[9] },
-                                { label: 'Year 20', data: chartData[19] },
-                                { label: `Retirement (Yr ${yearsToRetirement})`, data: chartData[yearsToRetirement - 1] }
-                            ].map((milestone, index) => {
-                                if (!milestone.data) return null
-
-                                // Get correct values based on view mode
-                                const cash = isReal ? milestone.data.cashPV : milestone.data.cash
-                                const retirement401k = isReal ? milestone.data.retirement401kValuePV : milestone.data.retirement401kValue
-
-                                // Sum investments
-                                const investmentsTotal = milestone.data.investments.reduce((sum, inv) => {
-                                    return sum + (isReal ? (inv.marketValuePV || 0) : (inv.marketValue || 0))
-                                }, 0)
-
-                                const total = cash + retirement401k + investmentsTotal
-
-                                return (
-                                    <tr key={index} className={`hover:bg-gray-50 ${index === 0 || index === 4 ? 'bg-blue-50/50' : ''}`}>
-                                        <td className="py-3 px-6 font-medium text-gray-900">{milestone.label}</td>
-                                        <td className="text-right py-3 px-6 text-gray-600">{formatCompact(cash)}</td>
-                                        <td className="text-right py-3 px-6 text-gray-600">{formatCompact(retirement401k)}</td>
-                                        <td className="text-right py-3 px-6 text-gray-600">{formatCompact(investmentsTotal)}</td>
-                                        <td className="text-right py-3 px-6 font-bold text-gray-900">{formatCompact(total)}</td>
-                                    </tr>
-                                )
-                            })}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     )
 }

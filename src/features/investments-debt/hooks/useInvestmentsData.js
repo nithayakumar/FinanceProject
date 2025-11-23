@@ -148,12 +148,73 @@ export function useInvestmentsData() {
 
     const addInvestment = () => {
         if (data.investments.length >= INVESTMENTS_CONFIG.MAX_INVESTMENTS) return
-        const newInvestment = createDefaultInvestment(data.investments.length + 1, 0, 0)
-        setData(prev => ({ ...prev, investments: [...prev.investments, newInvestment] }))
+
+        const currentCount = data.investments.length
+        const newCount = currentCount + 1
+        const newAllocation = Number((100 / newCount).toFixed(2)) // e.g. 33.33
+        const remainingAllocation = 100 - newAllocation // e.g. 66.67
+
+        // Adjust existing investments proportionally
+        // New % = Old % * (Remaining / 100)
+        const updatedInvestments = data.investments.map(inv => ({
+            ...inv,
+            portfolioPercent: Number((inv.portfolioPercent * (remainingAllocation / 100)).toFixed(2))
+        }))
+
+        // Get growth rate from first investment if it exists
+        const defaultGrowthRate = currentCount > 0
+            ? data.investments[0].growthRate
+            : INVESTMENTS_CONFIG.DEFAULT_GROWTH_RATE
+
+        // Create new investment
+        const newInvestment = createDefaultInvestment(newCount, 0, newAllocation)
+        newInvestment.growthRate = defaultGrowthRate
+
+        // Handle rounding error on last item (ensure sum is 100)
+        // Sum all updated + new, check difference from 100, apply to new investment
+        const currentSum = updatedInvestments.reduce((sum, inv) => sum + inv.portfolioPercent, 0)
+        newInvestment.portfolioPercent = Number((100 - currentSum).toFixed(2))
+
+        setData(prev => ({ ...prev, investments: [...updatedInvestments, newInvestment] }))
     }
 
     const removeInvestment = (id) => {
-        setData(prev => ({ ...prev, investments: prev.investments.filter(i => i.id !== id) }))
+        const removedInv = data.investments.find(i => i.id === id)
+        if (!removedInv) return
+
+        const removedAllocation = removedInv.portfolioPercent || 0
+        const remainingInvestments = data.investments.filter(i => i.id !== id)
+
+        if (remainingInvestments.length > 0) {
+            // If we removed an investment with 0 allocation, no rebalancing needed (avoid divide by zero)
+            // Otherwise scale up remaining investments
+            const currentSum = remainingInvestments.reduce((sum, inv) => sum + (inv.portfolioPercent || 0), 0)
+
+            if (currentSum > 0) {
+                const scaleFactor = 100 / currentSum
+
+                const updatedInvestments = remainingInvestments.map((inv, index) => {
+                    // For last item, handle rounding to ensure exactly 100
+                    if (index === remainingInvestments.length - 1) {
+                        const othersSum = remainingInvestments
+                            .slice(0, index)
+                            .reduce((sum, i) => sum + Number((i.portfolioPercent * scaleFactor).toFixed(2)), 0)
+                        return { ...inv, portfolioPercent: Number((100 - othersSum).toFixed(2)) }
+                    }
+                    return { ...inv, portfolioPercent: Number((inv.portfolioPercent * scaleFactor).toFixed(2)) }
+                })
+
+                setData(prev => ({ ...prev, investments: updatedInvestments }))
+            } else {
+                // If remaining sum is 0 (e.g. all were 0), set first one to 100
+                const updatedInvestments = remainingInvestments.map((inv, index) =>
+                    index === 0 ? { ...inv, portfolioPercent: 100 } : inv
+                )
+                setData(prev => ({ ...prev, investments: updatedInvestments }))
+            }
+        } else {
+            setData(prev => ({ ...prev, investments: [] }))
+        }
     }
 
     const updateInvestment = (id, field, value) => {
