@@ -102,7 +102,20 @@ export function useIncomeData() {
             ...prev,
             incomeStreams: prev.incomeStreams.map(stream => {
                 if (stream.id !== streamId) return stream
-                const updates = { [field]: value }
+
+                let updates = { [field]: value }
+
+                // If updating individual401k, check against the limit from investments
+                if (field === 'individual401k') {
+                    const investmentsData = storage.load('investmentsDebt')
+                    const limit = investmentsData?.retirement401k?.individualLimit
+
+                    if (limit && Number(value) > Number(limit)) {
+                        // Cap the value to the limit
+                        updates[field] = limit
+                    }
+                }
+
                 if (field === 'endWorkYear') updates.isEndYearLinked = false
                 return { ...stream, ...updates }
             })

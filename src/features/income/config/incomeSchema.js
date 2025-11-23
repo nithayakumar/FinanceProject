@@ -13,7 +13,8 @@ export const INCOME_FIELDS = {
         label: 'Pre-Tax Retirement (401k) 🏦',
         prefix: '$',
         placeholder: '23000',
-        type: 'number'
+        type: 'number',
+        tooltip: 'Capped by the 401k limit set in Investments. If you enter a higher amount first, it will be overridden when you set the limit.'
     },
     growthRate: {
         label: 'Growth Rate 📈',

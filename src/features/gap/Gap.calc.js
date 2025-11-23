@@ -114,11 +114,14 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
 
     // Calculate total individual 401k contribution across all streams
     // Note: 401k contributions can be made during career breaks using savings/debt
+    // The contribution grows with the 401k limit growth rate (not the income growth rate)
+    const limitGrowthRate = Number(investmentsData.retirement401k?.limitGrowth) || 0
+
     const totalIndividual401k = incomeData.incomeStreams.reduce((sum, stream) => {
       if (year <= stream.endWorkYear) {
-        // Apply growth to 401k contribution
+        // Apply 401k limit growth to the contribution (not income growth)
         const yearsOfGrowth = year - 1
-        const growthMultiplier = Math.pow(1 + stream.growthRate / 100, yearsOfGrowth)
+        const growthMultiplier = Math.pow(1 + limitGrowthRate / 100, yearsOfGrowth)
         return sum + ((Number(stream.individual401k) || 0) * growthMultiplier)
       }
       return sum
@@ -246,8 +249,8 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     // Apply growth to 401k and add contributions
     // Company contribution now comes from income projections (grows with income)
     retirement401k.value = retirement401k.value * (1 + retirement401k.growthRate / 100) +
-                          totalIndividual401k +
-                          annualCompany401k
+      totalIndividual401k +
+      annualCompany401k
 
     // Calculate net worth
     const totalInvestmentValue = investments.reduce((sum, inv) => sum + inv.marketValue, 0)
