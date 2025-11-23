@@ -553,7 +553,7 @@ function WIPTab({ data }) {
       {yearMetrics && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">📊 Key Metrics</h3>
+            <h3 className="text-lg font-semibold text-gray-800">📊 Your Current Trajectory by Year</h3>
             <div className="text-sm text-gray-600">
               <span className="font-medium">Year {selectedYear}</span>
               <span className="text-gray-400 ml-2">(Age {currentAge + selectedYear - 1})</span>
@@ -705,7 +705,7 @@ function WIPTab({ data }) {
       {/* FIRE Metrics Summary */}
       {fireMetrics && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">🔥 FIRE Metrics</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">🎯 Financial Independence Targets</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* FIRE Number */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
@@ -788,7 +788,7 @@ function WIPTab({ data }) {
       {impactAnalysis && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-800">📊 Impact Analysis</h3>
+            <h3 className="text-lg font-semibold text-gray-800">🤔 What If...</h3>
             <button
               onClick={() => { setIncomeAdjustment(0); setExpenseAdjustment(0); }}
               className="text-xs text-blue-600 hover:text-blue-800"
