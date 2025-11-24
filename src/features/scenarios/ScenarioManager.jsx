@@ -37,7 +37,11 @@ function ScenarioManager() {
           profile: JSON.parse(JSON.stringify(current.profile)),
           income: JSON.parse(JSON.stringify(current.income)),
           expenses: JSON.parse(JSON.stringify(current.expenses)),
-          investmentsDebt: JSON.parse(JSON.stringify(current.investmentsDebt))
+          investmentsDebt: JSON.parse(JSON.stringify(current.investmentsDebt)),
+          taxes: JSON.parse(JSON.stringify(current.taxes)),
+          taxLadders: JSON.parse(JSON.stringify(current.taxLadders)),
+          filingStatusRemapping: JSON.parse(JSON.stringify(current.filingStatusRemapping)),
+          customTaxLadder: JSON.parse(JSON.stringify(current.customTaxLadder))
         }
       }
       const updated = [...saved, activeScenario]
@@ -50,7 +54,11 @@ function ScenarioManager() {
         profile: JSON.parse(JSON.stringify(current.profile)),
         income: JSON.parse(JSON.stringify(current.income)),
         expenses: JSON.parse(JSON.stringify(current.expenses)),
-        investmentsDebt: JSON.parse(JSON.stringify(current.investmentsDebt))
+        investmentsDebt: JSON.parse(JSON.stringify(current.investmentsDebt)),
+        taxes: JSON.parse(JSON.stringify(current.taxes)),
+        taxLadders: JSON.parse(JSON.stringify(current.taxLadders)),
+        filingStatusRemapping: JSON.parse(JSON.stringify(current.filingStatusRemapping)),
+        customTaxLadder: JSON.parse(JSON.stringify(current.customTaxLadder))
       }
       activeScenario.modifiedAt = Date.now()
       const updated = saved.map(s => s.id === activeScenario.id ? activeScenario : s)
@@ -85,7 +93,11 @@ function ScenarioManager() {
         profile: { ...current.profile },
         income: JSON.parse(JSON.stringify(current.income)), // Deep copy
         expenses: JSON.parse(JSON.stringify(current.expenses)),
-        investmentsDebt: JSON.parse(JSON.stringify(current.investmentsDebt))
+        investmentsDebt: JSON.parse(JSON.stringify(current.investmentsDebt)),
+        taxes: JSON.parse(JSON.stringify(current.taxes)),
+        taxLadders: JSON.parse(JSON.stringify(current.taxLadders)),
+        filingStatusRemapping: JSON.parse(JSON.stringify(current.filingStatusRemapping)),
+        customTaxLadder: JSON.parse(JSON.stringify(current.customTaxLadder))
       }
     }
 
@@ -133,7 +145,11 @@ function ScenarioManager() {
           targetCash: 0,
           retirement401k: createDefault401k(0),
           investments: []
-        }
+        },
+        taxes: {},
+        taxLadders: {},
+        filingStatusRemapping: {},
+        customTaxLadder: {}
       }
     }
 
@@ -238,6 +254,10 @@ function ScenarioManager() {
       storage.save('income', scenarioToPromote.data.income)
       storage.save('expenses', scenarioToPromote.data.expenses)
       storage.save('investmentsDebt', scenarioToPromote.data.investmentsDebt)
+      storage.save('taxes', scenarioToPromote.data.taxes)
+      storage.save('taxLadders', scenarioToPromote.data.taxLadders)
+      storage.save('filingStatusRemapping', scenarioToPromote.data.filingStatusRemapping)
+      storage.save('customTaxLadder', scenarioToPromote.data.customTaxLadder)
 
       console.log('✅ Promotion successful!')
       console.log('  Previous plan saved as alternative scenario')

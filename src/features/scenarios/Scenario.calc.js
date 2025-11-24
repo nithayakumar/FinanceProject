@@ -120,7 +120,11 @@ export function getCurrentPlanData() {
       },
       investments: investmentsDebt.investments || [],
       ...investmentsDebt
-    }
+    },
+    taxes: storage.load('taxes') || {},
+    taxLadders: storage.load('taxLadders') || {},
+    filingStatusRemapping: storage.load('filingStatusRemapping') || {},
+    customTaxLadder: storage.load('customTaxLadder') || {}
   }
 }
 

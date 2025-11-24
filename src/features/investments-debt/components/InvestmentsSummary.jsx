@@ -38,7 +38,7 @@ export function InvestmentsSummary({ summary, yearsToRetirement, chartData, inve
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold">Savings & Investments Summary</h2>
+                <h2 className="text-xl font-bold">Cash & Investments Summary</h2>
 
                 {/* View Mode Toggle */}
                 <div className="flex bg-gray-100 p-1 rounded-lg">
@@ -60,9 +60,9 @@ export function InvestmentsSummary({ summary, yearsToRetirement, chartData, inve
             </div>
 
             {/* Primary Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <SummaryCard
-                    title="Savings & Investments"
+                    title="Cash & Investments"
                     value={formatCompact(currentNetWorth)}
                     highlight
                 />

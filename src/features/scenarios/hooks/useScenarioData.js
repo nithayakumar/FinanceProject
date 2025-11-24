@@ -78,7 +78,7 @@ export function useScenarioData() {
         storage.save(SCENARIO_STORAGE_KEY, updatedScenarios)
 
         // Clone data from active scenario to new scenario
-        const keysToClone = ['income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'gap', 'profile']
+        const keysToClone = ['income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'gap', 'profile', 'filingStatusRemapping', 'customTaxLadder']
 
         // We need to manually read the source data (active scenario) and write to target (new scenario)
         // Since storage.load/save automatically use activeScenarioId, we need to temporarily bypass it
