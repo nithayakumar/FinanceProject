@@ -5,10 +5,18 @@ import { calculateIncomeProjections } from '../../income/Income.calc'
 import { JUMP_DESCRIPTIONS, DEFAULT_EXPENSE_CATEGORIES, JUMP_TYPES } from '../config/expensesSchema'
 
 export function useExpensesData() {
-    // Load profile for inflation rate
+    // Calculate years to retirement from profile
+    const getYearsToRetirement = () => {
+        const profile = storage.load('profile') || {}
+        return profile.retirementAge && profile.age
+            ? profile.retirementAge - profile.age
+            : 30
+    }
+    const yearsToRetirement = getYearsToRetirement()
+
+    // Load profile for inflation rate (needed for new categories)
     const profile = storage.load('profile') || {}
     const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
-    const incomeData = storage.load('income')
 
     // Initialize state
     const [data, setData] = useState(() => {
@@ -67,6 +75,8 @@ export function useExpensesData() {
 
     // Debounced Projections
     const [projections, setProjections] = useState(() => {
+        const profile = storage.load('profile') || {}
+        const incomeData = storage.load('income')
         // Calculate income projections first
         const incomeProjections = incomeData ? calculateIncomeProjections(incomeData, profile) : null
         return calculateExpenseProjections(data, profile, incomeProjections)
@@ -74,13 +84,15 @@ export function useExpensesData() {
 
     useEffect(() => {
         const timer = setTimeout(() => {
+            const profile = storage.load('profile') || {}
+            const incomeData = storage.load('income')
             // Calculate income projections first
             const incomeProjections = incomeData ? calculateIncomeProjections(incomeData, profile) : null
             setProjections(calculateExpenseProjections(data, profile, incomeProjections))
         }, 300) // 300ms debounce
 
         return () => clearTimeout(timer)
-    }, [data, profile, incomeData])
+    }, [data])
 
     // Actions
     const updateCategory = (categoryId, field, value) => {

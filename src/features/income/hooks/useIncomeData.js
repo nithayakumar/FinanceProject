@@ -4,12 +4,14 @@ import { calculateIncomeProjections } from '../Income.calc'
 import { JUMP_DESCRIPTIONS, BREAK_DESCRIPTIONS } from '../config/incomeSchema'
 
 export function useIncomeData() {
-    // Load profile for retirement year and inflation rate
-    const profile = storage.load('profile') || {}
-    const yearsToRetirement = profile.retirementAge && profile.age
-        ? profile.retirementAge - profile.age
-        : 30
-    const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
+    // Calculate years to retirement from profile
+    const getYearsToRetirement = () => {
+        const profile = storage.load('profile') || {}
+        return profile.retirementAge && profile.age
+            ? profile.retirementAge - profile.age
+            : 30
+    }
+    const yearsToRetirement = getYearsToRetirement()
 
     // Initialize state directly from storage
     const [data, setData] = useState(() => {
@@ -40,16 +42,17 @@ export function useIncomeData() {
 
     // Sync endWorkYear with yearsToRetirement if linked
     useEffect(() => {
+        const currentYearsToRetirement = getYearsToRetirement()
         setData(prev => ({
             ...prev,
             incomeStreams: prev.incomeStreams.map(stream => {
-                if (stream.isEndYearLinked && stream.endWorkYear !== yearsToRetirement) {
-                    return { ...stream, endWorkYear: yearsToRetirement }
+                if (stream.isEndYearLinked && stream.endWorkYear !== currentYearsToRetirement) {
+                    return { ...stream, endWorkYear: currentYearsToRetirement }
                 }
                 return stream
             })
         }))
-    }, [yearsToRetirement])
+    }, [])
 
     // Auto-save effect
     const isFirstRender = useRef(true)
@@ -62,15 +65,19 @@ export function useIncomeData() {
     }, [data])
 
     // Debounced Projections
-    const [projections, setProjections] = useState(() => calculateIncomeProjections(data, profile))
+    const [projections, setProjections] = useState(() => {
+        const profile = storage.load('profile') || {}
+        return calculateIncomeProjections(data, profile)
+    })
 
     useEffect(() => {
         const timer = setTimeout(() => {
+            const profile = storage.load('profile') || {}
             setProjections(calculateIncomeProjections(data, profile))
         }, 300) // 300ms debounce
 
         return () => clearTimeout(timer)
-    }, [data, profile])
+    }, [data])
 
     // Actions
     const addIncomeStream = () => {
