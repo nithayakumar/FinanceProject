@@ -1,4 +1,5 @@
 import React from 'react'
+import { getFilingStatusLabel } from '../hooks/useTaxData'
 
 export function TaxMappingNotification({
     filingStatus,
@@ -25,8 +26,8 @@ export function TaxMappingNotification({
                     <div className="ml-3">
                         <h3 className="text-sm font-medium text-amber-800">Filing Status Remapped</h3>
                         <p className="mt-1 text-sm text-amber-700">
-                            Tax brackets for <span className="font-semibold">{filingStatus}</span> are not available in {state}.
-                            Using <span className="font-semibold">{filingStatusRemap}</span> brackets instead.
+                            Tax brackets for <span className="font-semibold">{getFilingStatusLabel(filingStatus)}</span> are not available in {state}.
+                            Using <span className="font-semibold">{getFilingStatusLabel(filingStatusRemap)}</span> brackets instead.
                         </p>
                     </div>
                 </div>
@@ -46,7 +47,7 @@ export function TaxMappingNotification({
                 <div className="ml-3">
                     <h3 className="text-sm font-medium text-green-800">Tax Brackets Found</h3>
                     <p className="mt-1 text-sm text-green-700">
-                        Using <span className="font-semibold">{filingStatus}</span> brackets for {state}, {country}.
+                        Using <span className="font-semibold">{getFilingStatusLabel(filingStatus)}</span> brackets for {state}, {country}.
                     </p>
                 </div>
             </div>

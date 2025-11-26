@@ -3,7 +3,8 @@ import {
     getAvailableStates,
     getAvailableCountries,
     getAvailableTaxTypes,
-    getAvailableFilingStatuses,
+
+    getFilingStatusesForTaxType,
     getTaxLadder,
     mapFilingStatusToCSV
 } from '../csvTaxLadders'
@@ -19,7 +20,21 @@ export function TaxLadderViewer({ defaultState, defaultCountry }) {
     const states = useMemo(() => getAvailableStates(), [])
     const countries = useMemo(() => getAvailableCountries(), [])
     const taxTypes = useMemo(() => getAvailableTaxTypes(), [])
-    const filingStatuses = useMemo(() => getAvailableFilingStatuses(), [])
+
+    // Get available filing statuses for current selection
+    const filingStatuses = useMemo(() => {
+        const statuses = getFilingStatusesForTaxType(region, jurisdiction, taxType)
+        // Filter to only allow Single and Married (if they exist in the data)
+        // Also allow 'All' for flat tax states
+        return statuses.filter(s => ['Single', 'Married', 'All'].includes(s))
+    }, [region, jurisdiction, taxType])
+
+    // Auto-select valid filing status if current one is not available
+    React.useEffect(() => {
+        if (filingStatuses.length > 0 && !filingStatuses.includes(filingStatus)) {
+            setFilingStatus(filingStatuses[0])
+        }
+    }, [filingStatuses, filingStatus])
 
     // Get current ladder
     const ladder = useMemo(() => {
@@ -123,7 +138,9 @@ export function TaxLadderViewer({ defaultState, defaultCountry }) {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                     >
                         {filingStatuses.map(opt => (
-                            <option key={opt} value={opt}>{opt.replace(/_/g, ' ')}</option>
+                            <option key={opt} value={opt}>
+                                {opt === 'Married' ? 'Couple' : opt.replace(/_/g, ' ')}
+                            </option>
                         ))}
                     </select>
                 </div>

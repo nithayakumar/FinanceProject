@@ -39,16 +39,16 @@ export function TaxSettings({
             <div className="bg-white rounded-lg border border-gray-200 p-4">
                 <h3 className="font-medium text-gray-900 mb-3">Filing Status Configuration</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                    Override the tax brackets used for {data.filingStatus} in {data.state}.
+                    Override the tax brackets used for {getFilingStatusLabel(data.filingStatus)} in {data.state}.
                 </p>
 
                 <div className="space-y-4">
                     <div>
                         <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                            Your Profile Status
+                            Your Filing Status
                         </label>
                         <div className="px-3 py-2 bg-gray-50 rounded text-sm text-gray-700 border border-gray-200">
-                            {data.filingStatus}
+                            {getFilingStatusLabel(data.filingStatus)}
                         </div>
                     </div>
 
@@ -61,7 +61,7 @@ export function TaxSettings({
                             onChange={(e) => handleRemapChange(e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
                         >
-                            <option value="">Default ({data.filingStatus})</option>
+                            <option value="">Default ({getFilingStatusLabel(data.filingStatus)})</option>
                             {remapOptions.map(status => (
                                 <option key={status.value} value={status.value}>
                                     {status.label}

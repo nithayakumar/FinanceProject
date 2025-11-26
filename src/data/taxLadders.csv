@@ -1,58 +1,55 @@
 ID,Region,State,Parent Region,TaxType,TaxedIncome,Filing Status,Range,RangeValue,Ladder Step,Rate
-State_Province_California_Income_Married_Bot_Range_Ladder Step1,State_Province,California,USA,Income,Income,Married,Bot_Range,0,1,0.01
-State_Province_California_Income_Married_Bot_Range_Ladder Step2,State_Province,California,USA,Income,Income,Married,Bot_Range,21512,2,0.02
-State_Province_California_Income_Married_Bot_Range_Ladder Step3,State_Province,California,USA,Income,Income,Married,Bot_Range,50998,3,0.04
-State_Province_California_Income_Married_Bot_Range_Ladder Step4,State_Province,California,USA,Income,Income,Married,Bot_Range,80490,4,0.06
-State_Province_California_Income_Married_Bot_Range_Ladder Step5,State_Province,California,USA,Income,Income,Married,Bot_Range,111732,5,0.08
-State_Province_California_Income_Married_Bot_Range_Ladder Step6,State_Province,California,USA,Income,Income,Married,Bot_Range,141212,6,0.09
-State_Province_California_Income_Married_Bot_Range_Ladder Step7,State_Province,California,USA,Income,Income,Married,Bot_Range,721318,7,0.10
-State_Province_California_Income_Married_Bot_Range_Ladder Step8,State_Province,California,USA,Income,Income,Married,Bot_Range,865574,8,0.11
-State_Province_California_Income_Married_Bot_Range_Ladder Step9,State_Province,California,USA,Income,Income,Married,Bot_Range,1442628,9,0.12
-State_Province_California_Income_Married_Top_Range_Ladder Step1,State_Province,California,USA,Income,Income,Married,Top_Range,21512,1,0.01
-State_Province_California_Income_Married_Top_Range_Ladder Step2,State_Province,California,USA,Income,Income,Married,Top_Range,50998,2,0.02
-State_Province_California_Income_Married_Top_Range_Ladder Step3,State_Province,California,USA,Income,Income,Married,Top_Range,80490,3,0.04
-State_Province_California_Income_Married_Top_Range_Ladder Step4,State_Province,California,USA,Income,Income,Married,Top_Range,111732,4,0.06
-State_Province_California_Income_Married_Top_Range_Ladder Step5,State_Province,California,USA,Income,Income,Married,Top_Range,141212,5,0.08
-State_Province_California_Income_Married_Top_Range_Ladder Step6,State_Province,California,USA,Income,Income,Married,Top_Range,721318,6,0.09
-State_Province_California_Income_Married_Top_Range_Ladder Step7,State_Province,California,USA,Income,Income,Married,Top_Range,865574,7,0.10
-State_Province_California_Income_Married_Top_Range_Ladder Step8,State_Province,California,USA,Income,Income,Married,Top_Range,1442628,8,0.11
-State_Province_California_Income_Married_Top_Range_Ladder Step9,State_Province,California,USA,Income,Income,Married,Top_Range,99999999,9,0.12
-State_Province_California_Income_Single_Bot_Range_Ladder Step1,State_Province,California,USA,Income,Income,Single,Bot_Range,0,1,0.01
-State_Province_California_Income_Single_Bot_Range_Ladder Step2,State_Province,California,USA,Income,Income,Single,Bot_Range,10756,2,0.02
-State_Province_California_Income_Single_Bot_Range_Ladder Step3,State_Province,California,USA,Income,Income,Single,Bot_Range,25499,3,0.04
-State_Province_California_Income_Single_Bot_Range_Ladder Step4,State_Province,California,USA,Income,Income,Single,Bot_Range,40245,4,0.06
-State_Province_California_Income_Single_Bot_Range_Ladder Step5,State_Province,California,USA,Income,Income,Single,Bot_Range,55866,5,0.08
-State_Province_California_Income_Single_Bot_Range_Ladder Step6,State_Province,California,USA,Income,Income,Single,Bot_Range,70606,6,0.09
-State_Province_California_Income_Single_Bot_Range_Ladder Step7,State_Province,California,USA,Income,Income,Single,Bot_Range,360659,7,0.10
-State_Province_California_Income_Single_Bot_Range_Ladder Step8,State_Province,California,USA,Income,Income,Single,Bot_Range,432787,8,0.11
-State_Province_California_Income_Single_Bot_Range_Ladder Step9,State_Province,California,USA,Income,Income,Single,Bot_Range,721314,9,0.12
-State_Province_California_Income_Single_Top_Range_Ladder Step1,State_Province,California,USA,Income,Income,Single,Top_Range,10756,1,0.01
-State_Province_California_Income_Single_Top_Range_Ladder Step2,State_Province,California,USA,Income,Income,Single,Top_Range,25499,2,0.02
-State_Province_California_Income_Single_Top_Range_Ladder Step3,State_Province,California,USA,Income,Income,Single,Top_Range,40245,3,0.04
-State_Province_California_Income_Single_Top_Range_Ladder Step4,State_Province,California,USA,Income,Income,Single,Top_Range,55866,4,0.06
-State_Province_California_Income_Single_Top_Range_Ladder Step5,State_Province,California,USA,Income,Income,Single,Top_Range,70606,5,0.08
-State_Province_California_Income_Single_Top_Range_Ladder Step6,State_Province,California,USA,Income,Income,Single,Top_Range,360659,6,0.09
-State_Province_California_Income_Single_Top_Range_Ladder Step7,State_Province,California,USA,Income,Income,Single,Top_Range,432787,7,0.10
-State_Province_California_Income_Single_Top_Range_Ladder Step8,State_Province,California,USA,Income,Income,Single,Top_Range,721314,8,0.11
-State_Province_California_Income_Single_Top_Range_Ladder Step9,State_Province,California,USA,Income,Income,Single,Top_Range,99999999,9,0.12
-State_Province_California_Income_Head_of_Household_Bot_Range_Ladder Step1,State_Province,California,USA,Income,Income,Head_of_Household,Bot_Range,0,1,0.01
-State_Province_California_Income_Head_of_Household_Bot_Range_Ladder Step2,State_Province,California,USA,Income,Income,Head_of_Household,Bot_Range,21527,2,0.02
-State_Province_California_Income_Head_of_Household_Bot_Range_Ladder Step3,State_Province,California,USA,Income,Income,Head_of_Household,Bot_Range,51000,3,0.04
-State_Province_California_Income_Head_of_Household_Bot_Range_Ladder Step4,State_Province,California,USA,Income,Income,Head_of_Household,Bot_Range,65744,4,0.06
-State_Province_California_Income_Head_of_Household_Bot_Range_Ladder Step5,State_Province,California,USA,Income,Income,Head_of_Household,Bot_Range,81364,5,0.08
-State_Province_California_Income_Head_of_Household_Bot_Range_Ladder Step6,State_Province,California,USA,Income,Income,Head_of_Household,Bot_Range,96107,6,0.09
-State_Province_California_Income_Head_of_Household_Bot_Range_Ladder Step7,State_Province,California,USA,Income,Income,Head_of_Household,Bot_Range,490493,7,0.10
-State_Province_California_Income_Head_of_Household_Bot_Range_Ladder Step8,State_Province,California,USA,Income,Income,Head_of_Household,Bot_Range,588593,8,0.11
-State_Province_California_Income_Head_of_Household_Bot_Range_Ladder Step9,State_Province,California,USA,Income,Income,Head_of_Household,Bot_Range,980987,9,0.12
-State_Province_California_Income_Head_of_Household_Top_Range_Ladder Step1,State_Province,California,USA,Income,Income,Head_of_Household,Top_Range,21527,1,0.01
-State_Province_California_Income_Head_of_Household_Top_Range_Ladder Step2,State_Province,California,USA,Income,Income,Head_of_Household,Top_Range,51000,2,0.02
-State_Province_California_Income_Head_of_Household_Top_Range_Ladder Step3,State_Province,California,USA,Income,Income,Head_of_Household,Top_Range,65744,3,0.04
-State_Province_California_Income_Head_of_Household_Top_Range_Ladder Step4,State_Province,California,USA,Income,Income,Head_of_Household,Top_Range,81364,4,0.06
-State_Province_California_Income_Head_of_Household_Top_Range_Ladder Step5,State_Province,California,USA,Income,Income,Head_of_Household,Top_Range,96107,5,0.08
-State_Province_California_Income_Head_of_Household_Top_Range_Ladder Step6,State_Province,California,USA,Income,Income,Head_of_Household,Top_Range,490493,6,0.09
-State_Province_California_Income_Head_of_Household_Top_Range_Ladder Step7,State_Province,California,USA,Income,Income,Head_of_Household,Top_Range,588593,7,0.10
-State_Province_California_Income_Head_of_Household_Top_Range_Ladder Step8,State_Province,California,USA,Income,Income,Head_of_Household,Top_Range,980987,8,0.11
-State_Province_California_Income_Head_of_Household_Top_Range_Ladder Step9,State_Province,California,USA,Income,Income,Head_of_Household,Top_Range,99999999,9,0.12
+Federal_Canada_CPP_All_Bot_Range_Ladder Step1,Federal,Canada,Canada,CPP,Income,All,Bot_Range,0,1,0.00
+Federal_Canada_CPP_All_Top_Range_Ladder Step1,Federal,Canada,Canada,CPP,Income,All,Top_Range,3500,1,0.00
+Federal_Canada_CPP_All_Bot_Range_Ladder Step2,Federal,Canada,Canada,CPP,Income,All,Bot_Range,3500,2,0.06
+Federal_Canada_CPP_All_Top_Range_Ladder Step2,Federal,Canada,Canada,CPP,Income,All,Top_Range,71300,2,0.06
+Federal_Canada_CPP_All_Bot_Range_Ladder Step3,Federal,Canada,Canada,CPP,Income,All,Bot_Range,71300,3,0.04
+Federal_Canada_CPP_All_Top_Range_Ladder Step3,Federal,Canada,Canada,CPP,Income,All,Top_Range,82700,3,0.04
+Federal_Canada_CPP_All_Bot_Range_Ladder Step4,Federal,Canada,Canada,CPP,Income,All,Bot_Range,82700,4,0.00
+Federal_Canada_CPP_All_Top_Range_Ladder Step4,Federal,Canada,Canada,CPP,Income,All,Top_Range,99999999,4,0.00
+Federal_Canada_EI_All_Bot_Range_Ladder Step1,Federal,Canada,Canada,EI,Income,All,Bot_Range,0,1,0.02
+Federal_Canada_EI_All_Top_Range_Ladder Step1,Federal,Canada,Canada,EI,Income,All,Top_Range,65700,1,0.02
+Federal_Canada_EI_All_Bot_Range_Ladder Step2,Federal,Canada,Canada,EI,Income,All,Bot_Range,65700,2,0.00
+Federal_Canada_EI_All_Top_Range_Ladder Step2,Federal,Canada,Canada,EI,Income,All,Top_Range,99999999,2,0.00
+Federal_Canada_Income_All_Bot_Range_Ladder Step1,Federal,Canada,Canada,Income,Income,All,Bot_Range,0,1,0.10
+Federal_Canada_Income_All_Bot_Range_Ladder Step2,Federal,Canada,Canada,Income,Income,All,Bot_Range,11926,2,0.12
+Federal_Canada_Income_All_Bot_Range_Ladder Step3,Federal,Canada,Canada,Income,Income,All,Bot_Range,48476,3,0.22
+Federal_Canada_Income_All_Bot_Range_Ladder Step4,Federal,Canada,Canada,Income,Income,All,Bot_Range,103351,4,0.24
+Federal_Canada_Income_All_Bot_Range_Ladder Step5,Federal,Canada,Canada,Income,Income,All,Bot_Range,197301,5,0.32
+Federal_Canada_Income_All_Bot_Range_Ladder Step6,Federal,Canada,Canada,Income,Income,All,Bot_Range,250526,6,0.35
+Federal_Canada_Income_All_Bot_Range_Ladder Step7,Federal,Canada,Canada,Income,Income,All,Bot_Range,626351,7,0.37
+Federal_USA_CapitalGains_Single_Bot_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Single,Bot_Range,0,1,0.00
+Federal_USA_CapitalGains_Single_Bot_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Single,Bot_Range,48351,2,0.10
+Federal_USA_CapitalGains_Single_Bot_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Single,Bot_Range,533401,3,0.20
+Federal_USA_CapitalGains_Single_Top_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Single,Top_Range,48350,1,0.00
+Federal_USA_CapitalGains_Single_Top_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Single,Top_Range,533400,2,0.10
+Federal_USA_CapitalGains_Single_Top_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Single,Top_Range,99999999,3,0.20
+Federal_USA_CapitalGains_Married_Bot_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Married,Bot_Range,0,1,0.00
+Federal_USA_CapitalGains_Married_Bot_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Married,Bot_Range,96701,2,0.10
+Federal_USA_CapitalGains_Married_Bot_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Married,Bot_Range,600501,3,0.20
+Federal_USA_CapitalGains_Married_Top_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Married,Top_Range,96700,1,0.00
+Federal_USA_CapitalGains_Married_Top_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Married,Top_Range,600500,2,0.10
+Federal_USA_CapitalGains_Married_Top_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Married,Top_Range,99999999,3,0.20
+Federal_USA_CapitalGains_Head_of_Household_Bot_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,0,1,0.00
+Federal_USA_CapitalGains_Head_of_Household_Bot_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,64751,2,0.10
+Federal_USA_CapitalGains_Head_of_Household_Bot_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,566701,3,0.20
+Federal_USA_CapitalGains_Head_of_Household_Top_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,64750,1,0.00
+Federal_USA_CapitalGains_Head_of_Household_Top_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,566700,2,0.10
+Federal_USA_CapitalGains_Head_of_Household_Top_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,99999999,3,0.20
+Federal_USA_CapitalGains_Separate_Bot_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Bot_Range,0,1,0.00
+Federal_USA_CapitalGains_Separate_Bot_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Bot_Range,48351,2,0.10
+Federal_USA_CapitalGains_Separate_Bot_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Bot_Range,300001,3,0.20
+Federal_USA_CapitalGains_Separate_Top_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Top_Range,48350,1,0.00
+Federal_USA_CapitalGains_Separate_Top_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Top_Range,300000,2,0.10
+Federal_USA_CapitalGains_Separate_Top_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Top_Range,99999999,3,0.20
+Federal_USA_FICA Medicare_All_Bot_Range_Ladder Step1,Federal,USA,USA,FICA Medicare,Income,All,Bot_Range,0,1,0.01
+Federal_USA_FICA Medicare_All_Top_Range_Ladder Step1,Federal,USA,USA,FICA Medicare,Income,All,Top_Range,99999999,1,0.01
+Federal_USA_FICA Medicare Additional_Single_Bot_Range_Ladder Step2,Federal,USA,USA,FICA Medicare Additional,Income,Single,Bot_Range,200000,2,0.01
+Federal_USA_FICA Medicare Additional_Single_Top_Range_Ladder Step2,Federal,USA,USA,FICA Medicare Additional,Income,Single,Top_Range,99999999,2,0.01
+Federal_USA_FICA Medicare Additional_Married_Bot_Range_Ladder Step2,Federal,USA,USA,FICA Medicare Additional,Income,Married,Bot_Range,250000,2,0.01
+Federal_USA_FICA Medicare Additional_Married_Top_Range_Ladder Step2,Federal,USA,USA,FICA Medicare Additional,Income,Married,Top_Range,99999999,2,0.01
+Federal_USA_FICA Social Security_All_Bot_Range_Ladder Step1,Federal,USA,USA,FICA Social Security,Income,All,Bot_Range,0,1,0.06
+Federal_USA_FICA Social Security_All_Top_Range_Ladder Step1,Federal,USA,USA,FICA Social Security,Income,All,Top_Range,176100,1,0.06
 Federal_USA_Income_Married_Bot_Range_Ladder Step1,Federal,USA,USA,Income,Income,Married,Bot_Range,0,1,0.10
 Federal_USA_Income_Married_Bot_Range_Ladder Step2,Federal,USA,USA,Income,Income,Married,Bot_Range,23851,2,0.12
 Federal_USA_Income_Married_Bot_Range_Ladder Step3,Federal,USA,USA,Income,Income,Married,Bot_Range,96951,3,0.22
@@ -109,86 +106,40 @@ Federal_USA_Income_Separate_Top_Range_Ladder Step4,Federal,USA,USA,Income,Income
 Federal_USA_Income_Separate_Top_Range_Ladder Step5,Federal,USA,USA,Income,Income,Separate,Top_Range,250525,5,0.32
 Federal_USA_Income_Separate_Top_Range_Ladder Step6,Federal,USA,USA,Income,Income,Separate,Top_Range,375800,6,0.35
 Federal_USA_Income_Separate_Top_Range_Ladder Step7,Federal,USA,USA,Income,Income,Separate,Top_Range,99999999,7,0.37
-State_Province_California_CapitalGains_Married_Bot_Range_Ladder Step1,State_Province,California,USA,CapitalGains,CapitalGains,Married,Bot_Range,0,1,0.01
-State_Province_California_CapitalGains_Married_Bot_Range_Ladder Step2,State_Province,California,USA,CapitalGains,CapitalGains,Married,Bot_Range,21512,2,0.02
-State_Province_California_CapitalGains_Married_Bot_Range_Ladder Step3,State_Province,California,USA,CapitalGains,CapitalGains,Married,Bot_Range,50998,3,0.04
-State_Province_California_CapitalGains_Married_Bot_Range_Ladder Step4,State_Province,California,USA,CapitalGains,CapitalGains,Married,Bot_Range,80490,4,0.06
-State_Province_California_CapitalGains_Married_Bot_Range_Ladder Step5,State_Province,California,USA,CapitalGains,CapitalGains,Married,Bot_Range,111732,5,0.08
-State_Province_California_CapitalGains_Married_Bot_Range_Ladder Step6,State_Province,California,USA,CapitalGains,CapitalGains,Married,Bot_Range,141212,6,0.09
-State_Province_California_CapitalGains_Married_Bot_Range_Ladder Step7,State_Province,California,USA,CapitalGains,CapitalGains,Married,Bot_Range,721318,7,0.10
-State_Province_California_CapitalGains_Married_Bot_Range_Ladder Step8,State_Province,California,USA,CapitalGains,CapitalGains,Married,Bot_Range,865574,8,0.11
-State_Province_California_CapitalGains_Married_Bot_Range_Ladder Step9,State_Province,California,USA,CapitalGains,CapitalGains,Married,Bot_Range,1442628,9,0.12
-State_Province_California_CapitalGains_Married_Top_Range_Ladder Step1,State_Province,California,USA,CapitalGains,CapitalGains,Married,Top_Range,21512,1,0.01
-State_Province_California_CapitalGains_Married_Top_Range_Ladder Step2,State_Province,California,USA,CapitalGains,CapitalGains,Married,Top_Range,50998,2,0.02
-State_Province_California_CapitalGains_Married_Top_Range_Ladder Step3,State_Province,California,USA,CapitalGains,CapitalGains,Married,Top_Range,80490,3,0.04
-State_Province_California_CapitalGains_Married_Top_Range_Ladder Step4,State_Province,California,USA,CapitalGains,CapitalGains,Married,Top_Range,111732,4,0.06
-State_Province_California_CapitalGains_Married_Top_Range_Ladder Step5,State_Province,California,USA,CapitalGains,CapitalGains,Married,Top_Range,141212,5,0.08
-State_Province_California_CapitalGains_Married_Top_Range_Ladder Step6,State_Province,California,USA,CapitalGains,CapitalGains,Married,Top_Range,721318,6,0.09
-State_Province_California_CapitalGains_Married_Top_Range_Ladder Step7,State_Province,California,USA,CapitalGains,CapitalGains,Married,Top_Range,865574,7,0.10
-State_Province_California_CapitalGains_Married_Top_Range_Ladder Step8,State_Province,California,USA,CapitalGains,CapitalGains,Married,Top_Range,1442628,8,0.11
-State_Province_California_CapitalGains_Married_Top_Range_Ladder Step9,State_Province,California,USA,CapitalGains,CapitalGains,Married,Top_Range,99999999,9,0.12
-State_Province_California_CapitalGains_Single_Bot_Range_Ladder Step1,State_Province,California,USA,CapitalGains,CapitalGains,Single,Bot_Range,0,1,0.01
-State_Province_California_CapitalGains_Single_Bot_Range_Ladder Step2,State_Province,California,USA,CapitalGains,CapitalGains,Single,Bot_Range,10756,2,0.02
-State_Province_California_CapitalGains_Single_Bot_Range_Ladder Step3,State_Province,California,USA,CapitalGains,CapitalGains,Single,Bot_Range,25499,3,0.04
-State_Province_California_CapitalGains_Single_Bot_Range_Ladder Step4,State_Province,California,USA,CapitalGains,CapitalGains,Single,Bot_Range,40245,4,0.06
-State_Province_California_CapitalGains_Single_Bot_Range_Ladder Step5,State_Province,California,USA,CapitalGains,CapitalGains,Single,Bot_Range,55866,5,0.08
-State_Province_California_CapitalGains_Single_Bot_Range_Ladder Step6,State_Province,California,USA,CapitalGains,CapitalGains,Single,Bot_Range,70606,6,0.09
-State_Province_California_CapitalGains_Single_Bot_Range_Ladder Step7,State_Province,California,USA,CapitalGains,CapitalGains,Single,Bot_Range,360659,7,0.10
-State_Province_California_CapitalGains_Single_Bot_Range_Ladder Step8,State_Province,California,USA,CapitalGains,CapitalGains,Single,Bot_Range,432787,8,0.11
-State_Province_California_CapitalGains_Single_Bot_Range_Ladder Step9,State_Province,California,USA,CapitalGains,CapitalGains,Single,Bot_Range,721314,9,0.12
-State_Province_California_CapitalGains_Single_Top_Range_Ladder Step1,State_Province,California,USA,CapitalGains,CapitalGains,Single,Top_Range,10756,1,0.01
-State_Province_California_CapitalGains_Single_Top_Range_Ladder Step2,State_Province,California,USA,CapitalGains,CapitalGains,Single,Top_Range,25499,2,0.02
-State_Province_California_CapitalGains_Single_Top_Range_Ladder Step3,State_Province,California,USA,CapitalGains,CapitalGains,Single,Top_Range,40245,3,0.04
-State_Province_California_CapitalGains_Single_Top_Range_Ladder Step4,State_Province,California,USA,CapitalGains,CapitalGains,Single,Top_Range,55866,4,0.06
-State_Province_California_CapitalGains_Single_Top_Range_Ladder Step5,State_Province,California,USA,CapitalGains,CapitalGains,Single,Top_Range,70606,5,0.08
-State_Province_California_CapitalGains_Single_Top_Range_Ladder Step6,State_Province,California,USA,CapitalGains,CapitalGains,Single,Top_Range,360659,6,0.09
-State_Province_California_CapitalGains_Single_Top_Range_Ladder Step7,State_Province,California,USA,CapitalGains,CapitalGains,Single,Top_Range,432787,7,0.10
-State_Province_California_CapitalGains_Single_Top_Range_Ladder Step8,State_Province,California,USA,CapitalGains,CapitalGains,Single,Top_Range,721314,8,0.11
-State_Province_California_CapitalGains_Single_Top_Range_Ladder Step9,State_Province,California,USA,CapitalGains,CapitalGains,Single,Top_Range,99999999,9,0.12
-State_Province_California_CapitalGains_Head_of_Household_Bot_Range_Ladder Step1,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,0,1,0.01
-State_Province_California_CapitalGains_Head_of_Household_Bot_Range_Ladder Step2,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,21527,2,0.02
-State_Province_California_CapitalGains_Head_of_Household_Bot_Range_Ladder Step3,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,51000,3,0.04
-State_Province_California_CapitalGains_Head_of_Household_Bot_Range_Ladder Step4,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,65744,4,0.06
-State_Province_California_CapitalGains_Head_of_Household_Bot_Range_Ladder Step5,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,81364,5,0.08
-State_Province_California_CapitalGains_Head_of_Household_Bot_Range_Ladder Step6,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,96107,6,0.09
-State_Province_California_CapitalGains_Head_of_Household_Bot_Range_Ladder Step7,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,490493,7,0.10
-State_Province_California_CapitalGains_Head_of_Household_Bot_Range_Ladder Step8,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,588593,8,0.11
-State_Province_California_CapitalGains_Head_of_Household_Bot_Range_Ladder Step9,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,980987,9,0.12
-State_Province_California_CapitalGains_Head_of_Household_Top_Range_Ladder Step1,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,21527,1,0.01
-State_Province_California_CapitalGains_Head_of_Household_Top_Range_Ladder Step2,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,51000,2,0.02
-State_Province_California_CapitalGains_Head_of_Household_Top_Range_Ladder Step3,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,65744,3,0.04
-State_Province_California_CapitalGains_Head_of_Household_Top_Range_Ladder Step4,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,81364,4,0.06
-State_Province_California_CapitalGains_Head_of_Household_Top_Range_Ladder Step5,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,96107,5,0.08
-State_Province_California_CapitalGains_Head_of_Household_Top_Range_Ladder Step6,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,490493,6,0.09
-State_Province_California_CapitalGains_Head_of_Household_Top_Range_Ladder Step7,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,588593,7,0.10
-State_Province_California_CapitalGains_Head_of_Household_Top_Range_Ladder Step8,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,980987,8,0.11
-State_Province_California_CapitalGains_Head_of_Household_Top_Range_Ladder Step9,State_Province,California,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,99999999,9,0.12
-Federal_USA_CapitalGains_Single_Bot_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Single,Bot_Range,0,1,0.00
-Federal_USA_CapitalGains_Single_Bot_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Single,Bot_Range,48351,2,0.10
-Federal_USA_CapitalGains_Single_Bot_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Single,Bot_Range,533401,3,0.20
-Federal_USA_CapitalGains_Single_Top_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Single,Top_Range,48350,1,0.00
-Federal_USA_CapitalGains_Single_Top_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Single,Top_Range,533400,2,0.10
-Federal_USA_CapitalGains_Single_Top_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Single,Top_Range,99999999,3,0.20
-Federal_USA_CapitalGains_Married_Bot_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Married,Bot_Range,0,1,0.00
-Federal_USA_CapitalGains_Married_Bot_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Married,Bot_Range,96701,2,0.10
-Federal_USA_CapitalGains_Married_Bot_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Married,Bot_Range,600501,3,0.20
-Federal_USA_CapitalGains_Married_Top_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Married,Top_Range,96700,1,0.00
-Federal_USA_CapitalGains_Married_Top_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Married,Top_Range,600500,2,0.10
-Federal_USA_CapitalGains_Married_Top_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Married,Top_Range,99999999,3,0.20
-Federal_USA_CapitalGains_Head_of_Household_Bot_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,0,1,0.00
-Federal_USA_CapitalGains_Head_of_Household_Bot_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,64751,2,0.10
-Federal_USA_CapitalGains_Head_of_Household_Bot_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Bot_Range,566701,3,0.20
-Federal_USA_CapitalGains_Head_of_Household_Top_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,64750,1,0.00
-Federal_USA_CapitalGains_Head_of_Household_Top_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,566700,2,0.10
-Federal_USA_CapitalGains_Head_of_Household_Top_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Head_of_Household,Top_Range,99999999,3,0.20
-Federal_USA_CapitalGains_Separate_Bot_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Bot_Range,0,1,0.00
-Federal_USA_CapitalGains_Separate_Bot_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Bot_Range,48351,2,0.10
-Federal_USA_CapitalGains_Separate_Bot_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Bot_Range,300001,3,0.20
-Federal_USA_CapitalGains_Separate_Top_Range_Ladder Step1,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Top_Range,48350,1,0.00
-Federal_USA_CapitalGains_Separate_Top_Range_Ladder Step2,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Top_Range,300000,2,0.10
-Federal_USA_CapitalGains_Separate_Top_Range_Ladder Step3,Federal,USA,USA,CapitalGains,CapitalGains,Separate,Top_Range,99999999,3,0.20
-State_Province_Washington_Income_All_Bot_Range_Ladder Step1,State_Province,Washington,USA,Income,Income,All,Bot_Range,0,1,0.00
-State_Province_Washington_Income_All_Top_Range_Ladder Step1,State_Province,Washington,USA,Income,Income,All,Top_Range,99999999,1,0.00
+State_Province_Alaska_Income_All_Bot_Range_Ladder Step1,State_Province,Alaska,USA,Income,Income,All,Bot_Range,0,1,0.0000
+State_Province_Alaska_Income_All_Top_Range_Ladder Step1,State_Province,Alaska,USA,Income,Income,All,Top_Range,99999999,1,0.0000
+State_Province_Arizona_Income_All_Bot_Range_Ladder Step1,State_Province,Arizona,USA,Income,Income,All,Bot_Range,0,1,0.0250
+State_Province_Arizona_Income_All_Top_Range_Ladder Step1,State_Province,Arizona,USA,Income,Income,All,Top_Range,99999999,1,0.0250
+State_Province_Florida_Income_All_Bot_Range_Ladder Step1,State_Province,Florida,USA,Income,Income,All,Bot_Range,0,1,0.0000
+State_Province_Florida_Income_All_Top_Range_Ladder Step1,State_Province,Florida,USA,Income,Income,All,Top_Range,99999999,1,0.0000
+State_Province_Georgia_Income_All_Bot_Range_Ladder Step1,State_Province,Georgia,USA,Income,Income,All,Bot_Range,0,1,0.0539
+State_Province_Georgia_Income_All_Top_Range_Ladder Step1,State_Province,Georgia,USA,Income,Income,All,Top_Range,99999999,1,0.0539
+State_Province_Illinois_Income_All_Bot_Range_Ladder Step1,State_Province,Illinois,USA,Income,Income,All,Bot_Range,0,1,0.0495
+State_Province_Illinois_Income_All_Top_Range_Ladder Step1,State_Province,Illinois,USA,Income,Income,All,Top_Range,99999999,1,0.0495
+State_Province_Indiana_Income_All_Bot_Range_Ladder Step1,State_Province,Indiana,USA,Income,Income,All,Bot_Range,0,1,0.0300
+State_Province_Indiana_Income_All_Top_Range_Ladder Step1,State_Province,Indiana,USA,Income,Income,All,Top_Range,99999999,1,0.0300
+State_Province_Iowa_Income_All_Bot_Range_Ladder Step1,State_Province,Iowa,USA,Income,Income,All,Bot_Range,0,1,0.0380
+State_Province_Iowa_Income_All_Top_Range_Ladder Step1,State_Province,Iowa,USA,Income,Income,All,Top_Range,99999999,1,0.0380
+State_Province_Kentucky_Income_All_Bot_Range_Ladder Step1,State_Province,Kentucky,USA,Income,Income,All,Bot_Range,0,1,0.0400
+State_Province_Kentucky_Income_All_Top_Range_Ladder Step1,State_Province,Kentucky,USA,Income,Income,All,Top_Range,99999999,1,0.0400
+State_Province_Louisiana_Income_All_Bot_Range_Ladder Step1,State_Province,Louisiana,USA,Income,Income,All,Bot_Range,0,1,0.0300
+State_Province_Louisiana_Income_All_Top_Range_Ladder Step1,State_Province,Louisiana,USA,Income,Income,All,Top_Range,99999999,1,0.0300
+State_Province_Nevada_Income_All_Bot_Range_Ladder Step1,State_Province,Nevada,USA,Income,Income,All,Bot_Range,0,1,0.0000
+State_Province_Nevada_Income_All_Top_Range_Ladder Step1,State_Province,Nevada,USA,Income,Income,All,Top_Range,99999999,1,0.0000
+State_Province_New Hampshire_Income_All_Bot_Range_Ladder Step1,State_Province,New Hampshire,USA,Income,Income,All,Bot_Range,0,1,0.0000
+State_Province_New Hampshire_Income_All_Top_Range_Ladder Step1,State_Province,New Hampshire,USA,Income,Income,All,Top_Range,99999999,1,0.0000
+State_Province_North Carolina_Income_All_Bot_Range_Ladder Step1,State_Province,North Carolina,USA,Income,Income,All,Bot_Range,0,1,0.0425
+State_Province_North Carolina_Income_All_Top_Range_Ladder Step1,State_Province,North Carolina,USA,Income,Income,All,Top_Range,99999999,1,0.0425
+State_Province_Pennsylvania_Income_All_Bot_Range_Ladder Step1,State_Province,Pennsylvania,USA,Income,Income,All,Bot_Range,0,1,0.0307
+State_Province_Pennsylvania_Income_All_Top_Range_Ladder Step1,State_Province,Pennsylvania,USA,Income,Income,All,Top_Range,99999999,1,0.0307
+State_Province_South Dakota_Income_All_Bot_Range_Ladder Step1,State_Province,South Dakota,USA,Income,Income,All,Bot_Range,0,1,0.0000
+State_Province_South Dakota_Income_All_Top_Range_Ladder Step1,State_Province,South Dakota,USA,Income,Income,All,Top_Range,99999999,1,0.0000
+State_Province_Tennessee_Income_All_Bot_Range_Ladder Step1,State_Province,Tennessee,USA,Income,Income,All,Bot_Range,0,1,0.0000
+State_Province_Tennessee_Income_All_Top_Range_Ladder Step1,State_Province,Tennessee,USA,Income,Income,All,Top_Range,99999999,1,0.0000
+State_Province_Texas_Income_All_Bot_Range_Ladder Step1,State_Province,Texas,USA,Income,Income,All,Bot_Range,0,1,0.0000
+State_Province_Texas_Income_All_Top_Range_Ladder Step1,State_Province,Texas,USA,Income,Income,All,Top_Range,99999999,1,0.0000
+State_Province_Utah_Income_All_Bot_Range_Ladder Step1,State_Province,Utah,USA,Income,Income,All,Bot_Range,0,1,0.0455
+State_Province_Utah_Income_All_Top_Range_Ladder Step1,State_Province,Utah,USA,Income,Income,All,Top_Range,99999999,1,0.0455
 State_Province_Washington_CapitalGains_Single_Bot_Range_Ladder Step1,State_Province,Washington,USA,CapitalGains,CapitalGains,Single,Bot_Range,0,1,0.00
 State_Province_Washington_CapitalGains_Single_Top_Range_Ladder Step1,State_Province,Washington,USA,CapitalGains,CapitalGains,Single,Top_Range,250000,1,0.00
 State_Province_Washington_CapitalGains_Single_Bot_Range_Ladder Step2,State_Province,Washington,USA,CapitalGains,CapitalGains,Single,Bot_Range,250001,2,0.07
@@ -201,50 +152,671 @@ State_Province_Washington_CapitalGains_Married_Bot_Range_Ladder Step2,State_Prov
 State_Province_Washington_CapitalGains_Married_Top_Range_Ladder Step2,State_Province,Washington,USA,CapitalGains,CapitalGains,Married,Top_Range,1000000,2,0.07
 State_Province_Washington_CapitalGains_Married_Bot_Range_Ladder Step3,State_Province,Washington,USA,CapitalGains,CapitalGains,Married,Bot_Range,1000001,3,0.10
 State_Province_Washington_CapitalGains_Married_Top_Range_Ladder Step3,State_Province,Washington,USA,CapitalGains,CapitalGains,Married,Top_Range,99999999,3,0.10
-Federal_USA_FICA Social Security_All_Bot_Range_Ladder Step1,Federal,USA,USA,FICA Social Security,Income,All,Bot_Range,0,1,0.06
-Federal_USA_FICA Social Security_All_Top_Range_Ladder Step1,Federal,USA,USA,FICA Social Security,Income,All,Top_Range,176100,1,0.06
-Federal_USA_FICA Medicare_All_Bot_Range_Ladder Step1,Federal,USA,USA,FICA Medicare,Income,All,Bot_Range,0,1,0.01
-Federal_USA_FICA Medicare_All_Top_Range_Ladder Step1,Federal,USA,USA,FICA Medicare,Income,All,Top_Range,99999999,1,0.01
-Federal_USA_FICA Medicare Additional_Single_Bot_Range_Ladder Step2,Federal,USA,USA,FICA Medicare Additional,Income,Single,Bot_Range,200000,2,0.01
-Federal_USA_FICA Medicare Additional_Single_Top_Range_Ladder Step2,Federal,USA,USA,FICA Medicare Additional,Income,Single,Top_Range,99999999,2,0.01
-Federal_USA_FICA Medicare Additional_Married_Bot_Range_Ladder Step2,Federal,USA,USA,FICA Medicare Additional,Income,Married,Bot_Range,250000,2,0.01
-Federal_USA_FICA Medicare Additional_Married_Top_Range_Ladder Step2,Federal,USA,USA,FICA Medicare Additional,Income,Married,Top_Range,99999999,2,0.01
-State_Province_Texas_Income_All_Bot_Range_Ladder Step1,State_Province,Texas,USA,Income,Income,All,Bot_Range,0,1,0.00
-State_Province_Texas_Income_All_Top_Range_Ladder Step1,State_Province,Texas,USA,Income,Income,All,Top_Range,99999999,1,0.00
-Federal_Canada_CPP_All_Bot_Range_Ladder Step1,Federal,Canada,Canada,CPP,Income,All,Bot_Range,0,1,0.00
-Federal_Canada_CPP_All_Top_Range_Ladder Step1,Federal,Canada,Canada,CPP,Income,All,Top_Range,3500,1,0.00
-Federal_Canada_CPP_All_Bot_Range_Ladder Step2,Federal,Canada,Canada,CPP,Income,All,Bot_Range,3500,2,0.06
-Federal_Canada_CPP_All_Top_Range_Ladder Step2,Federal,Canada,Canada,CPP,Income,All,Top_Range,71300,2,0.06
-Federal_Canada_CPP_All_Bot_Range_Ladder Step3,Federal,Canada,Canada,CPP,Income,All,Bot_Range,71300,3,0.04
-Federal_Canada_CPP_All_Top_Range_Ladder Step3,Federal,Canada,Canada,CPP,Income,All,Top_Range,82700,3,0.04
-Federal_Canada_CPP_All_Bot_Range_Ladder Step4,Federal,Canada,Canada,CPP,Income,All,Bot_Range,82700,4,0.00
-Federal_Canada_CPP_All_Top_Range_Ladder Step4,Federal,Canada,Canada,CPP,Income,All,Top_Range,99999999,4,0.00
-Federal_Canada_EI_All_Bot_Range_Ladder Step1,Federal,Canada,Canada,EI,Income,All,Bot_Range,0,1,0.02
-Federal_Canada_EI_All_Top_Range_Ladder Step1,Federal,Canada,Canada,EI,Income,All,Top_Range,65700,1,0.02
-Federal_Canada_EI_All_Bot_Range_Ladder Step2,Federal,Canada,Canada,EI,Income,All,Bot_Range,65700,2,0.00
-Federal_Canada_EI_All_Top_Range_Ladder Step2,Federal,Canada,Canada,EI,Income,All,Top_Range,99999999,2,0.00
-State_Province_British Columbia_Income_All_Bot_Range_Ladder Step1,State_Province,British Columbia,Canada,Income,Income,All,Bot_Range,0,1,0.01
-State_Province_British Columbia_Income_All_Bot_Range_Ladder Step2,State_Province,British Columbia,Canada,Income,Income,All,Bot_Range,10756,2,0.02
-State_Province_British Columbia_Income_All_Bot_Range_Ladder Step3,State_Province,British Columbia,Canada,Income,Income,All,Bot_Range,25499,3,0.04
-State_Province_British Columbia_Income_All_Bot_Range_Ladder Step4,State_Province,British Columbia,Canada,Income,Income,All,Bot_Range,40245,4,0.06
-State_Province_British Columbia_Income_All_Bot_Range_Ladder Step5,State_Province,British Columbia,Canada,Income,Income,All,Bot_Range,55866,5,0.08
-State_Province_British Columbia_Income_All_Bot_Range_Ladder Step6,State_Province,British Columbia,Canada,Income,Income,All,Bot_Range,70606,6,0.09
-State_Province_British Columbia_Income_All_Bot_Range_Ladder Step7,State_Province,British Columbia,Canada,Income,Income,All,Bot_Range,360659,7,0.10
-State_Province_British Columbia_Income_All_Bot_Range_Ladder Step8,State_Province,British Columbia,Canada,Income,Income,All,Bot_Range,432787,8,0.11
-State_Province_British Columbia_Income_All_Bot_Range_Ladder Step9,State_Province,British Columbia,Canada,Income,Income,All,Bot_Range,721314,9,0.12
-State_Province_British Columbia_Income_All_Top_Range_Ladder Step1,State_Province,British Columbia,Canada,Income,Income,All,Top_Range,10756,1,0.01
-State_Province_British Columbia_Income_All_Top_Range_Ladder Step2,State_Province,British Columbia,Canada,Income,Income,All,Top_Range,25499,2,0.02
-State_Province_British Columbia_Income_All_Top_Range_Ladder Step3,State_Province,British Columbia,Canada,Income,Income,All,Top_Range,40245,3,0.04
-State_Province_British Columbia_Income_All_Top_Range_Ladder Step4,State_Province,British Columbia,Canada,Income,Income,All,Top_Range,55866,4,0.06
-State_Province_British Columbia_Income_All_Top_Range_Ladder Step5,State_Province,British Columbia,Canada,Income,Income,All,Top_Range,70606,5,0.08
-State_Province_British Columbia_Income_All_Top_Range_Ladder Step6,State_Province,British Columbia,Canada,Income,Income,All,Top_Range,360659,6,0.09
-State_Province_British Columbia_Income_All_Top_Range_Ladder Step7,State_Province,British Columbia,Canada,Income,Income,All,Top_Range,432787,7,0.10
-State_Province_British Columbia_Income_All_Top_Range_Ladder Step8,State_Province,British Columbia,Canada,Income,Income,All,Top_Range,721314,8,0.11
-State_Province_British Columbia_Income_All_Top_Range_Ladder Step9,State_Province,British Columbia,Canada,Income,Income,All,Top_Range,99999999,9,0.12
-Federal_Canada_Income_All_Bot_Range_Ladder Step1,Federal,Canada,Canada,Income,Income,All,Bot_Range,0,1,0.10
-Federal_Canada_Income_All_Bot_Range_Ladder Step2,Federal,Canada,Canada,Income,Income,All,Bot_Range,11926,2,0.12
-Federal_Canada_Income_All_Bot_Range_Ladder Step3,Federal,Canada,Canada,Income,Income,All,Bot_Range,48476,3,0.22
-Federal_Canada_Income_All_Bot_Range_Ladder Step4,Federal,Canada,Canada,Income,Income,All,Bot_Range,103351,4,0.24
-Federal_Canada_Income_All_Bot_Range_Ladder Step5,Federal,Canada,Canada,Income,Income,All,Bot_Range,197301,5,0.32
-Federal_Canada_Income_All_Bot_Range_Ladder Step6,Federal,Canada,Canada,Income,Income,All,Bot_Range,250526,6,0.35
-Federal_Canada_Income_All_Bot_Range_Ladder Step7,Federal,Canada,Canada,Income,Income,All,Bot_Range,626351,7,0.37
+State_Province_Washington_Income_All_Bot_Range_Ladder Step1,State_Province,Washington,USA,Income,Income,All,Bot_Range,0,1,0.0000
+State_Province_Washington_Income_All_Top_Range_Ladder Step1,State_Province,Washington,USA,Income,Income,All,Top_Range,99999999,1,0.0000
+State_Province_Wyoming_Income_All_Bot_Range_Ladder Step1,State_Province,Wyoming,USA,Income,Income,All,Bot_Range,0,1,0.0000
+State_Province_Wyoming_Income_All_Top_Range_Ladder Step1,State_Province,Wyoming,USA,Income,Income,All,Top_Range,99999999,1,0.0000
+State_Province_Arkansas_Income_Single_Bot_Range_Ladder Step1,State_Province,Arkansas,USA,Income,Income,Single,Bot_Range,0,1,0.0200
+State_Province_Arkansas_Income_Single_Top_Range_Ladder Step1,State_Province,Arkansas,USA,Income,Income,Single,Top_Range,4500,1,0.0200
+State_Province_Arkansas_Income_Single_Bot_Range_Ladder Step2,State_Province,Arkansas,USA,Income,Income,Single,Bot_Range,4500,2,0.0390
+State_Province_Arkansas_Income_Single_Top_Range_Ladder Step2,State_Province,Arkansas,USA,Income,Income,Single,Top_Range,99999999,2,0.0390
+State_Province_Arkansas_Income_Married_Bot_Range_Ladder Step1,State_Province,Arkansas,USA,Income,Income,Married,Bot_Range,0,1,0.0200
+State_Province_Arkansas_Income_Married_Top_Range_Ladder Step1,State_Province,Arkansas,USA,Income,Income,Married,Top_Range,4500,1,0.0200
+State_Province_Arkansas_Income_Married_Bot_Range_Ladder Step2,State_Province,Arkansas,USA,Income,Income,Married,Bot_Range,4500,2,0.0390
+State_Province_Arkansas_Income_Married_Top_Range_Ladder Step2,State_Province,Arkansas,USA,Income,Income,Married,Top_Range,99999999,2,0.0390
+State_Province_California_Income_Single_Bot_Range_Ladder Step1,State_Province,California,USA,Income,Income,Single,Bot_Range,0,1,0.0100
+State_Province_California_Income_Single_Top_Range_Ladder Step1,State_Province,California,USA,Income,Income,Single,Top_Range,10756,1,0.0100
+State_Province_California_Income_Single_Bot_Range_Ladder Step2,State_Province,California,USA,Income,Income,Single,Bot_Range,10756,2,0.0200
+State_Province_California_Income_Single_Top_Range_Ladder Step2,State_Province,California,USA,Income,Income,Single,Top_Range,25499,2,0.0200
+State_Province_California_Income_Single_Bot_Range_Ladder Step3,State_Province,California,USA,Income,Income,Single,Bot_Range,25499,3,0.0400
+State_Province_California_Income_Single_Top_Range_Ladder Step3,State_Province,California,USA,Income,Income,Single,Top_Range,40245,3,0.0400
+State_Province_California_Income_Single_Bot_Range_Ladder Step4,State_Province,California,USA,Income,Income,Single,Bot_Range,40245,4,0.0600
+State_Province_California_Income_Single_Top_Range_Ladder Step4,State_Province,California,USA,Income,Income,Single,Top_Range,55866,4,0.0600
+State_Province_California_Income_Single_Bot_Range_Ladder Step5,State_Province,California,USA,Income,Income,Single,Bot_Range,55866,5,0.0800
+State_Province_California_Income_Single_Top_Range_Ladder Step5,State_Province,California,USA,Income,Income,Single,Top_Range,70606,5,0.0800
+State_Province_California_Income_Single_Bot_Range_Ladder Step6,State_Province,California,USA,Income,Income,Single,Bot_Range,70606,6,0.0930
+State_Province_California_Income_Single_Top_Range_Ladder Step6,State_Province,California,USA,Income,Income,Single,Top_Range,360659,6,0.0930
+State_Province_California_Income_Single_Bot_Range_Ladder Step7,State_Province,California,USA,Income,Income,Single,Bot_Range,360659,7,0.1030
+State_Province_California_Income_Single_Top_Range_Ladder Step7,State_Province,California,USA,Income,Income,Single,Top_Range,432787,7,0.1030
+State_Province_California_Income_Single_Bot_Range_Ladder Step8,State_Province,California,USA,Income,Income,Single,Bot_Range,432787,8,0.1130
+State_Province_California_Income_Single_Top_Range_Ladder Step8,State_Province,California,USA,Income,Income,Single,Top_Range,721314,8,0.1130
+State_Province_California_Income_Single_Bot_Range_Ladder Step9,State_Province,California,USA,Income,Income,Single,Bot_Range,721314,9,0.1230
+State_Province_California_Income_Single_Top_Range_Ladder Step9,State_Province,California,USA,Income,Income,Single,Top_Range,1000000,9,0.1230
+State_Province_California_Income_Single_Bot_Range_Ladder Step10,State_Province,California,USA,Income,Income,Single,Bot_Range,1000000,10,0.1330
+State_Province_California_Income_Single_Top_Range_Ladder Step10,State_Province,California,USA,Income,Income,Single,Top_Range,99999999,10,0.1330
+State_Province_California_Income_Married_Bot_Range_Ladder Step1,State_Province,California,USA,Income,Income,Married,Bot_Range,0,1,0.0100
+State_Province_California_Income_Married_Top_Range_Ladder Step1,State_Province,California,USA,Income,Income,Married,Top_Range,21512,1,0.0100
+State_Province_California_Income_Married_Bot_Range_Ladder Step2,State_Province,California,USA,Income,Income,Married,Bot_Range,21512,2,0.0200
+State_Province_California_Income_Married_Top_Range_Ladder Step2,State_Province,California,USA,Income,Income,Married,Top_Range,50998,2,0.0200
+State_Province_California_Income_Married_Bot_Range_Ladder Step3,State_Province,California,USA,Income,Income,Married,Bot_Range,50998,3,0.0400
+State_Province_California_Income_Married_Top_Range_Ladder Step3,State_Province,California,USA,Income,Income,Married,Top_Range,80490,3,0.0400
+State_Province_California_Income_Married_Bot_Range_Ladder Step4,State_Province,California,USA,Income,Income,Married,Bot_Range,80490,4,0.0600
+State_Province_California_Income_Married_Top_Range_Ladder Step4,State_Province,California,USA,Income,Income,Married,Top_Range,111732,4,0.0600
+State_Province_California_Income_Married_Bot_Range_Ladder Step5,State_Province,California,USA,Income,Income,Married,Bot_Range,111732,5,0.0800
+State_Province_California_Income_Married_Top_Range_Ladder Step5,State_Province,California,USA,Income,Income,Married,Top_Range,141732,5,0.0800
+State_Province_California_Income_Married_Bot_Range_Ladder Step6,State_Province,California,USA,Income,Income,Married,Bot_Range,141732,6,0.0930
+State_Province_California_Income_Married_Top_Range_Ladder Step6,State_Province,California,USA,Income,Income,Married,Top_Range,721318,6,0.0930
+State_Province_California_Income_Married_Bot_Range_Ladder Step7,State_Province,California,USA,Income,Income,Married,Bot_Range,721318,7,0.1030
+State_Province_California_Income_Married_Top_Range_Ladder Step7,State_Province,California,USA,Income,Income,Married,Top_Range,865574,7,0.1030
+State_Province_California_Income_Married_Bot_Range_Ladder Step8,State_Province,California,USA,Income,Income,Married,Bot_Range,865574,8,0.1130
+State_Province_California_Income_Married_Top_Range_Ladder Step8,State_Province,California,USA,Income,Income,Married,Top_Range,1000000,8,0.1130
+State_Province_California_Income_Married_Bot_Range_Ladder Step9,State_Province,California,USA,Income,Income,Married,Bot_Range,1000000,9,0.1230
+State_Province_California_Income_Married_Top_Range_Ladder Step9,State_Province,California,USA,Income,Income,Married,Top_Range,1442628,9,0.1230
+State_Province_California_Income_Married_Bot_Range_Ladder Step10,State_Province,California,USA,Income,Income,Married,Bot_Range,1442628,10,0.1330
+State_Province_California_Income_Married_Top_Range_Ladder Step10,State_Province,California,USA,Income,Income,Married,Top_Range,99999999,10,0.1330
+State_Province_Connecticut_Income_Single_Bot_Range_Ladder Step1,State_Province,Connecticut,USA,Income,Income,Single,Bot_Range,0,1,0.0200
+State_Province_Connecticut_Income_Single_Top_Range_Ladder Step1,State_Province,Connecticut,USA,Income,Income,Single,Top_Range,10000,1,0.0200
+State_Province_Connecticut_Income_Single_Bot_Range_Ladder Step2,State_Province,Connecticut,USA,Income,Income,Single,Bot_Range,10000,2,0.0450
+State_Province_Connecticut_Income_Single_Top_Range_Ladder Step2,State_Province,Connecticut,USA,Income,Income,Single,Top_Range,50000,2,0.0450
+State_Province_Connecticut_Income_Single_Bot_Range_Ladder Step3,State_Province,Connecticut,USA,Income,Income,Single,Bot_Range,50000,3,0.0550
+State_Province_Connecticut_Income_Single_Top_Range_Ladder Step3,State_Province,Connecticut,USA,Income,Income,Single,Top_Range,100000,3,0.0550
+State_Province_Connecticut_Income_Single_Bot_Range_Ladder Step4,State_Province,Connecticut,USA,Income,Income,Single,Bot_Range,100000,4,0.0600
+State_Province_Connecticut_Income_Single_Top_Range_Ladder Step4,State_Province,Connecticut,USA,Income,Income,Single,Top_Range,200000,4,0.0600
+State_Province_Connecticut_Income_Single_Bot_Range_Ladder Step5,State_Province,Connecticut,USA,Income,Income,Single,Bot_Range,200000,5,0.0650
+State_Province_Connecticut_Income_Single_Top_Range_Ladder Step5,State_Province,Connecticut,USA,Income,Income,Single,Top_Range,250000,5,0.0650
+State_Province_Connecticut_Income_Single_Bot_Range_Ladder Step6,State_Province,Connecticut,USA,Income,Income,Single,Bot_Range,250000,6,0.0690
+State_Province_Connecticut_Income_Single_Top_Range_Ladder Step6,State_Province,Connecticut,USA,Income,Income,Single,Top_Range,500000,6,0.0690
+State_Province_Connecticut_Income_Single_Bot_Range_Ladder Step7,State_Province,Connecticut,USA,Income,Income,Single,Bot_Range,500000,7,0.0699
+State_Province_Connecticut_Income_Single_Top_Range_Ladder Step7,State_Province,Connecticut,USA,Income,Income,Single,Top_Range,99999999,7,0.0699
+State_Province_Connecticut_Income_Married_Bot_Range_Ladder Step1,State_Province,Connecticut,USA,Income,Income,Married,Bot_Range,0,1,0.0200
+State_Province_Connecticut_Income_Married_Top_Range_Ladder Step1,State_Province,Connecticut,USA,Income,Income,Married,Top_Range,20000,1,0.0200
+State_Province_Connecticut_Income_Married_Bot_Range_Ladder Step2,State_Province,Connecticut,USA,Income,Income,Married,Bot_Range,20000,2,0.0450
+State_Province_Connecticut_Income_Married_Top_Range_Ladder Step2,State_Province,Connecticut,USA,Income,Income,Married,Top_Range,100000,2,0.0450
+State_Province_Connecticut_Income_Married_Bot_Range_Ladder Step3,State_Province,Connecticut,USA,Income,Income,Married,Bot_Range,100000,3,0.0550
+State_Province_Connecticut_Income_Married_Top_Range_Ladder Step3,State_Province,Connecticut,USA,Income,Income,Married,Top_Range,200000,3,0.0550
+State_Province_Connecticut_Income_Married_Bot_Range_Ladder Step4,State_Province,Connecticut,USA,Income,Income,Married,Bot_Range,200000,4,0.0600
+State_Province_Connecticut_Income_Married_Top_Range_Ladder Step4,State_Province,Connecticut,USA,Income,Income,Married,Top_Range,400000,4,0.0600
+State_Province_Connecticut_Income_Married_Bot_Range_Ladder Step5,State_Province,Connecticut,USA,Income,Income,Married,Bot_Range,400000,5,0.0650
+State_Province_Connecticut_Income_Married_Top_Range_Ladder Step5,State_Province,Connecticut,USA,Income,Income,Married,Top_Range,500000,5,0.0650
+State_Province_Connecticut_Income_Married_Bot_Range_Ladder Step6,State_Province,Connecticut,USA,Income,Income,Married,Bot_Range,500000,6,0.0690
+State_Province_Connecticut_Income_Married_Top_Range_Ladder Step6,State_Province,Connecticut,USA,Income,Income,Married,Top_Range,1000000,6,0.0690
+State_Province_Connecticut_Income_Married_Bot_Range_Ladder Step7,State_Province,Connecticut,USA,Income,Income,Married,Bot_Range,1000000,7,0.0699
+State_Province_Connecticut_Income_Married_Top_Range_Ladder Step7,State_Province,Connecticut,USA,Income,Income,Married,Top_Range,99999999,7,0.0699
+State_Province_Delaware_Income_Single_Bot_Range_Ladder Step1,State_Province,Delaware,USA,Income,Income,Single,Bot_Range,2000,1,0.0220
+State_Province_Delaware_Income_Single_Top_Range_Ladder Step1,State_Province,Delaware,USA,Income,Income,Single,Top_Range,5000,1,0.0220
+State_Province_Delaware_Income_Single_Bot_Range_Ladder Step2,State_Province,Delaware,USA,Income,Income,Single,Bot_Range,5000,2,0.0390
+State_Province_Delaware_Income_Single_Top_Range_Ladder Step2,State_Province,Delaware,USA,Income,Income,Single,Top_Range,10000,2,0.0390
+State_Province_Delaware_Income_Single_Bot_Range_Ladder Step3,State_Province,Delaware,USA,Income,Income,Single,Bot_Range,10000,3,0.0480
+State_Province_Delaware_Income_Single_Top_Range_Ladder Step3,State_Province,Delaware,USA,Income,Income,Single,Top_Range,20000,3,0.0480
+State_Province_Delaware_Income_Single_Bot_Range_Ladder Step4,State_Province,Delaware,USA,Income,Income,Single,Bot_Range,20000,4,0.0520
+State_Province_Delaware_Income_Single_Top_Range_Ladder Step4,State_Province,Delaware,USA,Income,Income,Single,Top_Range,25000,4,0.0520
+State_Province_Delaware_Income_Single_Bot_Range_Ladder Step5,State_Province,Delaware,USA,Income,Income,Single,Bot_Range,25000,5,0.0555
+State_Province_Delaware_Income_Single_Top_Range_Ladder Step5,State_Province,Delaware,USA,Income,Income,Single,Top_Range,60000,5,0.0555
+State_Province_Delaware_Income_Single_Bot_Range_Ladder Step6,State_Province,Delaware,USA,Income,Income,Single,Bot_Range,60000,6,0.0660
+State_Province_Delaware_Income_Single_Top_Range_Ladder Step6,State_Province,Delaware,USA,Income,Income,Single,Top_Range,99999999,6,0.0660
+State_Province_Delaware_Income_Married_Bot_Range_Ladder Step1,State_Province,Delaware,USA,Income,Income,Married,Bot_Range,2000,1,0.0220
+State_Province_Delaware_Income_Married_Top_Range_Ladder Step1,State_Province,Delaware,USA,Income,Income,Married,Top_Range,5000,1,0.0220
+State_Province_Delaware_Income_Married_Bot_Range_Ladder Step2,State_Province,Delaware,USA,Income,Income,Married,Bot_Range,5000,2,0.0390
+State_Province_Delaware_Income_Married_Top_Range_Ladder Step2,State_Province,Delaware,USA,Income,Income,Married,Top_Range,10000,2,0.0390
+State_Province_Delaware_Income_Married_Bot_Range_Ladder Step3,State_Province,Delaware,USA,Income,Income,Married,Bot_Range,10000,3,0.0480
+State_Province_Delaware_Income_Married_Top_Range_Ladder Step3,State_Province,Delaware,USA,Income,Income,Married,Top_Range,20000,3,0.0480
+State_Province_Delaware_Income_Married_Bot_Range_Ladder Step4,State_Province,Delaware,USA,Income,Income,Married,Bot_Range,20000,4,0.0520
+State_Province_Delaware_Income_Married_Top_Range_Ladder Step4,State_Province,Delaware,USA,Income,Income,Married,Top_Range,25000,4,0.0520
+State_Province_Delaware_Income_Married_Bot_Range_Ladder Step5,State_Province,Delaware,USA,Income,Income,Married,Bot_Range,25000,5,0.0555
+State_Province_Delaware_Income_Married_Top_Range_Ladder Step5,State_Province,Delaware,USA,Income,Income,Married,Top_Range,60000,5,0.0555
+State_Province_Delaware_Income_Married_Bot_Range_Ladder Step6,State_Province,Delaware,USA,Income,Income,Married,Bot_Range,60000,6,0.0660
+State_Province_Delaware_Income_Married_Top_Range_Ladder Step6,State_Province,Delaware,USA,Income,Income,Married,Top_Range,99999999,6,0.0660
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step1,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,0,1,0.0140
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step1,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,9600,1,0.0140
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step2,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,9600,2,0.0320
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step2,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,14400,2,0.0320
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step3,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,14400,3,0.0550
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step3,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,19200,3,0.0550
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step4,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,19200,4,0.0640
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step4,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,24000,4,0.0640
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step5,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,24000,5,0.0680
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step5,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,36000,5,0.0680
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step6,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,36000,6,0.0720
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step6,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,48000,6,0.0720
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step7,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,48000,7,0.0760
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step7,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,125000,7,0.0760
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step8,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,125000,8,0.0790
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step8,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,175000,8,0.0790
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step9,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,175000,9,0.0825
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step9,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,225000,9,0.0825
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step10,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,225000,10,0.0900
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step10,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,275000,10,0.0900
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step11,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,275000,11,0.1000
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step11,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,325000,11,0.1000
+State_Province_Hawaii_Income_Single_Bot_Range_Ladder Step12,State_Province,Hawaii,USA,Income,Income,Single,Bot_Range,325000,12,0.1100
+State_Province_Hawaii_Income_Single_Top_Range_Ladder Step12,State_Province,Hawaii,USA,Income,Income,Single,Top_Range,99999999,12,0.1100
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step1,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,0,1,0.0140
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step1,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,19200,1,0.0140
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step2,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,19200,2,0.0320
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step2,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,28800,2,0.0320
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step3,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,28800,3,0.0550
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step3,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,38400,3,0.0550
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step4,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,38400,4,0.0640
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step4,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,48000,4,0.0640
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step5,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,48000,5,0.0680
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step5,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,72000,5,0.0680
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step6,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,72000,6,0.0720
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step6,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,96000,6,0.0720
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step7,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,96000,7,0.0760
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step7,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,250000,7,0.0760
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step8,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,250000,8,0.0790
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step8,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,350000,8,0.0790
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step9,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,350000,9,0.0825
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step9,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,450000,9,0.0825
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step10,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,450000,10,0.0900
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step10,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,550000,10,0.0900
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step11,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,550000,11,0.1000
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step11,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,650000,11,0.1000
+State_Province_Hawaii_Income_Married_Bot_Range_Ladder Step12,State_Province,Hawaii,USA,Income,Income,Married,Bot_Range,650000,12,0.1100
+State_Province_Hawaii_Income_Married_Top_Range_Ladder Step12,State_Province,Hawaii,USA,Income,Income,Married,Top_Range,99999999,12,0.1100
+State_Province_Kansas_Income_Single_Bot_Range_Ladder Step1,State_Province,Kansas,USA,Income,Income,Single,Bot_Range,0,1,0.0520
+State_Province_Kansas_Income_Single_Top_Range_Ladder Step1,State_Province,Kansas,USA,Income,Income,Single,Top_Range,23000,1,0.0520
+State_Province_Kansas_Income_Single_Bot_Range_Ladder Step2,State_Province,Kansas,USA,Income,Income,Single,Bot_Range,23000,2,0.0558
+State_Province_Kansas_Income_Single_Top_Range_Ladder Step2,State_Province,Kansas,USA,Income,Income,Single,Top_Range,99999999,2,0.0558
+State_Province_Kansas_Income_Married_Bot_Range_Ladder Step1,State_Province,Kansas,USA,Income,Income,Married,Bot_Range,0,1,0.0520
+State_Province_Kansas_Income_Married_Top_Range_Ladder Step1,State_Province,Kansas,USA,Income,Income,Married,Top_Range,46000,1,0.0520
+State_Province_Kansas_Income_Married_Bot_Range_Ladder Step2,State_Province,Kansas,USA,Income,Income,Married,Bot_Range,46000,2,0.0558
+State_Province_Kansas_Income_Married_Top_Range_Ladder Step2,State_Province,Kansas,USA,Income,Income,Married,Top_Range,99999999,2,0.0558
+State_Province_Maine_Income_Single_Bot_Range_Ladder Step1,State_Province,Maine,USA,Income,Income,Single,Bot_Range,0,1,0.0580
+State_Province_Maine_Income_Single_Top_Range_Ladder Step1,State_Province,Maine,USA,Income,Income,Single,Top_Range,26800,1,0.0580
+State_Province_Maine_Income_Single_Bot_Range_Ladder Step2,State_Province,Maine,USA,Income,Income,Single,Bot_Range,26800,2,0.0675
+State_Province_Maine_Income_Single_Top_Range_Ladder Step2,State_Province,Maine,USA,Income,Income,Single,Top_Range,63450,2,0.0675
+State_Province_Maine_Income_Single_Bot_Range_Ladder Step3,State_Province,Maine,USA,Income,Income,Single,Bot_Range,63450,3,0.0715
+State_Province_Maine_Income_Single_Top_Range_Ladder Step3,State_Province,Maine,USA,Income,Income,Single,Top_Range,99999999,3,0.0715
+State_Province_Maine_Income_Married_Bot_Range_Ladder Step1,State_Province,Maine,USA,Income,Income,Married,Bot_Range,0,1,0.0580
+State_Province_Maine_Income_Married_Top_Range_Ladder Step1,State_Province,Maine,USA,Income,Income,Married,Top_Range,53600,1,0.0580
+State_Province_Maine_Income_Married_Bot_Range_Ladder Step2,State_Province,Maine,USA,Income,Income,Married,Bot_Range,53600,2,0.0675
+State_Province_Maine_Income_Married_Top_Range_Ladder Step2,State_Province,Maine,USA,Income,Income,Married,Top_Range,126900,2,0.0675
+State_Province_Maine_Income_Married_Bot_Range_Ladder Step3,State_Province,Maine,USA,Income,Income,Married,Bot_Range,126900,3,0.0715
+State_Province_Maine_Income_Married_Top_Range_Ladder Step3,State_Province,Maine,USA,Income,Income,Married,Top_Range,99999999,3,0.0715
+State_Province_Maryland_Income_Single_Bot_Range_Ladder Step1,State_Province,Maryland,USA,Income,Income,Single,Bot_Range,0,1,0.0200
+State_Province_Maryland_Income_Single_Top_Range_Ladder Step1,State_Province,Maryland,USA,Income,Income,Single,Top_Range,1000,1,0.0200
+State_Province_Maryland_Income_Single_Bot_Range_Ladder Step2,State_Province,Maryland,USA,Income,Income,Single,Bot_Range,1000,2,0.0300
+State_Province_Maryland_Income_Single_Top_Range_Ladder Step2,State_Province,Maryland,USA,Income,Income,Single,Top_Range,2000,2,0.0300
+State_Province_Maryland_Income_Single_Bot_Range_Ladder Step3,State_Province,Maryland,USA,Income,Income,Single,Bot_Range,2000,3,0.0400
+State_Province_Maryland_Income_Single_Top_Range_Ladder Step3,State_Province,Maryland,USA,Income,Income,Single,Top_Range,3000,3,0.0400
+State_Province_Maryland_Income_Single_Bot_Range_Ladder Step4,State_Province,Maryland,USA,Income,Income,Single,Bot_Range,3000,4,0.0475
+State_Province_Maryland_Income_Single_Top_Range_Ladder Step4,State_Province,Maryland,USA,Income,Income,Single,Top_Range,100000,4,0.0475
+State_Province_Maryland_Income_Single_Bot_Range_Ladder Step5,State_Province,Maryland,USA,Income,Income,Single,Bot_Range,100000,5,0.0500
+State_Province_Maryland_Income_Single_Top_Range_Ladder Step5,State_Province,Maryland,USA,Income,Income,Single,Top_Range,125000,5,0.0500
+State_Province_Maryland_Income_Single_Bot_Range_Ladder Step6,State_Province,Maryland,USA,Income,Income,Single,Bot_Range,125000,6,0.0525
+State_Province_Maryland_Income_Single_Top_Range_Ladder Step6,State_Province,Maryland,USA,Income,Income,Single,Top_Range,150000,6,0.0525
+State_Province_Maryland_Income_Single_Bot_Range_Ladder Step7,State_Province,Maryland,USA,Income,Income,Single,Bot_Range,150000,7,0.0550
+State_Province_Maryland_Income_Single_Top_Range_Ladder Step7,State_Province,Maryland,USA,Income,Income,Single,Top_Range,250000,7,0.0550
+State_Province_Maryland_Income_Single_Bot_Range_Ladder Step8,State_Province,Maryland,USA,Income,Income,Single,Bot_Range,250000,8,0.0575
+State_Province_Maryland_Income_Single_Top_Range_Ladder Step8,State_Province,Maryland,USA,Income,Income,Single,Top_Range,99999999,8,0.0575
+State_Province_Maryland_Income_Married_Bot_Range_Ladder Step1,State_Province,Maryland,USA,Income,Income,Married,Bot_Range,0,1,0.0200
+State_Province_Maryland_Income_Married_Top_Range_Ladder Step1,State_Province,Maryland,USA,Income,Income,Married,Top_Range,1000,1,0.0200
+State_Province_Maryland_Income_Married_Bot_Range_Ladder Step2,State_Province,Maryland,USA,Income,Income,Married,Bot_Range,1000,2,0.0300
+State_Province_Maryland_Income_Married_Top_Range_Ladder Step2,State_Province,Maryland,USA,Income,Income,Married,Top_Range,2000,2,0.0300
+State_Province_Maryland_Income_Married_Bot_Range_Ladder Step3,State_Province,Maryland,USA,Income,Income,Married,Bot_Range,2000,3,0.0400
+State_Province_Maryland_Income_Married_Top_Range_Ladder Step3,State_Province,Maryland,USA,Income,Income,Married,Top_Range,3000,3,0.0400
+State_Province_Maryland_Income_Married_Bot_Range_Ladder Step4,State_Province,Maryland,USA,Income,Income,Married,Bot_Range,3000,4,0.0475
+State_Province_Maryland_Income_Married_Top_Range_Ladder Step4,State_Province,Maryland,USA,Income,Income,Married,Top_Range,150000,4,0.0475
+State_Province_Maryland_Income_Married_Bot_Range_Ladder Step5,State_Province,Maryland,USA,Income,Income,Married,Bot_Range,150000,5,0.0500
+State_Province_Maryland_Income_Married_Top_Range_Ladder Step5,State_Province,Maryland,USA,Income,Income,Married,Top_Range,175000,5,0.0500
+State_Province_Maryland_Income_Married_Bot_Range_Ladder Step6,State_Province,Maryland,USA,Income,Income,Married,Bot_Range,175000,6,0.0525
+State_Province_Maryland_Income_Married_Top_Range_Ladder Step6,State_Province,Maryland,USA,Income,Income,Married,Top_Range,225000,6,0.0525
+State_Province_Maryland_Income_Married_Bot_Range_Ladder Step7,State_Province,Maryland,USA,Income,Income,Married,Bot_Range,225000,7,0.0550
+State_Province_Maryland_Income_Married_Top_Range_Ladder Step7,State_Province,Maryland,USA,Income,Income,Married,Top_Range,300000,7,0.0550
+State_Province_Maryland_Income_Married_Bot_Range_Ladder Step8,State_Province,Maryland,USA,Income,Income,Married,Bot_Range,300000,8,0.0575
+State_Province_Maryland_Income_Married_Top_Range_Ladder Step8,State_Province,Maryland,USA,Income,Income,Married,Top_Range,99999999,8,0.0575
+State_Province_Massachusetts_Income_Single_Bot_Range_Ladder Step1,State_Province,Massachusetts,USA,Income,Income,Single,Bot_Range,0,1,0.0500
+State_Province_Massachusetts_Income_Single_Top_Range_Ladder Step1,State_Province,Massachusetts,USA,Income,Income,Single,Top_Range,1083150,1,0.0500
+State_Province_Massachusetts_Income_Single_Bot_Range_Ladder Step2,State_Province,Massachusetts,USA,Income,Income,Single,Bot_Range,1083150,2,0.0900
+State_Province_Massachusetts_Income_Single_Top_Range_Ladder Step2,State_Province,Massachusetts,USA,Income,Income,Single,Top_Range,99999999,2,0.0900
+State_Province_Massachusetts_Income_Married_Bot_Range_Ladder Step1,State_Province,Massachusetts,USA,Income,Income,Married,Bot_Range,0,1,0.0500
+State_Province_Massachusetts_Income_Married_Top_Range_Ladder Step1,State_Province,Massachusetts,USA,Income,Income,Married,Top_Range,1083150,1,0.0500
+State_Province_Massachusetts_Income_Married_Bot_Range_Ladder Step2,State_Province,Massachusetts,USA,Income,Income,Married,Bot_Range,1083150,2,0.0900
+State_Province_Massachusetts_Income_Married_Top_Range_Ladder Step2,State_Province,Massachusetts,USA,Income,Income,Married,Top_Range,99999999,2,0.0900
+State_Province_Minnesota_Income_Single_Bot_Range_Ladder Step1,State_Province,Minnesota,USA,Income,Income,Single,Bot_Range,0,1,0.0535
+State_Province_Minnesota_Income_Single_Top_Range_Ladder Step1,State_Province,Minnesota,USA,Income,Income,Single,Top_Range,32570,1,0.0535
+State_Province_Minnesota_Income_Single_Bot_Range_Ladder Step2,State_Province,Minnesota,USA,Income,Income,Single,Bot_Range,32570,2,0.0680
+State_Province_Minnesota_Income_Single_Top_Range_Ladder Step2,State_Province,Minnesota,USA,Income,Income,Single,Top_Range,106990,2,0.0680
+State_Province_Minnesota_Income_Single_Bot_Range_Ladder Step3,State_Province,Minnesota,USA,Income,Income,Single,Bot_Range,106990,3,0.0785
+State_Province_Minnesota_Income_Single_Top_Range_Ladder Step3,State_Province,Minnesota,USA,Income,Income,Single,Top_Range,198630,3,0.0785
+State_Province_Minnesota_Income_Single_Bot_Range_Ladder Step4,State_Province,Minnesota,USA,Income,Income,Single,Bot_Range,198630,4,0.0985
+State_Province_Minnesota_Income_Single_Top_Range_Ladder Step4,State_Province,Minnesota,USA,Income,Income,Single,Top_Range,99999999,4,0.0985
+State_Province_Minnesota_Income_Married_Bot_Range_Ladder Step1,State_Province,Minnesota,USA,Income,Income,Married,Bot_Range,0,1,0.0535
+State_Province_Minnesota_Income_Married_Top_Range_Ladder Step1,State_Province,Minnesota,USA,Income,Income,Married,Top_Range,47620,1,0.0535
+State_Province_Minnesota_Income_Married_Bot_Range_Ladder Step2,State_Province,Minnesota,USA,Income,Income,Married,Bot_Range,47620,2,0.0680
+State_Province_Minnesota_Income_Married_Top_Range_Ladder Step2,State_Province,Minnesota,USA,Income,Income,Married,Top_Range,189180,2,0.0680
+State_Province_Minnesota_Income_Married_Bot_Range_Ladder Step3,State_Province,Minnesota,USA,Income,Income,Married,Bot_Range,189180,3,0.0785
+State_Province_Minnesota_Income_Married_Top_Range_Ladder Step3,State_Province,Minnesota,USA,Income,Income,Married,Top_Range,330410,3,0.0785
+State_Province_Minnesota_Income_Married_Bot_Range_Ladder Step4,State_Province,Minnesota,USA,Income,Income,Married,Bot_Range,330410,4,0.0985
+State_Province_Minnesota_Income_Married_Top_Range_Ladder Step4,State_Province,Minnesota,USA,Income,Income,Married,Top_Range,99999999,4,0.0985
+State_Province_Missouri_Income_Single_Bot_Range_Ladder Step1,State_Province,Missouri,USA,Income,Income,Single,Bot_Range,1313,1,0.0200
+State_Province_Missouri_Income_Single_Top_Range_Ladder Step1,State_Province,Missouri,USA,Income,Income,Single,Top_Range,2626,1,0.0200
+State_Province_Missouri_Income_Single_Bot_Range_Ladder Step2,State_Province,Missouri,USA,Income,Income,Single,Bot_Range,2626,2,0.0250
+State_Province_Missouri_Income_Single_Top_Range_Ladder Step2,State_Province,Missouri,USA,Income,Income,Single,Top_Range,3939,2,0.0250
+State_Province_Missouri_Income_Single_Bot_Range_Ladder Step3,State_Province,Missouri,USA,Income,Income,Single,Bot_Range,3939,3,0.0300
+State_Province_Missouri_Income_Single_Top_Range_Ladder Step3,State_Province,Missouri,USA,Income,Income,Single,Top_Range,5252,3,0.0300
+State_Province_Missouri_Income_Single_Bot_Range_Ladder Step4,State_Province,Missouri,USA,Income,Income,Single,Bot_Range,5252,4,0.0350
+State_Province_Missouri_Income_Single_Top_Range_Ladder Step4,State_Province,Missouri,USA,Income,Income,Single,Top_Range,6565,4,0.0350
+State_Province_Missouri_Income_Single_Bot_Range_Ladder Step5,State_Province,Missouri,USA,Income,Income,Single,Bot_Range,6565,5,0.0400
+State_Province_Missouri_Income_Single_Top_Range_Ladder Step5,State_Province,Missouri,USA,Income,Income,Single,Top_Range,7878,5,0.0400
+State_Province_Missouri_Income_Single_Bot_Range_Ladder Step6,State_Province,Missouri,USA,Income,Income,Single,Bot_Range,7878,6,0.0450
+State_Province_Missouri_Income_Single_Top_Range_Ladder Step6,State_Province,Missouri,USA,Income,Income,Single,Top_Range,9191,6,0.0450
+State_Province_Missouri_Income_Single_Bot_Range_Ladder Step7,State_Province,Missouri,USA,Income,Income,Single,Bot_Range,9191,7,0.0470
+State_Province_Missouri_Income_Single_Top_Range_Ladder Step7,State_Province,Missouri,USA,Income,Income,Single,Top_Range,99999999,7,0.0470
+State_Province_Missouri_Income_Married_Bot_Range_Ladder Step1,State_Province,Missouri,USA,Income,Income,Married,Bot_Range,1313,1,0.0200
+State_Province_Missouri_Income_Married_Top_Range_Ladder Step1,State_Province,Missouri,USA,Income,Income,Married,Top_Range,2626,1,0.0200
+State_Province_Missouri_Income_Married_Bot_Range_Ladder Step2,State_Province,Missouri,USA,Income,Income,Married,Bot_Range,2626,2,0.0250
+State_Province_Missouri_Income_Married_Top_Range_Ladder Step2,State_Province,Missouri,USA,Income,Income,Married,Top_Range,3939,2,0.0250
+State_Province_Missouri_Income_Married_Bot_Range_Ladder Step3,State_Province,Missouri,USA,Income,Income,Married,Bot_Range,3939,3,0.0300
+State_Province_Missouri_Income_Married_Top_Range_Ladder Step3,State_Province,Missouri,USA,Income,Income,Married,Top_Range,5252,3,0.0300
+State_Province_Missouri_Income_Married_Bot_Range_Ladder Step4,State_Province,Missouri,USA,Income,Income,Married,Bot_Range,5252,4,0.0350
+State_Province_Missouri_Income_Married_Top_Range_Ladder Step4,State_Province,Missouri,USA,Income,Income,Married,Top_Range,6565,4,0.0350
+State_Province_Missouri_Income_Married_Bot_Range_Ladder Step5,State_Province,Missouri,USA,Income,Income,Married,Bot_Range,6565,5,0.0400
+State_Province_Missouri_Income_Married_Top_Range_Ladder Step5,State_Province,Missouri,USA,Income,Income,Married,Top_Range,7878,5,0.0400
+State_Province_Missouri_Income_Married_Bot_Range_Ladder Step6,State_Province,Missouri,USA,Income,Income,Married,Bot_Range,7878,6,0.0450
+State_Province_Missouri_Income_Married_Top_Range_Ladder Step6,State_Province,Missouri,USA,Income,Income,Married,Top_Range,9191,6,0.0450
+State_Province_Missouri_Income_Married_Bot_Range_Ladder Step7,State_Province,Missouri,USA,Income,Income,Married,Bot_Range,9191,7,0.0470
+State_Province_Missouri_Income_Married_Top_Range_Ladder Step7,State_Province,Missouri,USA,Income,Income,Married,Top_Range,99999999,7,0.0470
+State_Province_Montana_Income_Single_Bot_Range_Ladder Step1,State_Province,Montana,USA,Income,Income,Single,Bot_Range,0,1,0.0470
+State_Province_Montana_Income_Single_Top_Range_Ladder Step1,State_Province,Montana,USA,Income,Income,Single,Top_Range,21100,1,0.0470
+State_Province_Montana_Income_Single_Bot_Range_Ladder Step2,State_Province,Montana,USA,Income,Income,Single,Bot_Range,21100,2,0.0590
+State_Province_Montana_Income_Single_Top_Range_Ladder Step2,State_Province,Montana,USA,Income,Income,Single,Top_Range,99999999,2,0.0590
+State_Province_Montana_Income_Married_Bot_Range_Ladder Step1,State_Province,Montana,USA,Income,Income,Married,Bot_Range,0,1,0.0470
+State_Province_Montana_Income_Married_Top_Range_Ladder Step1,State_Province,Montana,USA,Income,Income,Married,Top_Range,42200,1,0.0470
+State_Province_Montana_Income_Married_Bot_Range_Ladder Step2,State_Province,Montana,USA,Income,Income,Married,Bot_Range,42200,2,0.0590
+State_Province_Montana_Income_Married_Top_Range_Ladder Step2,State_Province,Montana,USA,Income,Income,Married,Top_Range,99999999,2,0.0590
+State_Province_Nebraska_Income_Single_Bot_Range_Ladder Step1,State_Province,Nebraska,USA,Income,Income,Single,Bot_Range,0,1,0.0246
+State_Province_Nebraska_Income_Single_Top_Range_Ladder Step1,State_Province,Nebraska,USA,Income,Income,Single,Top_Range,4030,1,0.0246
+State_Province_Nebraska_Income_Single_Bot_Range_Ladder Step2,State_Province,Nebraska,USA,Income,Income,Single,Bot_Range,4030,2,0.0351
+State_Province_Nebraska_Income_Single_Top_Range_Ladder Step2,State_Province,Nebraska,USA,Income,Income,Single,Top_Range,24120,2,0.0351
+State_Province_Nebraska_Income_Single_Bot_Range_Ladder Step3,State_Province,Nebraska,USA,Income,Income,Single,Bot_Range,24120,3,0.0501
+State_Province_Nebraska_Income_Single_Top_Range_Ladder Step3,State_Province,Nebraska,USA,Income,Income,Single,Top_Range,38870,3,0.0501
+State_Province_Nebraska_Income_Single_Bot_Range_Ladder Step4,State_Province,Nebraska,USA,Income,Income,Single,Bot_Range,38870,4,0.0520
+State_Province_Nebraska_Income_Single_Top_Range_Ladder Step4,State_Province,Nebraska,USA,Income,Income,Single,Top_Range,99999999,4,0.0520
+State_Province_Nebraska_Income_Married_Bot_Range_Ladder Step1,State_Province,Nebraska,USA,Income,Income,Married,Bot_Range,0,1,0.0246
+State_Province_Nebraska_Income_Married_Top_Range_Ladder Step1,State_Province,Nebraska,USA,Income,Income,Married,Top_Range,8040,1,0.0246
+State_Province_Nebraska_Income_Married_Bot_Range_Ladder Step2,State_Province,Nebraska,USA,Income,Income,Married,Bot_Range,8040,2,0.0351
+State_Province_Nebraska_Income_Married_Top_Range_Ladder Step2,State_Province,Nebraska,USA,Income,Income,Married,Top_Range,48250,2,0.0351
+State_Province_Nebraska_Income_Married_Bot_Range_Ladder Step3,State_Province,Nebraska,USA,Income,Income,Married,Bot_Range,48250,3,0.0501
+State_Province_Nebraska_Income_Married_Top_Range_Ladder Step3,State_Province,Nebraska,USA,Income,Income,Married,Top_Range,77730,3,0.0501
+State_Province_Nebraska_Income_Married_Bot_Range_Ladder Step4,State_Province,Nebraska,USA,Income,Income,Married,Bot_Range,77730,4,0.0520
+State_Province_Nebraska_Income_Married_Top_Range_Ladder Step4,State_Province,Nebraska,USA,Income,Income,Married,Top_Range,99999999,4,0.0520
+State_Province_New Jersey_Income_Single_Bot_Range_Ladder Step1,State_Province,New Jersey,USA,Income,Income,Single,Bot_Range,0,1,0.0140
+State_Province_New Jersey_Income_Single_Top_Range_Ladder Step1,State_Province,New Jersey,USA,Income,Income,Single,Top_Range,20000,1,0.0140
+State_Province_New Jersey_Income_Single_Bot_Range_Ladder Step2,State_Province,New Jersey,USA,Income,Income,Single,Bot_Range,20000,2,0.0175
+State_Province_New Jersey_Income_Single_Top_Range_Ladder Step2,State_Province,New Jersey,USA,Income,Income,Single,Top_Range,35000,2,0.0175
+State_Province_New Jersey_Income_Single_Bot_Range_Ladder Step3,State_Province,New Jersey,USA,Income,Income,Single,Bot_Range,35000,3,0.0350
+State_Province_New Jersey_Income_Single_Top_Range_Ladder Step3,State_Province,New Jersey,USA,Income,Income,Single,Top_Range,40000,3,0.0350
+State_Province_New Jersey_Income_Single_Bot_Range_Ladder Step4,State_Province,New Jersey,USA,Income,Income,Single,Bot_Range,40000,4,0.0553
+State_Province_New Jersey_Income_Single_Top_Range_Ladder Step4,State_Province,New Jersey,USA,Income,Income,Single,Top_Range,75000,4,0.0553
+State_Province_New Jersey_Income_Single_Bot_Range_Ladder Step5,State_Province,New Jersey,USA,Income,Income,Single,Bot_Range,75000,5,0.0637
+State_Province_New Jersey_Income_Single_Top_Range_Ladder Step5,State_Province,New Jersey,USA,Income,Income,Single,Top_Range,500000,5,0.0637
+State_Province_New Jersey_Income_Single_Bot_Range_Ladder Step6,State_Province,New Jersey,USA,Income,Income,Single,Bot_Range,500000,6,0.0897
+State_Province_New Jersey_Income_Single_Top_Range_Ladder Step6,State_Province,New Jersey,USA,Income,Income,Single,Top_Range,1000000,6,0.0897
+State_Province_New Jersey_Income_Single_Bot_Range_Ladder Step7,State_Province,New Jersey,USA,Income,Income,Single,Bot_Range,1000000,7,0.1075
+State_Province_New Jersey_Income_Single_Top_Range_Ladder Step7,State_Province,New Jersey,USA,Income,Income,Single,Top_Range,99999999,7,0.1075
+State_Province_New Jersey_Income_Married_Bot_Range_Ladder Step1,State_Province,New Jersey,USA,Income,Income,Married,Bot_Range,0,1,0.0140
+State_Province_New Jersey_Income_Married_Top_Range_Ladder Step1,State_Province,New Jersey,USA,Income,Income,Married,Top_Range,20000,1,0.0140
+State_Province_New Jersey_Income_Married_Bot_Range_Ladder Step2,State_Province,New Jersey,USA,Income,Income,Married,Bot_Range,20000,2,0.0175
+State_Province_New Jersey_Income_Married_Top_Range_Ladder Step2,State_Province,New Jersey,USA,Income,Income,Married,Top_Range,50000,2,0.0175
+State_Province_New Jersey_Income_Married_Bot_Range_Ladder Step3,State_Province,New Jersey,USA,Income,Income,Married,Bot_Range,50000,3,0.0245
+State_Province_New Jersey_Income_Married_Top_Range_Ladder Step3,State_Province,New Jersey,USA,Income,Income,Married,Top_Range,70000,3,0.0245
+State_Province_New Jersey_Income_Married_Bot_Range_Ladder Step4,State_Province,New Jersey,USA,Income,Income,Married,Bot_Range,70000,4,0.0350
+State_Province_New Jersey_Income_Married_Top_Range_Ladder Step4,State_Province,New Jersey,USA,Income,Income,Married,Top_Range,80000,4,0.0350
+State_Province_New Jersey_Income_Married_Bot_Range_Ladder Step5,State_Province,New Jersey,USA,Income,Income,Married,Bot_Range,80000,5,0.0553
+State_Province_New Jersey_Income_Married_Top_Range_Ladder Step5,State_Province,New Jersey,USA,Income,Income,Married,Top_Range,150000,5,0.0553
+State_Province_New Jersey_Income_Married_Bot_Range_Ladder Step6,State_Province,New Jersey,USA,Income,Income,Married,Bot_Range,150000,6,0.0637
+State_Province_New Jersey_Income_Married_Top_Range_Ladder Step6,State_Province,New Jersey,USA,Income,Income,Married,Top_Range,500000,6,0.0637
+State_Province_New Jersey_Income_Married_Bot_Range_Ladder Step7,State_Province,New Jersey,USA,Income,Income,Married,Bot_Range,500000,7,0.0897
+State_Province_New Jersey_Income_Married_Top_Range_Ladder Step7,State_Province,New Jersey,USA,Income,Income,Married,Top_Range,99999999,7,0.0897
+State_Province_New Mexico_Income_Single_Bot_Range_Ladder Step1,State_Province,New Mexico,USA,Income,Income,Single,Bot_Range,0,1,0.0150
+State_Province_New Mexico_Income_Single_Top_Range_Ladder Step1,State_Province,New Mexico,USA,Income,Income,Single,Top_Range,5500,1,0.0150
+State_Province_New Mexico_Income_Single_Bot_Range_Ladder Step2,State_Province,New Mexico,USA,Income,Income,Single,Bot_Range,5500,2,0.0320
+State_Province_New Mexico_Income_Single_Top_Range_Ladder Step2,State_Province,New Mexico,USA,Income,Income,Single,Top_Range,16500,2,0.0320
+State_Province_New Mexico_Income_Single_Bot_Range_Ladder Step3,State_Province,New Mexico,USA,Income,Income,Single,Bot_Range,16500,3,0.0430
+State_Province_New Mexico_Income_Single_Top_Range_Ladder Step3,State_Province,New Mexico,USA,Income,Income,Single,Top_Range,33500,3,0.0430
+State_Province_New Mexico_Income_Single_Bot_Range_Ladder Step4,State_Province,New Mexico,USA,Income,Income,Single,Bot_Range,33500,4,0.0470
+State_Province_New Mexico_Income_Single_Top_Range_Ladder Step4,State_Province,New Mexico,USA,Income,Income,Single,Top_Range,66500,4,0.0470
+State_Province_New Mexico_Income_Single_Bot_Range_Ladder Step5,State_Province,New Mexico,USA,Income,Income,Single,Bot_Range,66500,5,0.0490
+State_Province_New Mexico_Income_Single_Top_Range_Ladder Step5,State_Province,New Mexico,USA,Income,Income,Single,Top_Range,210000,5,0.0490
+State_Province_New Mexico_Income_Single_Bot_Range_Ladder Step6,State_Province,New Mexico,USA,Income,Income,Single,Bot_Range,210000,6,0.0590
+State_Province_New Mexico_Income_Single_Top_Range_Ladder Step6,State_Province,New Mexico,USA,Income,Income,Single,Top_Range,99999999,6,0.0590
+State_Province_New Mexico_Income_Married_Bot_Range_Ladder Step1,State_Province,New Mexico,USA,Income,Income,Married,Bot_Range,0,1,0.0150
+State_Province_New Mexico_Income_Married_Top_Range_Ladder Step1,State_Province,New Mexico,USA,Income,Income,Married,Top_Range,8000,1,0.0150
+State_Province_New Mexico_Income_Married_Bot_Range_Ladder Step2,State_Province,New Mexico,USA,Income,Income,Married,Bot_Range,8000,2,0.0320
+State_Province_New Mexico_Income_Married_Top_Range_Ladder Step2,State_Province,New Mexico,USA,Income,Income,Married,Top_Range,25000,2,0.0320
+State_Province_New Mexico_Income_Married_Bot_Range_Ladder Step3,State_Province,New Mexico,USA,Income,Income,Married,Bot_Range,25000,3,0.0430
+State_Province_New Mexico_Income_Married_Top_Range_Ladder Step3,State_Province,New Mexico,USA,Income,Income,Married,Top_Range,50000,3,0.0430
+State_Province_New Mexico_Income_Married_Bot_Range_Ladder Step4,State_Province,New Mexico,USA,Income,Income,Married,Bot_Range,50000,4,0.0470
+State_Province_New Mexico_Income_Married_Top_Range_Ladder Step4,State_Province,New Mexico,USA,Income,Income,Married,Top_Range,100000,4,0.0470
+State_Province_New Mexico_Income_Married_Bot_Range_Ladder Step5,State_Province,New Mexico,USA,Income,Income,Married,Bot_Range,100000,5,0.0490
+State_Province_New Mexico_Income_Married_Top_Range_Ladder Step5,State_Province,New Mexico,USA,Income,Income,Married,Top_Range,315000,5,0.0490
+State_Province_New Mexico_Income_Married_Bot_Range_Ladder Step6,State_Province,New Mexico,USA,Income,Income,Married,Bot_Range,315000,6,0.0590
+State_Province_New Mexico_Income_Married_Top_Range_Ladder Step6,State_Province,New Mexico,USA,Income,Income,Married,Top_Range,99999999,6,0.0590
+State_Province_New York_Income_Single_Bot_Range_Ladder Step1,State_Province,New York,USA,Income,Income,Single,Bot_Range,0,1,0.0400
+State_Province_New York_Income_Single_Top_Range_Ladder Step1,State_Province,New York,USA,Income,Income,Single,Top_Range,8500,1,0.0400
+State_Province_New York_Income_Single_Bot_Range_Ladder Step2,State_Province,New York,USA,Income,Income,Single,Bot_Range,8500,2,0.0450
+State_Province_New York_Income_Single_Top_Range_Ladder Step2,State_Province,New York,USA,Income,Income,Single,Top_Range,11700,2,0.0450
+State_Province_New York_Income_Single_Bot_Range_Ladder Step3,State_Province,New York,USA,Income,Income,Single,Bot_Range,11700,3,0.0525
+State_Province_New York_Income_Single_Top_Range_Ladder Step3,State_Province,New York,USA,Income,Income,Single,Top_Range,13900,3,0.0525
+State_Province_New York_Income_Single_Bot_Range_Ladder Step4,State_Province,New York,USA,Income,Income,Single,Bot_Range,13900,4,0.0550
+State_Province_New York_Income_Single_Top_Range_Ladder Step4,State_Province,New York,USA,Income,Income,Single,Top_Range,80650,4,0.0550
+State_Province_New York_Income_Single_Bot_Range_Ladder Step5,State_Province,New York,USA,Income,Income,Single,Bot_Range,80650,5,0.0600
+State_Province_New York_Income_Single_Top_Range_Ladder Step5,State_Province,New York,USA,Income,Income,Single,Top_Range,215400,5,0.0600
+State_Province_New York_Income_Single_Bot_Range_Ladder Step6,State_Province,New York,USA,Income,Income,Single,Bot_Range,215400,6,0.0685
+State_Province_New York_Income_Single_Top_Range_Ladder Step6,State_Province,New York,USA,Income,Income,Single,Top_Range,1077550,6,0.0685
+State_Province_New York_Income_Single_Bot_Range_Ladder Step7,State_Province,New York,USA,Income,Income,Single,Bot_Range,1077550,7,0.0965
+State_Province_New York_Income_Single_Top_Range_Ladder Step7,State_Province,New York,USA,Income,Income,Single,Top_Range,5000000,7,0.0965
+State_Province_New York_Income_Single_Bot_Range_Ladder Step8,State_Province,New York,USA,Income,Income,Single,Bot_Range,5000000,8,0.1030
+State_Province_New York_Income_Single_Top_Range_Ladder Step8,State_Province,New York,USA,Income,Income,Single,Top_Range,25000000,8,0.1030
+State_Province_New York_Income_Single_Bot_Range_Ladder Step9,State_Province,New York,USA,Income,Income,Single,Bot_Range,25000000,9,0.1090
+State_Province_New York_Income_Single_Top_Range_Ladder Step9,State_Province,New York,USA,Income,Income,Single,Top_Range,99999999,9,0.1090
+State_Province_New York_Income_Married_Bot_Range_Ladder Step1,State_Province,New York,USA,Income,Income,Married,Bot_Range,0,1,0.0400
+State_Province_New York_Income_Married_Top_Range_Ladder Step1,State_Province,New York,USA,Income,Income,Married,Top_Range,17150,1,0.0400
+State_Province_New York_Income_Married_Bot_Range_Ladder Step2,State_Province,New York,USA,Income,Income,Married,Bot_Range,17150,2,0.0450
+State_Province_New York_Income_Married_Top_Range_Ladder Step2,State_Province,New York,USA,Income,Income,Married,Top_Range,23600,2,0.0450
+State_Province_New York_Income_Married_Bot_Range_Ladder Step3,State_Province,New York,USA,Income,Income,Married,Bot_Range,23600,3,0.0525
+State_Province_New York_Income_Married_Top_Range_Ladder Step3,State_Province,New York,USA,Income,Income,Married,Top_Range,27900,3,0.0525
+State_Province_New York_Income_Married_Bot_Range_Ladder Step4,State_Province,New York,USA,Income,Income,Married,Bot_Range,27900,4,0.0550
+State_Province_New York_Income_Married_Top_Range_Ladder Step4,State_Province,New York,USA,Income,Income,Married,Top_Range,161550,4,0.0550
+State_Province_New York_Income_Married_Bot_Range_Ladder Step5,State_Province,New York,USA,Income,Income,Married,Bot_Range,161550,5,0.0600
+State_Province_New York_Income_Married_Top_Range_Ladder Step5,State_Province,New York,USA,Income,Income,Married,Top_Range,323200,5,0.0600
+State_Province_New York_Income_Married_Bot_Range_Ladder Step6,State_Province,New York,USA,Income,Income,Married,Bot_Range,323200,6,0.0685
+State_Province_New York_Income_Married_Top_Range_Ladder Step6,State_Province,New York,USA,Income,Income,Married,Top_Range,2155350,6,0.0685
+State_Province_New York_Income_Married_Bot_Range_Ladder Step7,State_Province,New York,USA,Income,Income,Married,Bot_Range,2155350,7,0.0965
+State_Province_New York_Income_Married_Top_Range_Ladder Step7,State_Province,New York,USA,Income,Income,Married,Top_Range,5000000,7,0.0965
+State_Province_New York_Income_Married_Bot_Range_Ladder Step8,State_Province,New York,USA,Income,Income,Married,Bot_Range,5000000,8,0.1030
+State_Province_New York_Income_Married_Top_Range_Ladder Step8,State_Province,New York,USA,Income,Income,Married,Top_Range,25000000,8,0.1030
+State_Province_New York_Income_Married_Bot_Range_Ladder Step9,State_Province,New York,USA,Income,Income,Married,Bot_Range,25000000,9,0.1090
+State_Province_New York_Income_Married_Top_Range_Ladder Step9,State_Province,New York,USA,Income,Income,Married,Top_Range,99999999,9,0.1090
+State_Province_North Dakota_Income_Single_Bot_Range_Ladder Step1,State_Province,North Dakota,USA,Income,Income,Single,Bot_Range,48475,1,0.0195
+State_Province_North Dakota_Income_Single_Top_Range_Ladder Step1,State_Province,North Dakota,USA,Income,Income,Single,Top_Range,244825,1,0.0195
+State_Province_North Dakota_Income_Single_Bot_Range_Ladder Step2,State_Province,North Dakota,USA,Income,Income,Single,Bot_Range,244825,2,0.0250
+State_Province_North Dakota_Income_Single_Top_Range_Ladder Step2,State_Province,North Dakota,USA,Income,Income,Single,Top_Range,99999999,2,0.0250
+State_Province_North Dakota_Income_Married_Bot_Range_Ladder Step1,State_Province,North Dakota,USA,Income,Income,Married,Bot_Range,80975,1,0.0195
+State_Province_North Dakota_Income_Married_Top_Range_Ladder Step1,State_Province,North Dakota,USA,Income,Income,Married,Top_Range,298075,1,0.0195
+State_Province_North Dakota_Income_Married_Bot_Range_Ladder Step2,State_Province,North Dakota,USA,Income,Income,Married,Bot_Range,298075,2,0.0250
+State_Province_North Dakota_Income_Married_Top_Range_Ladder Step2,State_Province,North Dakota,USA,Income,Income,Married,Top_Range,99999999,2,0.0250
+State_Province_Ohio_Income_Single_Bot_Range_Ladder Step1,State_Province,Ohio,USA,Income,Income,Single,Bot_Range,26050,1,0.0275
+State_Province_Ohio_Income_Single_Top_Range_Ladder Step1,State_Province,Ohio,USA,Income,Income,Single,Top_Range,100000,1,0.0275
+State_Province_Ohio_Income_Single_Bot_Range_Ladder Step2,State_Province,Ohio,USA,Income,Income,Single,Bot_Range,100000,2,0.0350
+State_Province_Ohio_Income_Single_Top_Range_Ladder Step2,State_Province,Ohio,USA,Income,Income,Single,Top_Range,99999999,2,0.0350
+State_Province_Ohio_Income_Married_Bot_Range_Ladder Step1,State_Province,Ohio,USA,Income,Income,Married,Bot_Range,26050,1,0.0275
+State_Province_Ohio_Income_Married_Top_Range_Ladder Step1,State_Province,Ohio,USA,Income,Income,Married,Top_Range,100000,1,0.0275
+State_Province_Ohio_Income_Married_Bot_Range_Ladder Step2,State_Province,Ohio,USA,Income,Income,Married,Bot_Range,100000,2,0.0350
+State_Province_Ohio_Income_Married_Top_Range_Ladder Step2,State_Province,Ohio,USA,Income,Income,Married,Top_Range,99999999,2,0.0350
+State_Province_Oklahoma_Income_Single_Bot_Range_Ladder Step1,State_Province,Oklahoma,USA,Income,Income,Single,Bot_Range,0,1,0.0025
+State_Province_Oklahoma_Income_Single_Top_Range_Ladder Step1,State_Province,Oklahoma,USA,Income,Income,Single,Top_Range,1000,1,0.0025
+State_Province_Oklahoma_Income_Single_Bot_Range_Ladder Step2,State_Province,Oklahoma,USA,Income,Income,Single,Bot_Range,1000,2,0.0075
+State_Province_Oklahoma_Income_Single_Top_Range_Ladder Step2,State_Province,Oklahoma,USA,Income,Income,Single,Top_Range,2500,2,0.0075
+State_Province_Oklahoma_Income_Single_Bot_Range_Ladder Step3,State_Province,Oklahoma,USA,Income,Income,Single,Bot_Range,2500,3,0.0175
+State_Province_Oklahoma_Income_Single_Top_Range_Ladder Step3,State_Province,Oklahoma,USA,Income,Income,Single,Top_Range,3750,3,0.0175
+State_Province_Oklahoma_Income_Single_Bot_Range_Ladder Step4,State_Province,Oklahoma,USA,Income,Income,Single,Bot_Range,3750,4,0.0275
+State_Province_Oklahoma_Income_Single_Top_Range_Ladder Step4,State_Province,Oklahoma,USA,Income,Income,Single,Top_Range,4900,4,0.0275
+State_Province_Oklahoma_Income_Single_Bot_Range_Ladder Step5,State_Province,Oklahoma,USA,Income,Income,Single,Bot_Range,4900,5,0.0375
+State_Province_Oklahoma_Income_Single_Top_Range_Ladder Step5,State_Province,Oklahoma,USA,Income,Income,Single,Top_Range,7200,5,0.0375
+State_Province_Oklahoma_Income_Single_Bot_Range_Ladder Step6,State_Province,Oklahoma,USA,Income,Income,Single,Bot_Range,7200,6,0.0475
+State_Province_Oklahoma_Income_Single_Top_Range_Ladder Step6,State_Province,Oklahoma,USA,Income,Income,Single,Top_Range,99999999,6,0.0475
+State_Province_Oklahoma_Income_Married_Bot_Range_Ladder Step1,State_Province,Oklahoma,USA,Income,Income,Married,Bot_Range,0,1,0.0025
+State_Province_Oklahoma_Income_Married_Top_Range_Ladder Step1,State_Province,Oklahoma,USA,Income,Income,Married,Top_Range,2000,1,0.0025
+State_Province_Oklahoma_Income_Married_Bot_Range_Ladder Step2,State_Province,Oklahoma,USA,Income,Income,Married,Bot_Range,2000,2,0.0075
+State_Province_Oklahoma_Income_Married_Top_Range_Ladder Step2,State_Province,Oklahoma,USA,Income,Income,Married,Top_Range,5000,2,0.0075
+State_Province_Oklahoma_Income_Married_Bot_Range_Ladder Step3,State_Province,Oklahoma,USA,Income,Income,Married,Bot_Range,5000,3,0.0175
+State_Province_Oklahoma_Income_Married_Top_Range_Ladder Step3,State_Province,Oklahoma,USA,Income,Income,Married,Top_Range,7500,3,0.0175
+State_Province_Oklahoma_Income_Married_Bot_Range_Ladder Step4,State_Province,Oklahoma,USA,Income,Income,Married,Bot_Range,7500,4,0.0275
+State_Province_Oklahoma_Income_Married_Top_Range_Ladder Step4,State_Province,Oklahoma,USA,Income,Income,Married,Top_Range,9800,4,0.0275
+State_Province_Oklahoma_Income_Married_Bot_Range_Ladder Step5,State_Province,Oklahoma,USA,Income,Income,Married,Bot_Range,9800,5,0.0375
+State_Province_Oklahoma_Income_Married_Top_Range_Ladder Step5,State_Province,Oklahoma,USA,Income,Income,Married,Top_Range,14400,5,0.0375
+State_Province_Oklahoma_Income_Married_Bot_Range_Ladder Step6,State_Province,Oklahoma,USA,Income,Income,Married,Bot_Range,14400,6,0.0475
+State_Province_Oklahoma_Income_Married_Top_Range_Ladder Step6,State_Province,Oklahoma,USA,Income,Income,Married,Top_Range,99999999,6,0.0475
+State_Province_Oregon_Income_Single_Bot_Range_Ladder Step1,State_Province,Oregon,USA,Income,Income,Single,Bot_Range,0,1,0.0475
+State_Province_Oregon_Income_Single_Top_Range_Ladder Step1,State_Province,Oregon,USA,Income,Income,Single,Top_Range,4400,1,0.0475
+State_Province_Oregon_Income_Single_Bot_Range_Ladder Step2,State_Province,Oregon,USA,Income,Income,Single,Bot_Range,4400,2,0.0675
+State_Province_Oregon_Income_Single_Top_Range_Ladder Step2,State_Province,Oregon,USA,Income,Income,Single,Top_Range,11050,2,0.0675
+State_Province_Oregon_Income_Single_Bot_Range_Ladder Step3,State_Province,Oregon,USA,Income,Income,Single,Bot_Range,11050,3,0.0875
+State_Province_Oregon_Income_Single_Top_Range_Ladder Step3,State_Province,Oregon,USA,Income,Income,Single,Top_Range,125000,3,0.0875
+State_Province_Oregon_Income_Single_Bot_Range_Ladder Step4,State_Province,Oregon,USA,Income,Income,Single,Bot_Range,125000,4,0.0990
+State_Province_Oregon_Income_Single_Top_Range_Ladder Step4,State_Province,Oregon,USA,Income,Income,Single,Top_Range,99999999,4,0.0990
+State_Province_Oregon_Income_Married_Bot_Range_Ladder Step1,State_Province,Oregon,USA,Income,Income,Married,Bot_Range,0,1,0.0475
+State_Province_Oregon_Income_Married_Top_Range_Ladder Step1,State_Province,Oregon,USA,Income,Income,Married,Top_Range,8800,1,0.0475
+State_Province_Oregon_Income_Married_Bot_Range_Ladder Step2,State_Province,Oregon,USA,Income,Income,Married,Bot_Range,8800,2,0.0675
+State_Province_Oregon_Income_Married_Top_Range_Ladder Step2,State_Province,Oregon,USA,Income,Income,Married,Top_Range,22100,2,0.0675
+State_Province_Oregon_Income_Married_Bot_Range_Ladder Step3,State_Province,Oregon,USA,Income,Income,Married,Bot_Range,22100,3,0.0875
+State_Province_Oregon_Income_Married_Top_Range_Ladder Step3,State_Province,Oregon,USA,Income,Income,Married,Top_Range,250000,3,0.0875
+State_Province_Oregon_Income_Married_Bot_Range_Ladder Step4,State_Province,Oregon,USA,Income,Income,Married,Bot_Range,250000,4,0.0990
+State_Province_Oregon_Income_Married_Top_Range_Ladder Step4,State_Province,Oregon,USA,Income,Income,Married,Top_Range,99999999,4,0.0990
+State_Province_Rhode Island_Income_Single_Bot_Range_Ladder Step1,State_Province,Rhode Island,USA,Income,Income,Single,Bot_Range,0,1,0.0375
+State_Province_Rhode Island_Income_Single_Top_Range_Ladder Step1,State_Province,Rhode Island,USA,Income,Income,Single,Top_Range,79900,1,0.0375
+State_Province_Rhode Island_Income_Single_Bot_Range_Ladder Step2,State_Province,Rhode Island,USA,Income,Income,Single,Bot_Range,79900,2,0.0475
+State_Province_Rhode Island_Income_Single_Top_Range_Ladder Step2,State_Province,Rhode Island,USA,Income,Income,Single,Top_Range,181650,2,0.0475
+State_Province_Rhode Island_Income_Single_Bot_Range_Ladder Step3,State_Province,Rhode Island,USA,Income,Income,Single,Bot_Range,181650,3,0.0599
+State_Province_Rhode Island_Income_Single_Top_Range_Ladder Step3,State_Province,Rhode Island,USA,Income,Income,Single,Top_Range,99999999,3,0.0599
+State_Province_Rhode Island_Income_Married_Bot_Range_Ladder Step1,State_Province,Rhode Island,USA,Income,Income,Married,Bot_Range,0,1,0.0375
+State_Province_Rhode Island_Income_Married_Top_Range_Ladder Step1,State_Province,Rhode Island,USA,Income,Income,Married,Top_Range,79900,1,0.0375
+State_Province_Rhode Island_Income_Married_Bot_Range_Ladder Step2,State_Province,Rhode Island,USA,Income,Income,Married,Bot_Range,79900,2,0.0475
+State_Province_Rhode Island_Income_Married_Top_Range_Ladder Step2,State_Province,Rhode Island,USA,Income,Income,Married,Top_Range,181650,2,0.0475
+State_Province_Rhode Island_Income_Married_Bot_Range_Ladder Step3,State_Province,Rhode Island,USA,Income,Income,Married,Bot_Range,181650,3,0.0599
+State_Province_Rhode Island_Income_Married_Top_Range_Ladder Step3,State_Province,Rhode Island,USA,Income,Income,Married,Top_Range,99999999,3,0.0599
+State_Province_South Carolina_Income_Single_Bot_Range_Ladder Step1,State_Province,South Carolina,USA,Income,Income,Single,Bot_Range,0,1,0.0000
+State_Province_South Carolina_Income_Single_Top_Range_Ladder Step1,State_Province,South Carolina,USA,Income,Income,Single,Top_Range,3560,1,0.0000
+State_Province_South Carolina_Income_Single_Bot_Range_Ladder Step2,State_Province,South Carolina,USA,Income,Income,Single,Bot_Range,3560,2,0.0300
+State_Province_South Carolina_Income_Single_Top_Range_Ladder Step2,State_Province,South Carolina,USA,Income,Income,Single,Top_Range,17830,2,0.0300
+State_Province_South Carolina_Income_Single_Bot_Range_Ladder Step3,State_Province,South Carolina,USA,Income,Income,Single,Bot_Range,17830,3,0.0620
+State_Province_South Carolina_Income_Single_Top_Range_Ladder Step3,State_Province,South Carolina,USA,Income,Income,Single,Top_Range,99999999,3,0.0620
+State_Province_South Carolina_Income_Married_Bot_Range_Ladder Step1,State_Province,South Carolina,USA,Income,Income,Married,Bot_Range,0,1,0.0000
+State_Province_South Carolina_Income_Married_Top_Range_Ladder Step1,State_Province,South Carolina,USA,Income,Income,Married,Top_Range,3560,1,0.0000
+State_Province_South Carolina_Income_Married_Bot_Range_Ladder Step2,State_Province,South Carolina,USA,Income,Income,Married,Bot_Range,3560,2,0.0300
+State_Province_South Carolina_Income_Married_Top_Range_Ladder Step2,State_Province,South Carolina,USA,Income,Income,Married,Top_Range,17830,2,0.0300
+State_Province_South Carolina_Income_Married_Bot_Range_Ladder Step3,State_Province,South Carolina,USA,Income,Income,Married,Bot_Range,17830,3,0.0620
+State_Province_South Carolina_Income_Married_Top_Range_Ladder Step3,State_Province,South Carolina,USA,Income,Income,Married,Top_Range,99999999,3,0.0620
+State_Province_Vermont_Income_Single_Bot_Range_Ladder Step1,State_Province,Vermont,USA,Income,Income,Single,Bot_Range,0,1,0.0335
+State_Province_Vermont_Income_Single_Top_Range_Ladder Step1,State_Province,Vermont,USA,Income,Income,Single,Top_Range,47900,1,0.0335
+State_Province_Vermont_Income_Single_Bot_Range_Ladder Step2,State_Province,Vermont,USA,Income,Income,Single,Bot_Range,47900,2,0.0660
+State_Province_Vermont_Income_Single_Top_Range_Ladder Step2,State_Province,Vermont,USA,Income,Income,Single,Top_Range,116000,2,0.0660
+State_Province_Vermont_Income_Single_Bot_Range_Ladder Step3,State_Province,Vermont,USA,Income,Income,Single,Bot_Range,116000,3,0.0760
+State_Province_Vermont_Income_Single_Top_Range_Ladder Step3,State_Province,Vermont,USA,Income,Income,Single,Top_Range,242000,3,0.0760
+State_Province_Vermont_Income_Single_Bot_Range_Ladder Step4,State_Province,Vermont,USA,Income,Income,Single,Bot_Range,242000,4,0.0875
+State_Province_Vermont_Income_Single_Top_Range_Ladder Step4,State_Province,Vermont,USA,Income,Income,Single,Top_Range,99999999,4,0.0875
+State_Province_Vermont_Income_Married_Bot_Range_Ladder Step1,State_Province,Vermont,USA,Income,Income,Married,Bot_Range,0,1,0.0335
+State_Province_Vermont_Income_Married_Top_Range_Ladder Step1,State_Province,Vermont,USA,Income,Income,Married,Top_Range,79950,1,0.0335
+State_Province_Vermont_Income_Married_Bot_Range_Ladder Step2,State_Province,Vermont,USA,Income,Income,Married,Bot_Range,79950,2,0.0660
+State_Province_Vermont_Income_Married_Top_Range_Ladder Step2,State_Province,Vermont,USA,Income,Income,Married,Top_Range,193300,2,0.0660
+State_Province_Vermont_Income_Married_Bot_Range_Ladder Step3,State_Province,Vermont,USA,Income,Income,Married,Bot_Range,193300,3,0.0760
+State_Province_Vermont_Income_Married_Top_Range_Ladder Step3,State_Province,Vermont,USA,Income,Income,Married,Top_Range,294600,3,0.0760
+State_Province_Vermont_Income_Married_Bot_Range_Ladder Step4,State_Province,Vermont,USA,Income,Income,Married,Bot_Range,294600,4,0.0875
+State_Province_Vermont_Income_Married_Top_Range_Ladder Step4,State_Province,Vermont,USA,Income,Income,Married,Top_Range,99999999,4,0.0875
+State_Province_Virginia_Income_Single_Bot_Range_Ladder Step1,State_Province,Virginia,USA,Income,Income,Single,Bot_Range,0,1,0.0200
+State_Province_Virginia_Income_Single_Top_Range_Ladder Step1,State_Province,Virginia,USA,Income,Income,Single,Top_Range,3000,1,0.0200
+State_Province_Virginia_Income_Single_Bot_Range_Ladder Step2,State_Province,Virginia,USA,Income,Income,Single,Bot_Range,3000,2,0.0300
+State_Province_Virginia_Income_Single_Top_Range_Ladder Step2,State_Province,Virginia,USA,Income,Income,Single,Top_Range,5000,2,0.0300
+State_Province_Virginia_Income_Single_Bot_Range_Ladder Step3,State_Province,Virginia,USA,Income,Income,Single,Bot_Range,5000,3,0.0500
+State_Province_Virginia_Income_Single_Top_Range_Ladder Step3,State_Province,Virginia,USA,Income,Income,Single,Top_Range,17000,3,0.0500
+State_Province_Virginia_Income_Single_Bot_Range_Ladder Step4,State_Province,Virginia,USA,Income,Income,Single,Bot_Range,17000,4,0.0575
+State_Province_Virginia_Income_Single_Top_Range_Ladder Step4,State_Province,Virginia,USA,Income,Income,Single,Top_Range,99999999,4,0.0575
+State_Province_Virginia_Income_Married_Bot_Range_Ladder Step1,State_Province,Virginia,USA,Income,Income,Married,Bot_Range,0,1,0.0200
+State_Province_Virginia_Income_Married_Top_Range_Ladder Step1,State_Province,Virginia,USA,Income,Income,Married,Top_Range,3000,1,0.0200
+State_Province_Virginia_Income_Married_Bot_Range_Ladder Step2,State_Province,Virginia,USA,Income,Income,Married,Bot_Range,3000,2,0.0300
+State_Province_Virginia_Income_Married_Top_Range_Ladder Step2,State_Province,Virginia,USA,Income,Income,Married,Top_Range,5000,2,0.0300
+State_Province_Virginia_Income_Married_Bot_Range_Ladder Step3,State_Province,Virginia,USA,Income,Income,Married,Bot_Range,5000,3,0.0500
+State_Province_Virginia_Income_Married_Top_Range_Ladder Step3,State_Province,Virginia,USA,Income,Income,Married,Top_Range,17000,3,0.0500
+State_Province_Virginia_Income_Married_Bot_Range_Ladder Step4,State_Province,Virginia,USA,Income,Income,Married,Bot_Range,17000,4,0.0575
+State_Province_Virginia_Income_Married_Top_Range_Ladder Step4,State_Province,Virginia,USA,Income,Income,Married,Top_Range,99999999,4,0.0575
+State_Province_Washington DC_Income_Single_Bot_Range_Ladder Step1,State_Province,Washington DC,USA,Income,Income,Single,Bot_Range,0,1,0.0400
+State_Province_Washington DC_Income_Single_Top_Range_Ladder Step1,State_Province,Washington DC,USA,Income,Income,Single,Top_Range,10000,1,0.0400
+State_Province_Washington DC_Income_Single_Bot_Range_Ladder Step2,State_Province,Washington DC,USA,Income,Income,Single,Bot_Range,10000,2,0.0600
+State_Province_Washington DC_Income_Single_Top_Range_Ladder Step2,State_Province,Washington DC,USA,Income,Income,Single,Top_Range,40000,2,0.0600
+State_Province_Washington DC_Income_Single_Bot_Range_Ladder Step3,State_Province,Washington DC,USA,Income,Income,Single,Bot_Range,40000,3,0.0650
+State_Province_Washington DC_Income_Single_Top_Range_Ladder Step3,State_Province,Washington DC,USA,Income,Income,Single,Top_Range,60000,3,0.0650
+State_Province_Washington DC_Income_Single_Bot_Range_Ladder Step4,State_Province,Washington DC,USA,Income,Income,Single,Bot_Range,60000,4,0.0850
+State_Province_Washington DC_Income_Single_Top_Range_Ladder Step4,State_Province,Washington DC,USA,Income,Income,Single,Top_Range,250000,4,0.0850
+State_Province_Washington DC_Income_Single_Bot_Range_Ladder Step5,State_Province,Washington DC,USA,Income,Income,Single,Bot_Range,250000,5,0.0925
+State_Province_Washington DC_Income_Single_Top_Range_Ladder Step5,State_Province,Washington DC,USA,Income,Income,Single,Top_Range,500000,5,0.0925
+State_Province_Washington DC_Income_Single_Bot_Range_Ladder Step6,State_Province,Washington DC,USA,Income,Income,Single,Bot_Range,500000,6,0.0975
+State_Province_Washington DC_Income_Single_Top_Range_Ladder Step6,State_Province,Washington DC,USA,Income,Income,Single,Top_Range,1000000,6,0.0975
+State_Province_Washington DC_Income_Single_Bot_Range_Ladder Step7,State_Province,Washington DC,USA,Income,Income,Single,Bot_Range,1000000,7,0.1075
+State_Province_Washington DC_Income_Single_Top_Range_Ladder Step7,State_Province,Washington DC,USA,Income,Income,Single,Top_Range,99999999,7,0.1075
+State_Province_Washington DC_Income_Married_Bot_Range_Ladder Step1,State_Province,Washington DC,USA,Income,Income,Married,Bot_Range,0,1,0.0400
+State_Province_Washington DC_Income_Married_Top_Range_Ladder Step1,State_Province,Washington DC,USA,Income,Income,Married,Top_Range,10000,1,0.0400
+State_Province_Washington DC_Income_Married_Bot_Range_Ladder Step2,State_Province,Washington DC,USA,Income,Income,Married,Bot_Range,10000,2,0.0600
+State_Province_Washington DC_Income_Married_Top_Range_Ladder Step2,State_Province,Washington DC,USA,Income,Income,Married,Top_Range,40000,2,0.0600
+State_Province_Washington DC_Income_Married_Bot_Range_Ladder Step3,State_Province,Washington DC,USA,Income,Income,Married,Bot_Range,40000,3,0.0650
+State_Province_Washington DC_Income_Married_Top_Range_Ladder Step3,State_Province,Washington DC,USA,Income,Income,Married,Top_Range,60000,3,0.0650
+State_Province_Washington DC_Income_Married_Bot_Range_Ladder Step4,State_Province,Washington DC,USA,Income,Income,Married,Bot_Range,60000,4,0.0850
+State_Province_Washington DC_Income_Married_Top_Range_Ladder Step4,State_Province,Washington DC,USA,Income,Income,Married,Top_Range,250000,4,0.0850
+State_Province_Washington DC_Income_Married_Bot_Range_Ladder Step5,State_Province,Washington DC,USA,Income,Income,Married,Bot_Range,250000,5,0.0925
+State_Province_Washington DC_Income_Married_Top_Range_Ladder Step5,State_Province,Washington DC,USA,Income,Income,Married,Top_Range,500000,5,0.0925
+State_Province_Washington DC_Income_Married_Bot_Range_Ladder Step6,State_Province,Washington DC,USA,Income,Income,Married,Bot_Range,500000,6,0.0975
+State_Province_Washington DC_Income_Married_Top_Range_Ladder Step6,State_Province,Washington DC,USA,Income,Income,Married,Top_Range,1000000,6,0.0975
+State_Province_Washington DC_Income_Married_Bot_Range_Ladder Step7,State_Province,Washington DC,USA,Income,Income,Married,Bot_Range,1000000,7,0.1075
+State_Province_Washington DC_Income_Married_Top_Range_Ladder Step7,State_Province,Washington DC,USA,Income,Income,Married,Top_Range,99999999,7,0.1075
+State_Province_West Virginia_Income_Single_Bot_Range_Ladder Step1,State_Province,West Virginia,USA,Income,Income,Single,Bot_Range,0,1,0.0222
+State_Province_West Virginia_Income_Single_Top_Range_Ladder Step1,State_Province,West Virginia,USA,Income,Income,Single,Top_Range,10000,1,0.0222
+State_Province_West Virginia_Income_Single_Bot_Range_Ladder Step2,State_Province,West Virginia,USA,Income,Income,Single,Bot_Range,10000,2,0.0296
+State_Province_West Virginia_Income_Single_Top_Range_Ladder Step2,State_Province,West Virginia,USA,Income,Income,Single,Top_Range,25000,2,0.0296
+State_Province_West Virginia_Income_Single_Bot_Range_Ladder Step3,State_Province,West Virginia,USA,Income,Income,Single,Bot_Range,25000,3,0.0333
+State_Province_West Virginia_Income_Single_Top_Range_Ladder Step3,State_Province,West Virginia,USA,Income,Income,Single,Top_Range,40000,3,0.0333
+State_Province_West Virginia_Income_Single_Bot_Range_Ladder Step4,State_Province,West Virginia,USA,Income,Income,Single,Bot_Range,40000,4,0.0444
+State_Province_West Virginia_Income_Single_Top_Range_Ladder Step4,State_Province,West Virginia,USA,Income,Income,Single,Top_Range,60000,4,0.0444
+State_Province_West Virginia_Income_Single_Bot_Range_Ladder Step5,State_Province,West Virginia,USA,Income,Income,Single,Bot_Range,60000,5,0.0482
+State_Province_West Virginia_Income_Single_Top_Range_Ladder Step5,State_Province,West Virginia,USA,Income,Income,Single,Top_Range,99999999,5,0.0482
+State_Province_West Virginia_Income_Married_Bot_Range_Ladder Step1,State_Province,West Virginia,USA,Income,Income,Married,Bot_Range,0,1,0.0222
+State_Province_West Virginia_Income_Married_Top_Range_Ladder Step1,State_Province,West Virginia,USA,Income,Income,Married,Top_Range,10000,1,0.0222
+State_Province_West Virginia_Income_Married_Bot_Range_Ladder Step2,State_Province,West Virginia,USA,Income,Income,Married,Bot_Range,10000,2,0.0296
+State_Province_West Virginia_Income_Married_Top_Range_Ladder Step2,State_Province,West Virginia,USA,Income,Income,Married,Top_Range,25000,2,0.0296
+State_Province_West Virginia_Income_Married_Bot_Range_Ladder Step3,State_Province,West Virginia,USA,Income,Income,Married,Bot_Range,25000,3,0.0333
+State_Province_West Virginia_Income_Married_Top_Range_Ladder Step3,State_Province,West Virginia,USA,Income,Income,Married,Top_Range,40000,3,0.0333
+State_Province_West Virginia_Income_Married_Bot_Range_Ladder Step4,State_Province,West Virginia,USA,Income,Income,Married,Bot_Range,40000,4,0.0444
+State_Province_West Virginia_Income_Married_Top_Range_Ladder Step4,State_Province,West Virginia,USA,Income,Income,Married,Top_Range,60000,4,0.0444
+State_Province_West Virginia_Income_Married_Bot_Range_Ladder Step5,State_Province,West Virginia,USA,Income,Income,Married,Bot_Range,60000,5,0.0482
+State_Province_West Virginia_Income_Married_Top_Range_Ladder Step5,State_Province,West Virginia,USA,Income,Income,Married,Top_Range,99999999,5,0.0482
+State_Province_Wisconsin_Income_Single_Bot_Range_Ladder Step1,State_Province,Wisconsin,USA,Income,Income,Single,Bot_Range,0,1,0.0350
+State_Province_Wisconsin_Income_Single_Top_Range_Ladder Step1,State_Province,Wisconsin,USA,Income,Income,Single,Top_Range,14680,1,0.0350
+State_Province_Wisconsin_Income_Single_Bot_Range_Ladder Step2,State_Province,Wisconsin,USA,Income,Income,Single,Bot_Range,14680,2,0.0440
+State_Province_Wisconsin_Income_Single_Top_Range_Ladder Step2,State_Province,Wisconsin,USA,Income,Income,Single,Top_Range,29370,2,0.0440
+State_Province_Wisconsin_Income_Single_Bot_Range_Ladder Step3,State_Province,Wisconsin,USA,Income,Income,Single,Bot_Range,29370,3,0.0530
+State_Province_Wisconsin_Income_Single_Top_Range_Ladder Step3,State_Province,Wisconsin,USA,Income,Income,Single,Top_Range,323290,3,0.0530
+State_Province_Wisconsin_Income_Single_Bot_Range_Ladder Step4,State_Province,Wisconsin,USA,Income,Income,Single,Bot_Range,323290,4,0.0765
+State_Province_Wisconsin_Income_Single_Top_Range_Ladder Step4,State_Province,Wisconsin,USA,Income,Income,Single,Top_Range,99999999,4,0.0765
+State_Province_Wisconsin_Income_Married_Bot_Range_Ladder Step1,State_Province,Wisconsin,USA,Income,Income,Married,Bot_Range,0,1,0.0350
+State_Province_Wisconsin_Income_Married_Top_Range_Ladder Step1,State_Province,Wisconsin,USA,Income,Income,Married,Top_Range,19580,1,0.0350
+State_Province_Wisconsin_Income_Married_Bot_Range_Ladder Step2,State_Province,Wisconsin,USA,Income,Income,Married,Bot_Range,19580,2,0.0440
+State_Province_Wisconsin_Income_Married_Top_Range_Ladder Step2,State_Province,Wisconsin,USA,Income,Income,Married,Top_Range,39150,2,0.0440
+State_Province_Wisconsin_Income_Married_Bot_Range_Ladder Step3,State_Province,Wisconsin,USA,Income,Income,Married,Bot_Range,39150,3,0.0530
+State_Province_Wisconsin_Income_Married_Top_Range_Ladder Step3,State_Province,Wisconsin,USA,Income,Income,Married,Top_Range,431060,3,0.0530
+State_Province_Wisconsin_Income_Married_Bot_Range_Ladder Step4,State_Province,Wisconsin,USA,Income,Income,Married,Bot_Range,431060,4,0.0765
+State_Province_Wisconsin_Income_Married_Top_Range_Ladder Step4,State_Province,Wisconsin,USA,Income,Income,Married,Top_Range,99999999,4,0.0765
+State_Province_Alberta_Income_Single_Bot_Range_Ladder Step1,State_Province,Alberta,Canada,Income,Income,Single,Bot_Range,0,1,0.1000
+State_Province_Alberta_Income_Single_Top_Range_Ladder Step1,State_Province,Alberta,Canada,Income,Income,Single,Top_Range,151234,1,0.1000
+State_Province_Alberta_Income_Single_Bot_Range_Ladder Step2,State_Province,Alberta,Canada,Income,Income,Single,Bot_Range,151234,2,0.1200
+State_Province_Alberta_Income_Single_Top_Range_Ladder Step2,State_Province,Alberta,Canada,Income,Income,Single,Top_Range,181481,2,0.1200
+State_Province_Alberta_Income_Single_Bot_Range_Ladder Step3,State_Province,Alberta,Canada,Income,Income,Single,Bot_Range,181481,3,0.1300
+State_Province_Alberta_Income_Single_Top_Range_Ladder Step3,State_Province,Alberta,Canada,Income,Income,Single,Top_Range,241974,3,0.1300
+State_Province_Alberta_Income_Single_Bot_Range_Ladder Step4,State_Province,Alberta,Canada,Income,Income,Single,Bot_Range,241974,4,0.1400
+State_Province_Alberta_Income_Single_Top_Range_Ladder Step4,State_Province,Alberta,Canada,Income,Income,Single,Top_Range,362961,4,0.1400
+State_Province_Alberta_Income_Single_Bot_Range_Ladder Step5,State_Province,Alberta,Canada,Income,Income,Single,Bot_Range,362961,5,0.1500
+State_Province_Alberta_Income_Single_Top_Range_Ladder Step5,State_Province,Alberta,Canada,Income,Income,Single,Top_Range,99999999,5,0.1500
+State_Province_British Columbia_Income_Single_Bot_Range_Ladder Step1,State_Province,British Columbia,Canada,Income,Income,Single,Bot_Range,0,1,0.0506
+State_Province_British Columbia_Income_Single_Top_Range_Ladder Step1,State_Province,British Columbia,Canada,Income,Income,Single,Top_Range,49279,1,0.0506
+State_Province_British Columbia_Income_Single_Bot_Range_Ladder Step2,State_Province,British Columbia,Canada,Income,Income,Single,Bot_Range,49279,2,0.0770
+State_Province_British Columbia_Income_Single_Top_Range_Ladder Step2,State_Province,British Columbia,Canada,Income,Income,Single,Top_Range,98560,2,0.0770
+State_Province_British Columbia_Income_Single_Bot_Range_Ladder Step3,State_Province,British Columbia,Canada,Income,Income,Single,Bot_Range,98560,3,0.1050
+State_Province_British Columbia_Income_Single_Top_Range_Ladder Step3,State_Province,British Columbia,Canada,Income,Income,Single,Top_Range,113158,3,0.1050
+State_Province_British Columbia_Income_Single_Bot_Range_Ladder Step4,State_Province,British Columbia,Canada,Income,Income,Single,Bot_Range,113158,4,0.1229
+State_Province_British Columbia_Income_Single_Top_Range_Ladder Step4,State_Province,British Columbia,Canada,Income,Income,Single,Top_Range,137407,4,0.1229
+State_Province_British Columbia_Income_Single_Bot_Range_Ladder Step5,State_Province,British Columbia,Canada,Income,Income,Single,Bot_Range,137407,5,0.1470
+State_Province_British Columbia_Income_Single_Top_Range_Ladder Step5,State_Province,British Columbia,Canada,Income,Income,Single,Top_Range,186306,5,0.1470
+State_Province_British Columbia_Income_Single_Bot_Range_Ladder Step6,State_Province,British Columbia,Canada,Income,Income,Single,Bot_Range,186306,6,0.1680
+State_Province_British Columbia_Income_Single_Top_Range_Ladder Step6,State_Province,British Columbia,Canada,Income,Income,Single,Top_Range,259829,6,0.1680
+State_Province_British Columbia_Income_Single_Bot_Range_Ladder Step7,State_Province,British Columbia,Canada,Income,Income,Single,Bot_Range,259829,7,0.2050
+State_Province_British Columbia_Income_Single_Top_Range_Ladder Step7,State_Province,British Columbia,Canada,Income,Income,Single,Top_Range,99999999,7,0.2050
+State_Province_Manitoba_Income_Single_Bot_Range_Ladder Step1,State_Province,Manitoba,Canada,Income,Income,Single,Bot_Range,0,1,0.1080
+State_Province_Manitoba_Income_Single_Top_Range_Ladder Step1,State_Province,Manitoba,Canada,Income,Income,Single,Top_Range,47564,1,0.1080
+State_Province_Manitoba_Income_Single_Bot_Range_Ladder Step2,State_Province,Manitoba,Canada,Income,Income,Single,Bot_Range,101200,2,0.1740
+State_Province_Manitoba_Income_Single_Top_Range_Ladder Step2,State_Province,Manitoba,Canada,Income,Income,Single,Top_Range,4700047564,2,0.1740
+State_Province_Manitoba_Income_Single_Bot_Range_Ladder Step3,State_Province,Manitoba,Canada,Income,Income,Single,Bot_Range,4700047564,3,0.1275
+State_Province_Manitoba_Income_Single_Top_Range_Ladder Step3,State_Province,Manitoba,Canada,Income,Income,Single,Top_Range,101200,3,0.1275
+State_Province_New Brunswick_Income_Single_Bot_Range_Ladder Step1,State_Province,New Brunswick,Canada,Income,Income,Single,Bot_Range,0,1,0.0940
+State_Province_New Brunswick_Income_Single_Top_Range_Ladder Step1,State_Province,New Brunswick,Canada,Income,Income,Single,Top_Range,51306,1,0.0940
+State_Province_New Brunswick_Income_Single_Bot_Range_Ladder Step2,State_Province,New Brunswick,Canada,Income,Income,Single,Bot_Range,51306,2,0.1400
+State_Province_New Brunswick_Income_Single_Top_Range_Ladder Step2,State_Province,New Brunswick,Canada,Income,Income,Single,Top_Range,102614,2,0.1400
+State_Province_New Brunswick_Income_Single_Bot_Range_Ladder Step3,State_Province,New Brunswick,Canada,Income,Income,Single,Bot_Range,102614,3,0.1600
+State_Province_New Brunswick_Income_Single_Top_Range_Ladder Step3,State_Province,New Brunswick,Canada,Income,Income,Single,Top_Range,190060,3,0.1600
+State_Province_New Brunswick_Income_Single_Bot_Range_Ladder Step4,State_Province,New Brunswick,Canada,Income,Income,Single,Bot_Range,190060,4,0.1950
+State_Province_New Brunswick_Income_Single_Top_Range_Ladder Step4,State_Province,New Brunswick,Canada,Income,Income,Single,Top_Range,99999999,4,0.1950
+State_Province_Newfoundland and Labrador_Income_Single_Bot_Range_Ladder Step1,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Bot_Range,0,1,0.0870
+State_Province_Newfoundland and Labrador_Income_Single_Top_Range_Ladder Step1,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Top_Range,44192,1,0.0870
+State_Province_Newfoundland and Labrador_Income_Single_Bot_Range_Ladder Step2,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Bot_Range,44192,2,0.1450
+State_Province_Newfoundland and Labrador_Income_Single_Top_Range_Ladder Step2,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Top_Range,88382,2,0.1450
+State_Province_Newfoundland and Labrador_Income_Single_Bot_Range_Ladder Step3,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Bot_Range,88382,3,0.1580
+State_Province_Newfoundland and Labrador_Income_Single_Top_Range_Ladder Step3,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Top_Range,157792,3,0.1580
+State_Province_Newfoundland and Labrador_Income_Single_Bot_Range_Ladder Step4,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Bot_Range,157792,4,0.1780
+State_Province_Newfoundland and Labrador_Income_Single_Top_Range_Ladder Step4,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Top_Range,220910,4,0.1780
+State_Province_Newfoundland and Labrador_Income_Single_Bot_Range_Ladder Step5,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Bot_Range,220910,5,0.1980
+State_Province_Newfoundland and Labrador_Income_Single_Top_Range_Ladder Step5,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Top_Range,282214,5,0.1980
+State_Province_Newfoundland and Labrador_Income_Single_Bot_Range_Ladder Step6,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Bot_Range,282214,6,0.2080
+State_Province_Newfoundland and Labrador_Income_Single_Top_Range_Ladder Step6,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Top_Range,564429,6,0.2080
+State_Province_Newfoundland and Labrador_Income_Single_Bot_Range_Ladder Step7,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Bot_Range,564429,7,0.2130
+State_Province_Newfoundland and Labrador_Income_Single_Top_Range_Ladder Step7,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Top_Range,1128858,7,0.2130
+State_Province_Newfoundland and Labrador_Income_Single_Bot_Range_Ladder Step8,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Bot_Range,1128858,8,0.2180
+State_Province_Newfoundland and Labrador_Income_Single_Top_Range_Ladder Step8,State_Province,Newfoundland and Labrador,Canada,Income,Income,Single,Top_Range,99999999,8,0.2180
+State_Province_Northwest Territories_Income_Single_Bot_Range_Ladder Step1,State_Province,Northwest Territories,Canada,Income,Income,Single,Bot_Range,0,1,0.0590
+State_Province_Northwest Territories_Income_Single_Top_Range_Ladder Step1,State_Province,Northwest Territories,Canada,Income,Income,Single,Top_Range,51964,1,0.0590
+State_Province_Northwest Territories_Income_Single_Bot_Range_Ladder Step2,State_Province,Northwest Territories,Canada,Income,Income,Single,Bot_Range,51964,2,0.0860
+State_Province_Northwest Territories_Income_Single_Top_Range_Ladder Step2,State_Province,Northwest Territories,Canada,Income,Income,Single,Top_Range,103930,2,0.0860
+State_Province_Northwest Territories_Income_Single_Bot_Range_Ladder Step3,State_Province,Northwest Territories,Canada,Income,Income,Single,Bot_Range,103930,3,0.1220
+State_Province_Northwest Territories_Income_Single_Top_Range_Ladder Step3,State_Province,Northwest Territories,Canada,Income,Income,Single,Top_Range,168967,3,0.1220
+State_Province_Northwest Territories_Income_Single_Bot_Range_Ladder Step4,State_Province,Northwest Territories,Canada,Income,Income,Single,Bot_Range,168967,4,0.1405
+State_Province_Northwest Territories_Income_Single_Top_Range_Ladder Step4,State_Province,Northwest Territories,Canada,Income,Income,Single,Top_Range,99999999,4,0.1405
+State_Province_Nova Scotia_Income_Single_Bot_Range_Ladder Step1,State_Province,Nova Scotia,Canada,Income,Income,Single,Bot_Range,0,1,0.0879
+State_Province_Nova Scotia_Income_Single_Top_Range_Ladder Step1,State_Province,Nova Scotia,Canada,Income,Income,Single,Top_Range,30507,1,0.0879
+State_Province_Nova Scotia_Income_Single_Bot_Range_Ladder Step2,State_Province,Nova Scotia,Canada,Income,Income,Single,Bot_Range,30507,2,0.1495
+State_Province_Nova Scotia_Income_Single_Top_Range_Ladder Step2,State_Province,Nova Scotia,Canada,Income,Income,Single,Top_Range,61015,2,0.1495
+State_Province_Nova Scotia_Income_Single_Bot_Range_Ladder Step3,State_Province,Nova Scotia,Canada,Income,Income,Single,Bot_Range,61015,3,0.1667
+State_Province_Nova Scotia_Income_Single_Top_Range_Ladder Step3,State_Province,Nova Scotia,Canada,Income,Income,Single,Top_Range,95883,3,0.1667
+State_Province_Nova Scotia_Income_Single_Bot_Range_Ladder Step4,State_Province,Nova Scotia,Canada,Income,Income,Single,Bot_Range,95883,4,0.1750
+State_Province_Nova Scotia_Income_Single_Top_Range_Ladder Step4,State_Province,Nova Scotia,Canada,Income,Income,Single,Top_Range,154650,4,0.1750
+State_Province_Nova Scotia_Income_Single_Bot_Range_Ladder Step5,State_Province,Nova Scotia,Canada,Income,Income,Single,Bot_Range,154650,5,0.2100
+State_Province_Nova Scotia_Income_Single_Top_Range_Ladder Step5,State_Province,Nova Scotia,Canada,Income,Income,Single,Top_Range,99999999,5,0.2100
+State_Province_Nunavut_Income_Single_Bot_Range_Ladder Step1,State_Province,Nunavut,Canada,Income,Income,Single,Bot_Range,0,1,0.0400
+State_Province_Nunavut_Income_Single_Top_Range_Ladder Step1,State_Province,Nunavut,Canada,Income,Income,Single,Top_Range,54707,1,0.0400
+State_Province_Nunavut_Income_Single_Bot_Range_Ladder Step2,State_Province,Nunavut,Canada,Income,Income,Single,Bot_Range,54707,2,0.0700
+State_Province_Nunavut_Income_Single_Top_Range_Ladder Step2,State_Province,Nunavut,Canada,Income,Income,Single,Top_Range,109413,2,0.0700
+State_Province_Nunavut_Income_Single_Bot_Range_Ladder Step3,State_Province,Nunavut,Canada,Income,Income,Single,Bot_Range,109413,3,0.0900
+State_Province_Nunavut_Income_Single_Top_Range_Ladder Step3,State_Province,Nunavut,Canada,Income,Income,Single,Top_Range,177881,3,0.0900
+State_Province_Nunavut_Income_Single_Bot_Range_Ladder Step4,State_Province,Nunavut,Canada,Income,Income,Single,Bot_Range,177881,4,0.1150
+State_Province_Nunavut_Income_Single_Top_Range_Ladder Step4,State_Province,Nunavut,Canada,Income,Income,Single,Top_Range,99999999,4,0.1150
+State_Province_Ontario_Income_Single_Bot_Range_Ladder Step1,State_Province,Ontario,Canada,Income,Income,Single,Bot_Range,0,1,0.0505
+State_Province_Ontario_Income_Single_Top_Range_Ladder Step1,State_Province,Ontario,Canada,Income,Income,Single,Top_Range,52886,1,0.0505
+State_Province_Ontario_Income_Single_Bot_Range_Ladder Step2,State_Province,Ontario,Canada,Income,Income,Single,Bot_Range,52886,2,0.0915
+State_Province_Ontario_Income_Single_Top_Range_Ladder Step2,State_Province,Ontario,Canada,Income,Income,Single,Top_Range,105775,2,0.0915
+State_Province_Ontario_Income_Single_Bot_Range_Ladder Step3,State_Province,Ontario,Canada,Income,Income,Single,Bot_Range,105775,3,0.1116
+State_Province_Ontario_Income_Single_Top_Range_Ladder Step3,State_Province,Ontario,Canada,Income,Income,Single,Top_Range,150000,3,0.1116
+State_Province_Ontario_Income_Single_Bot_Range_Ladder Step4,State_Province,Ontario,Canada,Income,Income,Single,Bot_Range,150000,4,0.1216
+State_Province_Ontario_Income_Single_Top_Range_Ladder Step4,State_Province,Ontario,Canada,Income,Income,Single,Top_Range,220000,4,0.1216
+State_Province_Ontario_Income_Single_Bot_Range_Ladder Step5,State_Province,Ontario,Canada,Income,Income,Single,Bot_Range,220000,5,0.1316
+State_Province_Ontario_Income_Single_Top_Range_Ladder Step5,State_Province,Ontario,Canada,Income,Income,Single,Top_Range,99999999,5,0.1316
+State_Province_Prince Edward Island_Income_Single_Bot_Range_Ladder Step1,State_Province,Prince Edward Island,Canada,Income,Income,Single,Bot_Range,0,1,0.0950
+State_Province_Prince Edward Island_Income_Single_Top_Range_Ladder Step1,State_Province,Prince Edward Island,Canada,Income,Income,Single,Top_Range,33328,1,0.0950
+State_Province_Prince Edward Island_Income_Single_Bot_Range_Ladder Step2,State_Province,Prince Edward Island,Canada,Income,Income,Single,Bot_Range,33328,2,0.1347
+State_Province_Prince Edward Island_Income_Single_Top_Range_Ladder Step2,State_Province,Prince Edward Island,Canada,Income,Income,Single,Top_Range,64656,2,0.1347
+State_Province_Prince Edward Island_Income_Single_Bot_Range_Ladder Step3,State_Province,Prince Edward Island,Canada,Income,Income,Single,Bot_Range,64656,3,0.1660
+State_Province_Prince Edward Island_Income_Single_Top_Range_Ladder Step3,State_Province,Prince Edward Island,Canada,Income,Income,Single,Top_Range,105000,3,0.1660
+State_Province_Prince Edward Island_Income_Single_Bot_Range_Ladder Step4,State_Province,Prince Edward Island,Canada,Income,Income,Single,Bot_Range,105000,4,0.1762
+State_Province_Prince Edward Island_Income_Single_Top_Range_Ladder Step4,State_Province,Prince Edward Island,Canada,Income,Income,Single,Top_Range,140000,4,0.1762
+State_Province_Prince Edward Island_Income_Single_Bot_Range_Ladder Step5,State_Province,Prince Edward Island,Canada,Income,Income,Single,Bot_Range,140000,5,0.1900
+State_Province_Prince Edward Island_Income_Single_Top_Range_Ladder Step5,State_Province,Prince Edward Island,Canada,Income,Income,Single,Top_Range,99999999,5,0.1900
+State_Province_Québec_Income_Single_Bot_Range_Ladder Step1,State_Province,Québec,Canada,Income,Income,Single,Bot_Range,0,1,0.1400
+State_Province_Québec_Income_Single_Top_Range_Ladder Step1,State_Province,Québec,Canada,Income,Income,Single,Top_Range,53255,1,0.1400
+State_Province_Québec_Income_Single_Bot_Range_Ladder Step2,State_Province,Québec,Canada,Income,Income,Single,Bot_Range,53255,2,0.1900
+State_Province_Québec_Income_Single_Top_Range_Ladder Step2,State_Province,Québec,Canada,Income,Income,Single,Top_Range,106495,2,0.1900
+State_Province_Québec_Income_Single_Bot_Range_Ladder Step3,State_Province,Québec,Canada,Income,Income,Single,Bot_Range,106495,3,0.2400
+State_Province_Québec_Income_Single_Top_Range_Ladder Step3,State_Province,Québec,Canada,Income,Income,Single,Top_Range,129590,3,0.2400
+State_Province_Québec_Income_Single_Bot_Range_Ladder Step4,State_Province,Québec,Canada,Income,Income,Single,Bot_Range,129590,4,0.2575
+State_Province_Québec_Income_Single_Top_Range_Ladder Step4,State_Province,Québec,Canada,Income,Income,Single,Top_Range,99999999,4,0.2575
+State_Province_Saskatchewan_Income_Single_Bot_Range_Ladder Step1,State_Province,Saskatchewan,Canada,Income,Income,Single,Bot_Range,0,1,0.1050
+State_Province_Saskatchewan_Income_Single_Top_Range_Ladder Step1,State_Province,Saskatchewan,Canada,Income,Income,Single,Top_Range,53463,1,0.1050
+State_Province_Saskatchewan_Income_Single_Bot_Range_Ladder Step2,State_Province,Saskatchewan,Canada,Income,Income,Single,Bot_Range,53463,2,0.1250
+State_Province_Saskatchewan_Income_Single_Top_Range_Ladder Step2,State_Province,Saskatchewan,Canada,Income,Income,Single,Top_Range,152750,2,0.1250
+State_Province_Saskatchewan_Income_Single_Bot_Range_Ladder Step3,State_Province,Saskatchewan,Canada,Income,Income,Single,Bot_Range,152750,3,0.1450
+State_Province_Saskatchewan_Income_Single_Top_Range_Ladder Step3,State_Province,Saskatchewan,Canada,Income,Income,Single,Top_Range,99999999,3,0.1450
+State_Province_Yukon_Income_Single_Bot_Range_Ladder Step1,State_Province,Yukon,Canada,Income,Income,Single,Bot_Range,0,1,0.0640
+State_Province_Yukon_Income_Single_Top_Range_Ladder Step1,State_Province,Yukon,Canada,Income,Income,Single,Top_Range,57375,1,0.0640
+State_Province_Yukon_Income_Single_Bot_Range_Ladder Step2,State_Province,Yukon,Canada,Income,Income,Single,Bot_Range,57375,2,0.0900
+State_Province_Yukon_Income_Single_Top_Range_Ladder Step2,State_Province,Yukon,Canada,Income,Income,Single,Top_Range,114750,2,0.0900
+State_Province_Yukon_Income_Single_Bot_Range_Ladder Step3,State_Province,Yukon,Canada,Income,Income,Single,Bot_Range,114750,3,0.1090
+State_Province_Yukon_Income_Single_Top_Range_Ladder Step3,State_Province,Yukon,Canada,Income,Income,Single,Top_Range,177882,3,0.1090
+State_Province_Yukon_Income_Single_Bot_Range_Ladder Step4,State_Province,Yukon,Canada,Income,Income,Single,Bot_Range,177882,4,0.1280
+State_Province_Yukon_Income_Single_Top_Range_Ladder Step4,State_Province,Yukon,Canada,Income,Income,Single,Top_Range,500000,4,0.1280
+State_Province_Yukon_Income_Single_Bot_Range_Ladder Step5,State_Province,Yukon,Canada,Income,Income,Single,Bot_Range,500000,5,0.1500
+State_Province_Yukon_Income_Single_Top_Range_Ladder Step5,State_Province,Yukon,Canada,Income,Income,Single,Top_Range,99999999,5,0.1500

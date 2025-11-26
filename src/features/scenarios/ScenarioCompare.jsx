@@ -103,17 +103,18 @@ function ScenarioCompare() {
 
     // Calculate current plan projections
     try {
-      console.log('📊 Attempting to calculate projections for active scenario')
-      console.log('📋 Current plan data:', currentPlan)
-      console.log('📋 Profile:', currentPlan.profile)
-      console.log('📋 Income streams:', currentPlan.income.incomeStreams)
-      console.log('📋 Expense categories:', currentPlan.expenses.expenseCategories)
-      console.log('📋 Investments:', currentPlan.investmentsDebt.investments)
+      // DISABLED: Scenarios feature - console logs
+      // console.log('📊 Attempting to calculate projections for active scenario')
+      // console.log('📋 Current plan data:', currentPlan)
+      // console.log('📋 Profile:', currentPlan.profile)
+      // console.log('📋 Income streams:', currentPlan.income.incomeStreams)
+      // console.log('📋 Expense categories:', currentPlan.expenses.expenseCategories)
+      // console.log('📋 Investments:', currentPlan.investmentsDebt.investments)
 
-      const baseProjectionResults = calculateScenarioProjections(currentPlan)
-      console.log('✅ Calculation successful:', baseProjectionResults)
+      // DISABLED: Scenarios feature - console logs
+      // console.log('✅ Calculation successful:', baseProjectionResults)
       setBaseResults(baseProjectionResults)
-      console.log('✅ Current Plan loaded from active scenario:', activeScenario.name)
+      // console.log('✅ Current Plan loaded from active scenario:', activeScenario.name)
     } catch (error) {
       console.error('❌ Error calculating current plan projections:', error)
       console.error('❌ Error message:', error.message)
@@ -125,14 +126,15 @@ function ScenarioCompare() {
 
   // Run comparison when scenarios are selected (NEW: scenarios have complete data)
   const handleCompare = () => {
-    console.group('📊 Scenario Comparison')
-    console.log('📋 Base results available:', !!baseResults)
-    console.log('📋 Selected scenario IDs:', selectedScenarioIds)
-    console.log('📋 Available scenarios:', scenarios)
+    // DISABLED: Scenarios feature - console logs
+    // console.group('📊 Scenario Comparison')
+    // console.log('📋 Base results available:', !!baseResults)
+    // console.log('📋 Selected scenario IDs:', selectedScenarioIds)
+    // console.log('📋 Available scenarios:', scenarios)
 
     if (!baseResults) {
       console.warn('⚠️ Base results not available - Current Plan not loaded')
-      console.log('Base data:', baseData)
+      // console.log('Base data:', baseData)
       console.groupEnd()
       alert('Current Plan is not set up yet.\n\nPlease complete your Current Plan first by:\n1. Setting up your Profile (age, retirement age, etc.)\n2. Adding Income streams\n3. Adding Expenses\n4. Adding Investments\n\nOr, promote one of your scenarios to become the Current Plan.')
       return
@@ -156,20 +158,24 @@ function ScenarioCompare() {
           projectionResults: baseResults
         }
       ]
-      console.log('✅ Added Current Plan to comparison')
+      // DISABLED: Scenarios feature - console log
+      // console.log('✅ Added Current Plan to comparison')
 
       // Add selected scenarios (NEW: each scenario has complete data in scenario.data)
       selectedScenarioIds.forEach(scenarioId => {
-        console.log(`🔍 Looking for scenario: ${scenarioId}`)
+        // DISABLED: Scenarios feature - console logs
+        // console.log(`📊 Total scenarios to compare: ${scenariosToCompare.length}`)
+        // console.log(`🔍 Looking for scenario: ${scenarioId}`)
         const scenario = scenarios.find(s => s.id === scenarioId)
 
         if (scenario) {
-          console.log(`✅ Found scenario: ${scenario.name}`)
-          console.log('📋 Scenario data:', scenario.data)
+          // DISABLED: Scenarios feature - console logs
+          // console.log(`✅ Found scenario: ${scenario.name}`)
+          // console.log('📋 Scenario data:', scenario.data)
 
           // Calculate projections using scenario's complete data
           const projectionResults = calculateScenarioProjections(scenario.data)
-          console.log('📊 Calculated projections for', scenario.name)
+          // console.log('📊 Calculated projections for', scenario.name)
 
           scenariosToCompare.push({
             id: scenario.id,
@@ -181,11 +187,12 @@ function ScenarioCompare() {
         }
       })
 
-      console.log(`📊 Total scenarios to compare: ${scenariosToCompare.length}`)
+      // DISABLED: Scenarios feature - console logs
+      // console.log(`📊 Total scenarios to compare: ${scenariosToCompare.length}`)
 
       // Run comparison
       const comparison = compareScenarios(scenariosToCompare)
-      console.log('✅ Comparison complete:', comparison)
+      // console.log('✅ Comparison complete:', comparison)
       setComparisonData(comparison)
     } catch (error) {
       console.error('❌ Error comparing scenarios:', error)

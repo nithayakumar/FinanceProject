@@ -12,7 +12,10 @@ import { storage } from '../core/storage'
 export function exportAsJSON(filename = null) {
   try {
     // Get all data
-    const data = storage.exportAll()
+    const allData = storage.exportAll()
+
+    // DISABLED: Scenarios feature - remove scenarios from export
+    const { scenarios, ...data } = allData
 
     // Convert to formatted JSON
     const jsonString = JSON.stringify(data, null, 2)
@@ -74,7 +77,8 @@ export async function importFromJSON(file) {
     }
 
     // Validate data structure
-    const validKeys = ['profile', 'income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'scenarios', 'filingStatusRemapping', 'customTaxLadder']
+    // DISABLED: Scenarios feature - removed 'scenarios' from valid keys
+    const validKeys = ['profile', 'income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'filingStatusRemapping', 'customTaxLadder']
     const dataKeys = Object.keys(data)
     const hasValidKeys = dataKeys.some(key => validKeys.includes(key))
 

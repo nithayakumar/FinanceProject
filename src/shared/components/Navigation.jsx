@@ -5,7 +5,8 @@ import { exportAsJSON, triggerJSONImport } from '../jsonExport'
 import { clearAllData } from '../devTools'
 import { generateCSVExport, downloadCSV, generateFilename } from '../../features/export/CSVExporter'
 import { storage } from '../../core/storage'
-import { useScenarioData } from '../../features/scenarios/hooks/useScenarioData'
+// DISABLED: Scenarios feature
+// import { useScenarioData } from '../../features/scenarios/hooks/useScenarioData'
 import ConfirmModal from './ConfirmModal'
 
 function Navigation() {
@@ -13,7 +14,8 @@ function Navigation() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [notification, setNotification] = useState(null)
   const [confirmModal, setConfirmModal] = useState(null)
-  const { scenarios, activeScenarioId, setActiveScenario } = useScenarioData()
+  // DISABLED: Scenarios feature
+  // const { scenarios, activeScenarioId, setActiveScenario } = useScenarioData()
 
   const navItems = [
     { path: '/', label: 'Home' },
@@ -21,9 +23,10 @@ function Navigation() {
     { path: '/personal-details', label: 'Personal' },
     { path: '/income', label: 'Income' },
     { path: '/expenses', label: 'Expenses' },
-    { path: '/taxes', label: 'Taxes' },
     { path: '/investments-debt', label: 'Investments' },
-    { path: '/scenarios', label: 'Scenarios' },
+    { path: '/taxes', label: 'Taxes' },
+    // DISABLED: Scenarios feature
+    // { path: '/scenarios', label: 'Scenarios' },
   ]
 
   const colorMap = {
@@ -118,8 +121,8 @@ function Navigation() {
               </Link>
             ))}
 
-            {/* Scenario Switcher */}
-            <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-200">
+            {/* DISABLED: Scenario Switcher */}
+            {/* <div className="flex items-center space-x-2 ml-4 pl-4 border-l border-gray-200">
               <span className="text-xs font-medium text-gray-500 uppercase hidden lg:inline">Scenario</span>
               {scenarios.map(s => (
                 <button
@@ -134,7 +137,7 @@ function Navigation() {
                   {s.id}
                 </button>
               ))}
-            </div>
+            </div> */}
           </div>
 
           {/* Tools Dropdown */}

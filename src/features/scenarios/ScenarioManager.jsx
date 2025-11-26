@@ -47,7 +47,8 @@ function ScenarioManager() {
       const updated = [...saved, activeScenario]
       storage.save('scenarios', updated)
       setScenarios(updated)
-      console.log('✨ Created active scenario entry for Current Plan')
+      // DISABLED: Scenarios feature - console log
+      // console.log('✨ Created active scenario entry for Current Plan')
     } else {
       // Sync localStorage data to active scenario
       activeScenario.data = {
@@ -64,18 +65,21 @@ function ScenarioManager() {
       const updated = saved.map(s => s.id === activeScenario.id ? activeScenario : s)
       storage.save('scenarios', updated)
       setScenarios(updated)
-      console.log('🔄 Synced Current Plan to active scenario')
+      // DISABLED: Scenarios feature - console log
+      // console.log('🔄 Synced Current Plan to active scenario')
     }
 
     setCurrentPlan(current)
-    console.log('📋 Loaded scenarios with active tracking')
+    // DISABLED: Scenarios feature - console log
+    // console.log('📋 Loaded scenarios with active tracking')
   }, [])
 
   // Save scenarios to localStorage
   const saveScenarios = (updatedScenarios) => {
     storage.save('scenarios', updatedScenarios)
     setScenarios(updatedScenarios)
-    console.log('💾 Saved scenarios:', updatedScenarios)
+    // DISABLED: Scenarios feature - console log
+    // console.log('💾 Saved scenarios:', updatedScenarios)
   }
 
   // Create new scenario from current plan
@@ -178,7 +182,8 @@ function ScenarioManager() {
 
   // Actually delete scenario after confirmation
   const executeDelete = () => {
-    console.log('🗑️ Executing delete for scenario:', confirmDialog.scenarioId)
+    // DISABLED: Scenarios feature - console log
+    // console.log('🗑️ Executing delete for scenario:', confirmDialog.scenarioId)
     try {
       const scenario = scenarios.find(s => s.id === confirmDialog.scenarioId)
 
@@ -190,9 +195,11 @@ function ScenarioManager() {
       }
 
       const updated = scenarios.filter(s => s.id !== confirmDialog.scenarioId)
-      console.log('✂️ Filtered scenarios - Original count:', scenarios.length, '→ New count:', updated.length)
+      // DISABLED: Scenarios feature - console log
+      // console.log('✂️ Filtered scenarios - Original count:', scenarios.length, '→ New count:', updated.length)
       saveScenarios(updated)
-      console.log('✅ Delete successful!')
+      // DISABLED: Scenarios feature - console log
+      // console.log('✅ Delete successful!')
       setConfirmDialog({ show: false, type: null, scenarioId: null, scenarioName: null })
     } catch (error) {
       console.error('❌ Error deleting scenario:', error)
@@ -218,7 +225,8 @@ function ScenarioManager() {
 
   // Actually promote scenario after confirmation
   const executePromote = () => {
-    console.log('🚀 Executing promote for scenario:', confirmDialog.scenarioId)
+    // DISABLED: Scenarios feature - console log
+    // console.log('🚀 Executing promote for scenario:', confirmDialog.scenarioId)
     const scenarioToPromote = scenarios.find(s => s.id === confirmDialog.scenarioId)
     const currentActive = scenarios.find(s => s.isActive)
 
@@ -230,9 +238,10 @@ function ScenarioManager() {
     }
 
     try {
-      console.log('💾 Swapping active flags...')
-      console.log('  Previous active:', currentActive?.name)
-      console.log('  New active:', scenarioToPromote.name)
+      // DISABLED: Scenarios feature - console logs
+      // console.log('💾 Swapping active flags...')
+      // console.log('  Previous active:', currentActive?.name)
+      // console.log('  New active:', scenarioToPromote.name)
 
       // Update scenarios array: swap isActive flags
       const updated = scenarios.map(s => {
@@ -259,9 +268,10 @@ function ScenarioManager() {
       storage.save('filingStatusRemapping', scenarioToPromote.data.filingStatusRemapping)
       storage.save('customTaxLadder', scenarioToPromote.data.customTaxLadder)
 
-      console.log('✅ Promotion successful!')
-      console.log('  Previous plan saved as alternative scenario')
-      console.log('  New plan is now active')
+      // DISABLED: Scenarios feature - console logs
+      // console.log('✅ Promotion successful!')
+      // console.log('  Previous plan saved as alternative scenario')
+      // console.log('  New plan is now active')
       setConfirmDialog({ show: false, type: null, scenarioId: null, scenarioName: null })
 
       // Show success message and navigate
@@ -300,7 +310,8 @@ function ScenarioManager() {
       // Calculate actual first year values using the calculation engine
       const projectionResults = calculateScenarioProjections(currentPlan)
 
-      console.log('🔴 Projections result:', projectionResults)
+      // DISABLED: Scenarios feature - console log
+      // console.log('🔴 Projections result:', projectionResults)
 
       // Use the helper function to safely extract first year data
       // This validates the structure and returns properly named fields

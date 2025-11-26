@@ -7,8 +7,10 @@ export function TaxBreakdownChart({ calculations, country }) {
     const { totals } = calculations
     const takeHome = totals.totalIncome - totals.totalTax
 
+    const stateLabel = country === 'Canada' ? 'Provincial Income Tax' : 'State Income Tax'
+
     const data = [
-        { name: 'State Income Tax', value: totals.totalStateTax, color: '#F87171' }, // red-400
+        { name: stateLabel, value: totals.totalStateTax, color: '#F87171' }, // red-400
         { name: 'Federal Income Tax', value: totals.totalFederalTax, color: '#60A5FA' }, // blue-400
         { name: 'Federal (Other)', value: totals.totalFICA, color: '#FBBF24' }, // amber-400
         { name: 'Take Home', value: takeHome, color: '#34D399' } // emerald-400
@@ -33,7 +35,7 @@ export function TaxBreakdownChart({ calculations, country }) {
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Tax Breakdown</h3>
-            <div className="h-64 w-full">
+            <div style={{ width: '100%', height: 256 }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie

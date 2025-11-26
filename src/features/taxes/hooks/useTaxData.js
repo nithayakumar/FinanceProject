@@ -13,9 +13,7 @@ import {
 
 const FILING_STATUS_OPTIONS = [
     { value: 'Single', label: 'Single' },
-    { value: 'Married', label: 'Married Filing Jointly' },
-    { value: 'Separate', label: 'Married Filing Separately' },
-    { value: 'Head_of_Household', label: 'Head of Household' }
+    { value: 'Married', label: 'Couple' }
 ]
 
 export const getFilingStatusLabel = (value) => {

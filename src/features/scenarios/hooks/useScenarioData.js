@@ -9,28 +9,39 @@ const DEFAULT_SCENARIOS = [
 ]
 
 export function useScenarioData() {
+    // DISABLED: Scenarios feature - Early return with minimal data
+    return {
+        scenarios: [{ id: '1', name: 'Scenario 1', color: 'blue', isLocked: false }],
+        activeScenarioId: '1',
+        addScenario: () => { },
+        updateScenario: () => { },
+        deleteScenario: () => { },
+        setActiveScenario: () => { }
+    }
+
+    /* DISABLED CODE - Preserve for future re-enablement
     const [scenarios, setScenarios] = useState([])
     const [activeScenarioId, setActiveScenarioId] = useState('1')
-
+    
     // Load initial data
     useEffect(() => {
         loadData()
-
+    
         // Listen for storage changes
         const handleStorageChange = (e) => {
             if (e.detail.key === SCENARIO_STORAGE_KEY || e.detail.key === ACTIVE_SCENARIO_KEY) {
                 loadData()
             }
         }
-
+    
         window.addEventListener('localStorageChange', handleStorageChange)
         return () => window.removeEventListener('localStorageChange', handleStorageChange)
     }, [])
-
+    
     const loadData = () => {
         const storedScenarios = storage.load(SCENARIO_STORAGE_KEY)
         const storedActiveId = storage.load(ACTIVE_SCENARIO_KEY)
-
+    
         if (!storedScenarios || storedScenarios.length === 0) {
             // Initialize with default if empty
             storage.save(SCENARIO_STORAGE_KEY, DEFAULT_SCENARIOS)
@@ -38,7 +49,7 @@ export function useScenarioData() {
         } else {
             setScenarios(storedScenarios)
         }
-
+    
         if (storedActiveId) {
             setActiveScenarioId(storedActiveId)
         } else {
@@ -46,10 +57,10 @@ export function useScenarioData() {
             setActiveScenarioId('1')
         }
     }
-
+    
     const addScenario = () => {
         if (scenarios.length >= 3) return
-
+    
         // Find first available ID (1, 2, or 3)
         const existingIds = scenarios.map(s => parseInt(s.id))
         let newIdNum = 1
@@ -57,7 +68,7 @@ export function useScenarioData() {
             newIdNum++
         }
         const newId = newIdNum.toString()
-
+    
         // Assign fixed colors based on ID to ensure consistency
         // 1: Blue, 2: Green, 3: Purple
         const colorMap = {
@@ -66,32 +77,32 @@ export function useScenarioData() {
             '3': 'purple'
         }
         const newColor = colorMap[newId] || 'gray'
-
+    
         const newScenario = {
             id: newId,
             name: `Scenario ${newId}`,
             color: newColor,
             isLocked: false
         }
-
+    
         const updatedScenarios = [...scenarios, newScenario]
         storage.save(SCENARIO_STORAGE_KEY, updatedScenarios)
-
+    
         // Clone data from active scenario to new scenario
         const keysToClone = ['income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'gap', 'profile', 'filingStatusRemapping', 'customTaxLadder']
-
+    
         // We need to manually read the source data (active scenario) and write to target (new scenario)
         // Since storage.load/save automatically use activeScenarioId, we need to temporarily bypass it
         // OR we can use the raw localStorage keys.
         // Using raw keys is safer here to avoid race conditions with activeScenarioId state.
-
+    
         const sourceId = activeScenarioId
         const targetId = newId
-
+    
         keysToClone.forEach(key => {
             const sourceKey = sourceId === '1' ? key : `${key}_${sourceId}`
             const targetKey = targetId === '1' ? key : `${key}_${targetId}`
-
+    
             const data = localStorage.getItem(sourceKey)
             if (data) {
                 localStorage.setItem(targetKey, data)
@@ -101,37 +112,37 @@ export function useScenarioData() {
                 }))
             }
         })
-
+    
         return newId
     }
-
+    
     const updateScenario = (id, updates) => {
         const updatedScenarios = scenarios.map(s =>
             s.id === id ? { ...s, ...updates } : s
         )
         storage.save(SCENARIO_STORAGE_KEY, updatedScenarios)
     }
-
+    
     const deleteScenario = (id) => {
         if (scenarios.length <= 1) return // Cannot delete last scenario
-
+    
         const updatedScenarios = scenarios.filter(s => s.id !== id)
         storage.save(SCENARIO_STORAGE_KEY, updatedScenarios)
-
+    
         // If deleted active scenario, switch to first available
         if (activeScenarioId === id) {
             const newActiveId = updatedScenarios[0].id
             setActiveScenario(newActiveId)
         }
     }
-
+    
     const setActiveScenario = (id) => {
         storage.save(ACTIVE_SCENARIO_KEY, id)
         setActiveScenarioId(id)
         // Force reload to ensure all components pick up new scenario data
         window.location.reload()
     }
-
+    
     return {
         scenarios,
         activeScenarioId,
@@ -140,4 +151,5 @@ export function useScenarioData() {
         deleteScenario,
         setActiveScenario
     }
+    END OF DISABLED CODE */
 }

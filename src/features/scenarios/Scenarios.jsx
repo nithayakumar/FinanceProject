@@ -26,8 +26,9 @@ function Scenarios() {
         investmentsDebt: { investments: investmentsDebt.investments || [], ...investmentsDebt }
       }
 
-      console.log(`[Scenario ${scenario.id}] Loaded Data:`, scenarioData)
-      console.log(`[Scenario ${scenario.id}] Income Streams:`, scenarioData.income.incomeStreams)
+      // DISABLED: Scenarios feature - console logs
+      // console.log(`[Scenario ${scenario.id}] Loaded Data:`, scenarioData)
+      // console.log(`[Scenario ${scenario.id}] Income Streams:`, scenarioData.income.incomeStreams)
       try {
         const projections = calculateScenarioProjections(scenarioData)
         const summary = calculateScenarioSummary(projections)
@@ -86,7 +87,8 @@ function Scenarios() {
       // Recalculate when any scenario-specific data changes
       const scenarioKeys = ['income', 'expenses', 'investmentsDebt', 'taxes', 'taxLadders', 'gap', 'profile']
       if (scenarioKeys.some(key => e.detail.key?.startsWith(key))) {
-        console.log('Storage changed, recalculating scenarios:', e.detail.key)
+        // DISABLED: Scenarios feature - console log
+        // console.log('Storage changed, recalculating scenarios:', e.detail.key)
         calculateComparisons()
       }
     }
@@ -250,7 +252,7 @@ function Scenarios() {
         <div className="space-y-6">
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold mb-6 text-gray-700">Net Worth at Retirement Comparison</h3>
-            <div className="h-80">
+            <div style={{ width: '100%', height: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={comparisonData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />

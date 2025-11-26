@@ -11,7 +11,8 @@ import { expensesRoutes } from './features/expenses'
 import { taxesRoutes } from './features/taxes'
 import { investmentsDebtRoutes } from './features/investments-debt'
 import { gapRoutes } from './features/gap'
-import { scenariosRoutes } from './features/scenarios'
+// DISABLED: Scenarios feature
+// import { scenariosRoutes } from './features/scenarios'
 
 // Combine all feature routes
 const featureRoutes = [
@@ -22,7 +23,8 @@ const featureRoutes = [
   ...taxesRoutes,
   ...investmentsDebtRoutes,
   ...gapRoutes,
-  ...scenariosRoutes
+  // DISABLED: Scenarios feature
+  // ...scenariosRoutes
 ]
 
 function App() {

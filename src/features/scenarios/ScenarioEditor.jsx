@@ -29,7 +29,8 @@ function ScenarioEditor() {
 
     if (found) {
       setScenario(found)
-      console.log('📋 Loaded scenario for editing:', found)
+      // DISABLED: Scenarios feature - console log
+      // console.log('📋 Loaded scenario for editing:', found)
     } else {
       alert('Scenario not found')
       navigate('/scenarios')
@@ -83,7 +84,8 @@ function ScenarioEditor() {
     storage.save('scenarios', updatedList)
     setScenario(updatedScenario)
     setHasChanges(false)
-    console.log('💾 Saved scenario:', updatedScenario)
+    // DISABLED: Scenarios feature - console log
+    // console.log('💾 Saved scenario:', updatedScenario)
     alert('Scenario saved successfully!')
   }
 
@@ -99,7 +101,8 @@ function ScenarioEditor() {
       const scenarios = storage.load('scenarios') || []
       const updated = scenarios.filter(s => s.id !== scenario.id)
       storage.save('scenarios', updated)
-      console.log('🗑️ Discarded draft scenario:', scenario.id)
+      // DISABLED: Scenarios feature - console log
+      // console.log('🗑️ Discarded draft scenario:', scenario.id)
     }
   }
 
@@ -189,11 +192,10 @@ function ScenarioEditor() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 font-medium transition-colors ${
-                activeTab === tab.id
+              className={`px-6 py-3 font-medium transition-colors ${activeTab === tab.id
                   ? 'bg-white border-b-2 border-blue-600 text-blue-600'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -237,19 +239,20 @@ function ScenarioEditor() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-1">Filing Status</label>
-                  <select
-                    value={data.profile?.filingStatus || 'Single'}
-                    onChange={(e) => handleDataChange('profile', { filingStatus: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded"
-                  >
-                    <option value="Single">Single</option>
-                    <option value="Married Filing Jointly">Married Filing Jointly</option>
-                    <option value="Married Filing Separately">Married Filing Separately</option>
-                    <option value="Head of Household">Head of Household</option>
-                  </select>
-                </div>
+                {/* Filing Status - Only for USA */}
+                {data.profile?.country !== 'Canada' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Filing Status</label>
+                    <select
+                      value={data.profile?.filingStatus || 'Single'}
+                      onChange={(e) => handleDataChange('profile', { filingStatus: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded"
+                    >
+                      <option value="Single">Single</option>
+                      <option value="Married">Couple</option>
+                    </select>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium mb-1">Current Age</label>

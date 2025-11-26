@@ -29,7 +29,7 @@ export function TaxSummary({ calculations, data }) {
                 value={formatCompactNumber(totals.totalFederalTax)}
             />
             <SummaryCard
-                title="State Income Tax"
+                title={data.country === 'Canada' ? 'Provincial Income Tax' : 'State Income Tax'}
                 subtitle={data.state}
                 value={formatCompactNumber(totals.totalStateTax)}
             />

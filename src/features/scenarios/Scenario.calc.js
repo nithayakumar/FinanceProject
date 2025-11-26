@@ -218,7 +218,8 @@ export function calculateScenarioProjections(scenarioData) {
     data.profile
   )
 
-  console.log('Scenario Projections:', gapResults)
+  // DISABLED: Scenarios feature - console log
+  // console.log('Scenario Projections:', gapResults)
   console.groupEnd()
 
   const results = {
@@ -390,7 +391,8 @@ export function compareScenarios(scenarios) {
     }
   })
 
-  console.log('Comparison Results:', comparisons)
+  // DISABLED: Scenarios feature - console log
+  // console.log('Comparison Results:', comparisons)
   console.groupEnd()
 
   return {

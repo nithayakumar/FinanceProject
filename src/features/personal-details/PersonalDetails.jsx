@@ -2,11 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../../core'
 import { validatePersonalDetails } from './PersonalDetails.calc'
-import { getAvailableStates, getCountryForState, initializeTaxLadders } from '../taxes/csvTaxLadders'
+import { getAvailableStates, getCountryForState, getAvailableCountries, getStatesByCountry, initializeTaxLadders } from '../taxes/csvTaxLadders'
 import SplitLayout from '../../shared/components/SplitLayout'
 
 function PersonalDetails() {
   const navigate = useNavigate()
+  const [availableCountries, setAvailableCountries] = useState(['USA', 'Canada'])
   const [availableStates, setAvailableStates] = useState(['California'])
   const [showAdvanced, setShowAdvanced] = useState(() => {
     const saved = localStorage.getItem('personalDetails_showAdvanced')
@@ -39,18 +40,45 @@ function PersonalDetails() {
 
   // Filing status options
   const filingStatusOptions = [
-    'Single',
-    'Married Filing Jointly',
-    'Married Filing Separately',
-    'Head of Household'
+    { label: 'Single', value: 'Single' },
+    { label: 'Couple', value: 'Married' }
   ]
 
-  // Load available states on mount
+  // Helper function to get filing status label
+  const getFilingStatusLabel = (value) => {
+    const option = filingStatusOptions.find(opt => opt.value === value)
+    return option ? option.label : value
+  }
+
+  // Load available countries and states on mount
   useEffect(() => {
     initializeTaxLadders()
-    const states = getAvailableStates()
+    const countries = getAvailableCountries()
+    setAvailableCountries(countries)
+
+    // Update available states based on current country
+    const currentCountry = data.country || 'USA'
+    const states = getStatesByCountry(currentCountry)
     setAvailableStates(states)
   }, [])
+
+  // Update available states when country changes
+  useEffect(() => {
+    if (data.country) {
+      const states = getStatesByCountry(data.country)
+      setAvailableStates(states)
+
+      // If current location is not in the new country's states, reset to default
+      if (!states.includes(data.location)) {
+        const defaultLocation = data.country === 'Canada' ? 'British Columbia' : 'California'
+        // Update location directly without using handleLocationChange to avoid circular update
+        setData(prev => ({
+          ...prev,
+          location: defaultLocation
+        }))
+      }
+    }
+  }, [data.country])
 
   // Auto-save effect
   const isFirstRender = useRef(true)
@@ -95,6 +123,22 @@ function PersonalDetails() {
     }))
   }
 
+  // Handle country change
+  const handleCountryChange = (newCountry) => {
+    const defaultLocation = newCountry === 'Canada' ? 'British Columbia' : 'California'
+
+    setData(prev => {
+      const defaultFilingStatus = newCountry === 'Canada' ? 'Single' : (prev.filingStatus || 'Single')
+
+      return {
+        ...prev,
+        country: newCountry,
+        location: defaultLocation,
+        filingStatus: defaultFilingStatus
+      }
+    })
+  }
+
   const handleChange = (field, value) => {
     setData(prev => ({
       ...prev,
@@ -111,10 +155,28 @@ function PersonalDetails() {
       <h1 className="text-2xl font-bold mb-4">Personal Details</h1>
 
       <div className="space-y-4">
-        {/* Row 1: Location */}
+        {/* Row 1: Country */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Location
+            Country
+          </label>
+          <select
+            value={data.country || 'USA'}
+            onChange={(e) => handleCountryChange(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {availableCountries.map(country => (
+              <option key={country} value={country}>
+                {country}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Row 2: State/Province */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {data.country === 'Canada' ? 'Province/Territory' : 'State'}
           </label>
           <select
             value={data.location}
@@ -123,13 +185,13 @@ function PersonalDetails() {
           >
             {availableStates.map(state => (
               <option key={state} value={state}>
-                {state} ({getCountryForState(state)})
+                {state}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Row 2: Age & Retirement Age */}
+        {/* Row 3: Age & Retirement Age */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -236,21 +298,23 @@ function PersonalDetails() {
                 </div>
               </div>
 
-              {/* Filing Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Filing Status
-                </label>
-                <select
-                  value={data.filingStatus}
-                  onChange={(e) => handleChange('filingStatus', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {filingStatusOptions.map(status => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </div>
+              {/* Filing Status - Only for USA */}
+              {data.country !== 'Canada' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Filing Status
+                  </label>
+                  <select
+                    value={data.filingStatus}
+                    onChange={(e) => handleChange('filingStatus', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {filingStatusOptions.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Inflation Rate */}
               <div>
@@ -280,7 +344,8 @@ function PersonalDetails() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 space-y-4">
         <h2 className="text-xl font-bold mb-4">Summary</h2>
 
-        <SummaryRow label="Location" value={`${data.location} (${data.country || getCountryForState(data.location)})`} />
+        <SummaryRow label="Country" value={data.country || 'USA'} />
+        <SummaryRow label={data.country === 'Canada' ? 'Province/Territory' : 'State'} value={data.location} />
         <SummaryRow label="Age" value={data.age} />
         <SummaryRow label="Retirement Age" value={data.retirementAge} />
 
@@ -291,7 +356,9 @@ function PersonalDetails() {
             <SummaryRow label="Total Investments" value={`$${Math.round(Number(data.currentSavings || 0)).toLocaleString()}`} />
             <SummaryRow label="Cash" value={`$${Math.round(data.currentCash || 0).toLocaleString()}`} />
             <SummaryRow label="Max Cash" value={`$${Math.round(data.targetCash || 0).toLocaleString()}`} />
-            <SummaryRow label="Filing Status" value={data.filingStatus} />
+            {data.country !== 'Canada' && (
+              <SummaryRow label="Filing Status" value={getFilingStatusLabel(data.filingStatus)} />
+            )}
             <SummaryRow label="Inflation Rate" value={`${data.inflationRate}%`} />
           </>
         )}
