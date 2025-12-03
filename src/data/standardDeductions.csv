@@ -1,0 +1,133 @@
+Region,Jurisdiction,Country,Filing_Status,Deduction_Amount
+Federal,USA,USA,Single,15750
+Federal,USA,USA,Married,31500
+Federal,Canada,Canada,Single,0
+Federal,Canada,Canada,Married,0
+State_Province,Alabama,USA,Single,3000
+State_Province,Alabama,USA,Married,8500
+State_Province,Alaska,USA,Single,0
+State_Province,Alaska,USA,Married,0
+State_Province,Arizona,USA,Single,15000
+State_Province,Arizona,USA,Married,30000
+State_Province,Arkanasas,USA,Single,2410
+State_Province,Arkanasas,USA,Married,4820
+State_Province,California,USA,Single,5540
+State_Province,California,USA,Married,11080
+State_Province,Colorado,USA,Single,15000
+State_Province,Colorado,USA,Married,30000
+State_Province,Connecticut,USA,Single,15000
+State_Province,Connecticut,USA,Married,24000
+State_Province,Delaware,USA,Single,3250
+State_Province,Delaware,USA,Married,6500
+State_Province,Florida,USA,Single,0
+State_Province,Florida,USA,Married,0
+State_Province,Georgia,USA,Single,12000
+State_Province,Georgia,USA,Married,24000
+State_Province,Hawaii,USA,Single,4400
+State_Province,Hawaii,USA,Married,8800
+State_Province,Idaho,USA,Single,15000
+State_Province,Idaho,USA,Married,30000
+State_Province,Illinois,USA,Single,2850
+State_Province,Illinois,USA,Married,5700
+State_Province,Indiana,USA,Single,1000
+State_Province,Indiana,USA,Married,2000
+State_Province,Iowa,USA,Single,0
+State_Province,Iowa,USA,Married,0
+State_Province,Kansas,USA,Single,3605
+State_Province,Kansas,USA,Married,8240
+State_Province,Kentucky,USA,Single,3270
+State_Province,Kentucky,USA,Married,6540
+State_Province,Louisiana,USA,Single,12500
+State_Province,Louisiana,USA,Married,25000
+State_Province,Maine,USA,Single,15000
+State_Province,Maine,USA,Married,30000
+State_Province,Maryland,USA,Single,2700
+State_Province,Maryland,USA,Married,5450
+State_Province,Massachusetts,USA,Single,4400
+State_Province,Massachusetts,USA,Married,8800
+State_Province,Michigan,USA,Single,5800
+State_Province,Michigan,USA,Married,11600
+State_Province,Minnesota,USA,Single,14950
+State_Province,Minnesota,USA,Married,29900
+State_Province,Mississippi,USA,Single,2300
+State_Province,Mississippi,USA,Married,4600
+State_Province,Missouri,USA,Single,15000
+State_Province,Missouri,USA,Married,30000
+State_Province,Montana,USA,Single,15000
+State_Province,Montana,USA,Married,30000
+State_Province,Nebraska,USA,Single,8600
+State_Province,Nebraska,USA,Married,17200
+State_Province,Nevada,USA,Single,0
+State_Province,Nevada,USA,Married,0
+State_Province,New Hampshire,USA,Single,0
+State_Province,New Hampshire,USA,Married,0
+State_Province,New Jersey,USA,Single,1000
+State_Province,New Jersey,USA,Married,2000
+State_Province,New Mexico,USA,Single,15000
+State_Province,New Mexico,USA,Married,30000
+State_Province,New York,USA,Single,8000
+State_Province,New York,USA,Married,16050
+State_Province,North Carolina,USA,Single,12750
+State_Province,North Carolina,USA,Married,25500
+State_Province,North Dakota,USA,Single,15000
+State_Province,North Dakota,USA,Married,30000
+State_Province,Ohio,USA,Single,2400
+State_Province,Ohio,USA,Married,4800
+State_Province,Oklahoma,USA,Single,6350
+State_Province,Oklahoma,USA,Married,12700
+State_Province,Oregan,USA,Single,2800
+State_Province,Oregan,USA,Married,5600
+State_Province,Pennsylvania,USA,Single,0
+State_Province,Pennsylvania,USA,Married,0
+State_Province,Rhode Island,USA,Single,10900
+State_Province,Rhode Island,USA,Married,21800
+State_Province,South Carolina,USA,Single,15000
+State_Province,South Carolina,USA,Married,30000
+State_Province,South Dakota,USA,Single,0
+State_Province,South Dakota,USA,Married,0
+State_Province,Tennessee,USA,Single,0
+State_Province,Tennessee,USA,Married,0
+State_Province,Texas,USA,Single,0
+State_Province,Texas,USA,Married,0
+State_Province,Utah,USA,Single,900
+State_Province,Utah,USA,Married,1800
+State_Province,Vermont,USA,Single,7400
+State_Province,Vermont,USA,Married,14850
+State_Province,Virginia,USA,Single,8500
+State_Province,Virginia,USA,Married,17000
+State_Province,Washington,USA,Single,270000
+State_Province,Washington,USA,Married,270000
+State_Province,West Virginia,USA,Single,2000
+State_Province,West Virginia,USA,Married,4000
+State_Province,Wisconsin,USA,Single,13560
+State_Province,Wisconsin,USA,Married,25110
+State_Province,Wyoming,USA,Single,0
+State_Province,Wyoming,USA,Married,0
+State_Province,Washington DC,USA,Single,15000
+State_Province,Washington DC,USA,Married,30000
+State_Province,Alberta,Canada,Single,0
+State_Province,Alberta,Canada,Married,0
+State_Province,British Columbia,Canada,Single,0
+State_Province,British Columbia,Canada,Married,0
+State_Province,Manitoba,Canada,Single,0
+State_Province,Manitoba,Canada,Married,0
+State_Province,New Brunswick,Canada,Single,0
+State_Province,New Brunswick,Canada,Married,0
+State_Province,Newfoundland and Labrador,Canada,Single,0
+State_Province,Newfoundland and Labrador,Canada,Married,0
+State_Province,Northwest Territories,Canada,Single,0
+State_Province,Northwest Territories,Canada,Married,0
+State_Province,Nova Scotia,Canada,Single,0
+State_Province,Nova Scotia,Canada,Married,0
+State_Province,Nunavut,Canada,Single,0
+State_Province,Nunavut,Canada,Married,0
+State_Province,Ontario,Canada,Single,0
+State_Province,Ontario,Canada,Married,0
+State_Province,Prince Edward Island,Canada,Single,0
+State_Province,Prince Edward Island,Canada,Married,0
+State_Province,Québec,Canada,Single,0
+State_Province,Québec,Canada,Married,0
+State_Province,Saskatchewan,Canada,Single,0
+State_Province,Saskatchewan,Canada,Married,0
+State_Province,Yukon,Canada,Single,0
+State_Province,Yukon,Canada,Married,0

@@ -8,7 +8,9 @@ import {
   getFederalTaxLadder,
   getTaxLadder,
   getCountryForState,
-  mapFilingStatusToCSV
+  mapFilingStatusToCSV,
+  getStandardDeduction,
+  getTaxCredit
 } from './csvTaxLadders';
 import { storage } from "../../core/storage";
 
@@ -286,10 +288,66 @@ export function calculateTaxesCSV(income, incomeType, filingStatus, state, year,
       federalTax = { tax: 0, breakdown: [], effectiveRate: 0, notAvailable: true };
       payrollTaxes = { socialSecurity: 0, medicare: 0, additionalMedicare: 0, cpp: 0, ei: 0, total: 0 };
     } else {
-      stateTax = calculateStateIncomeTax(income, state, remappedFilingStatus, inflationMultiplier);
-      federalTax = calculateFederalIncomeTax(income, country, remappedFilingStatus, inflationMultiplier);
+      // Get standard deductions (inflation-adjusted)
+      const csvFilingStatus = mapFilingStatusToCSV(remappedFilingStatus);
 
-      // Calculate payroll taxes based on country
+      // Load custom standard deductions from storage if available
+      const customDeductions = storage.load('customStandardDeductions') || {};
+      const jurisdictionKey = `${country}_${state}_${csvFilingStatus}`;
+      const savedDeductions = customDeductions[jurisdictionKey];
+
+      // Use custom values if available, otherwise use defaults
+      const federalDeduction = savedDeductions?.federal !== null && savedDeductions?.federal !== undefined
+        ? savedDeductions.federal * inflationMultiplier
+        : getStandardDeduction('Federal', country, csvFilingStatus, inflationMultiplier);
+      const stateDeduction = savedDeductions?.state !== null && savedDeductions?.state !== undefined
+        ? savedDeductions.state * inflationMultiplier
+        : getStandardDeduction('State_Province', state, csvFilingStatus, inflationMultiplier);
+
+      // Apply deductions to calculate taxable income
+      const federalTaxableIncome = Math.max(0, income - federalDeduction);
+      const stateTaxableIncome = Math.max(0, income - stateDeduction);
+
+      // Calculate taxes on taxable income (after deductions)
+      stateTax = calculateStateIncomeTax(stateTaxableIncome, state, remappedFilingStatus, inflationMultiplier);
+      federalTax = calculateFederalIncomeTax(federalTaxableIncome, country, remappedFilingStatus, inflationMultiplier);
+
+      // Store deduction amounts in tax results
+      stateTax.standardDeduction = stateDeduction;
+      federalTax.standardDeduction = federalDeduction;
+
+      // Get and apply tax credits (inflation-adjusted)
+      // Load custom tax credits from storage if available
+      const customCredits = storage.load('customTaxCredits') || {};
+      const savedCredits = customCredits[jurisdictionKey];
+
+      // Use custom values if available, otherwise use defaults
+      const defaultFederalCredit = getTaxCredit('Federal', country, csvFilingStatus, inflationMultiplier);
+      const defaultStateCredit = getTaxCredit('State_Province', state, csvFilingStatus, inflationMultiplier);
+
+      const federalCredit = savedCredits?.federal !== null && savedCredits?.federal !== undefined
+        ? { amount: savedCredits.federal * inflationMultiplier, type: defaultFederalCredit.type }
+        : defaultFederalCredit;
+      const stateCredit = savedCredits?.state !== null && savedCredits?.state !== undefined
+        ? { amount: savedCredits.state * inflationMultiplier, type: defaultStateCredit.type }
+        : defaultStateCredit;
+
+      // Apply credits to reduce tax amounts (cannot go below 0)
+      if (federalCredit.type === 'federal' && federalCredit.amount > 0) {
+        const creditedFederalTax = Math.max(0, federalTax.tax - federalCredit.amount);
+        federalTax.taxCredit = federalCredit.amount;
+        federalTax.taxBeforeCredit = federalTax.tax;
+        federalTax.tax = creditedFederalTax;
+      }
+
+      if (stateCredit.type === 'state' && stateCredit.amount > 0) {
+        const creditedStateTax = Math.max(0, stateTax.tax - stateCredit.amount);
+        stateTax.taxCredit = stateCredit.amount;
+        stateTax.taxBeforeCredit = stateTax.tax;
+        stateTax.tax = creditedStateTax;
+      }
+
+      // Calculate payroll taxes based on country (use gross income, not taxable income)
       if (country === 'USA') {
         const fica = calculateUSFICA(income, remappedFilingStatus, inflationMultiplier);
         payrollTaxes = {
@@ -334,7 +392,10 @@ export function calculateTaxesCSV(income, incomeType, filingStatus, state, year,
       effectiveRate: stateTax.effectiveRate,
       breakdown: stateTax.breakdown,
       notAvailable: stateTax.notAvailable,
-      custom: stateTax.custom
+      custom: stateTax.custom,
+      standardDeduction: stateTax.standardDeduction || 0,
+      taxCredit: stateTax.taxCredit || 0,
+      taxBeforeCredit: stateTax.taxBeforeCredit || stateTax.tax
     },
 
     federalTax: {
@@ -342,7 +403,10 @@ export function calculateTaxesCSV(income, incomeType, filingStatus, state, year,
       effectiveRate: federalTax.effectiveRate,
       breakdown: federalTax.breakdown,
       notAvailable: federalTax.notAvailable,
-      custom: federalTax.custom
+      custom: federalTax.custom,
+      standardDeduction: federalTax.standardDeduction || 0,
+      taxCredit: federalTax.taxCredit || 0,
+      taxBeforeCredit: federalTax.taxBeforeCredit || federalTax.tax
     },
 
     payrollTaxes: {

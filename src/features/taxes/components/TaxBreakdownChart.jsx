@@ -35,9 +35,8 @@ export function TaxBreakdownChart({ calculations, country }) {
     return (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Tax Breakdown</h3>
-            <div style={{ width: '100%', height: 256 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
+            <ResponsiveContainer width="100%" height={256}>
+                <PieChart>
                         <Pie
                             data={data}
                             cx="50%"
@@ -55,7 +54,6 @@ export function TaxBreakdownChart({ calculations, country }) {
                         <Legend verticalAlign="bottom" height={36} />
                     </PieChart>
                 </ResponsiveContainer>
-            </div>
         </div>
     )
 }

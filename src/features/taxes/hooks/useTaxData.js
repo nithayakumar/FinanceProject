@@ -8,7 +8,9 @@ import {
     mapFilingStatusToCSV,
     mapFilingStatusFromCSV,
     getStateTaxLadder,
-    getFederalTaxLadder
+    getFederalTaxLadder,
+    getStandardDeduction,
+    getTaxCredit
 } from '../csvTaxLadders'
 
 const FILING_STATUS_OPTIONS = [
@@ -37,6 +39,30 @@ export function useTaxData() {
     const [isSaved, setIsSaved] = useState(false)
     const [filingStatusRemap, setFilingStatusRemap] = useState('')
     const [missingFilingStatus, setMissingFilingStatus] = useState(null)
+    const [standardDeductions, setStandardDeductions] = useState({
+        federal: null,  // null means use default
+        state: null     // null means use default
+    })
+    const [prevStandardDeductions, setPrevStandardDeductions] = useState({
+        federal: null,
+        state: null
+    })
+    const [hasCustomStandardDeductions, setHasCustomStandardDeductions] = useState({
+        federal: false,
+        state: false
+    })
+    const [taxCredits, setTaxCredits] = useState({
+        federal: null,  // null means use default
+        state: null     // null means use default
+    })
+    const [prevTaxCredits, setPrevTaxCredits] = useState({
+        federal: null,
+        state: null
+    })
+    const [hasCustomTaxCredits, setHasCustomTaxCredits] = useState({
+        federal: false,
+        state: false
+    })
     const [data, setData] = useState({
         filingType: 'single',
         filingStatus: 'Single',
@@ -57,7 +83,12 @@ export function useTaxData() {
     }
 
     const currentCsvStatus = mapFilingStatusToCSV(data.filingStatus || 'Single')
-    const remapOptions = FILING_STATUS_OPTIONS.filter(option => option.value !== currentCsvStatus)
+    // Canada only has Single filing status
+    const availableOptions = data.country === 'Canada'
+        ? FILING_STATUS_OPTIONS.filter(option => option.value === 'Single')
+        : FILING_STATUS_OPTIONS
+    const remapOptions = availableOptions.filter(option => option.value !== currentCsvStatus)
+
 
     // Load profile and income data on mount, then auto-calculate
     useEffect(() => {
@@ -193,10 +224,72 @@ export function useTaxData() {
             })
         }
 
+        // Load custom standard deductions from storage
+        const customDeductions = storage.load('customStandardDeductions') || {}
+        const jurisdictionKey = `${userCountry}_${userState}_${csvFilingStatus}`
+        const savedDeductions = customDeductions[jurisdictionKey]
+
+        if (savedDeductions) {
+            const deductions = {
+                federal: savedDeductions.federal ?? null,
+                state: savedDeductions.state ?? null
+            }
+            const hasCustom = {
+                federal: savedDeductions.federal !== null && savedDeductions.federal !== undefined,
+                state: savedDeductions.state !== null && savedDeductions.state !== undefined
+            }
+            console.log('📊 Loading saved deductions:', {
+                savedDeductions,
+                deductions,
+                hasCustom,
+                jurisdictionKey
+            })
+            setStandardDeductions(deductions)
+            setPrevStandardDeductions(deductions)
+            setHasCustomStandardDeductions(hasCustom)
+        } else {
+            console.log('📊 No saved deductions found for:', jurisdictionKey)
+            setStandardDeductions({ federal: null, state: null })
+            setPrevStandardDeductions({ federal: null, state: null })
+            setHasCustomStandardDeductions({ federal: false, state: false })
+        }
+
+        // Load custom tax credits from storage
+        const customCredits = storage.load('customTaxCredits') || {}
+        const savedCredits = customCredits[jurisdictionKey]
+
+        if (savedCredits) {
+            const credits = {
+                federal: savedCredits.federal ?? null,
+                state: savedCredits.state ?? null
+            }
+            setTaxCredits(credits)
+            setPrevTaxCredits(credits)
+            setHasCustomTaxCredits({
+                federal: savedCredits.federal !== null && savedCredits.federal !== undefined,
+                state: savedCredits.state !== null && savedCredits.state !== undefined
+            })
+        } else {
+            setTaxCredits({ federal: null, state: null })
+            setPrevTaxCredits({ federal: null, state: null })
+            setHasCustomTaxCredits({ federal: false, state: false })
+        }
+
         // Load filing status remapping for this state
         const remapping = storage.load('filingStatusRemapping') || {}
         const storedRemap = remapping[userState]?.[profile.filingStatus]
-        if (storedRemap && storedRemap !== csvFilingStatus) {
+
+        // Check if the remapping is still needed
+        // If the current filing status is available, remove invalid remapping
+        if (storedRemap && stateHasStatus && federalHasStatus) {
+            // Remapping exists but is no longer needed - clean it up
+            delete remapping[userState]?.[profile.filingStatus]
+            if (remapping[userState] && Object.keys(remapping[userState]).length === 0) {
+                delete remapping[userState]
+            }
+            storage.save('filingStatusRemapping', remapping)
+            setFilingStatusRemap('')
+        } else if (storedRemap && storedRemap !== csvFilingStatus) {
             // Convert CSV format to user-friendly format if needed (for backwards compatibility)
             const userFriendlyRemap = storedRemap.includes('_') ? mapFilingStatusFromCSV(storedRemap) : storedRemap
             setFilingStatusRemap(userFriendlyRemap)
@@ -236,6 +329,151 @@ export function useTaxData() {
         window.location.reload()
     }
 
+    // Handle standard deduction changes
+    const handleStandardDeductionChange = (type, value, shouldReload = false) => {
+        const newDeductions = {
+            ...standardDeductions,
+            [type]: value === '' || value === null ? null : Number(value)
+        }
+
+        console.log('🔄 handleStandardDeductionChange called:', {
+            type,
+            value,
+            shouldReload,
+            oldValue: standardDeductions[type],
+            newValue: newDeductions[type],
+            prevValue: prevStandardDeductions[type],
+            willChange: newDeductions[type] !== prevStandardDeductions[type]
+        })
+
+        setStandardDeductions(newDeductions)
+
+        // Save to storage
+        const customDeductions = storage.load('customStandardDeductions') || {}
+        const profile = storage.load('profile') || {}
+        const csvFilingStatus = mapFilingStatusToCSV(profile.filingStatus || 'Single')
+        const jurisdictionKey = `${data.country}_${data.state}_${csvFilingStatus}`
+
+        if (newDeductions.federal === null && newDeductions.state === null) {
+            // Both are default, remove from storage
+            delete customDeductions[jurisdictionKey]
+        } else {
+            customDeductions[jurisdictionKey] = {
+                federal: newDeductions.federal,
+                state: newDeductions.state
+            }
+        }
+
+        storage.save('customStandardDeductions', customDeductions)
+
+        // Only reload if explicitly requested (blur) AND value changed
+        if (shouldReload) {
+            const changed = newDeductions[type] !== prevStandardDeductions[type]
+            console.log('🔄 Reload decision:', {
+                shouldReload,
+                changed,
+                newValue: newDeductions[type],
+                prevValue: prevStandardDeductions[type]
+            })
+
+            if (changed) {
+                console.log('✅ WILL RELOAD - value changed')
+                // Update custom flag only when saving
+                setHasCustomStandardDeductions({
+                    ...hasCustomStandardDeductions,
+                    [type]: newDeductions[type] !== null
+                })
+                // Small delay to ensure state update
+                setTimeout(() => {
+                    window.location.reload()
+                }, 10)
+            } else {
+                console.log('⏭️  NO RELOAD - value unchanged')
+                // Update prev to current even if no reload (for next comparison)
+                setPrevStandardDeductions(newDeductions)
+            }
+        }
+    }
+
+    // Reset standard deduction to default
+    const handleResetStandardDeduction = (type) => {
+        console.log('🔄 Reset button clicked for:', type, {
+            currentValue: standardDeductions[type],
+            prevValue: prevStandardDeductions[type],
+            hasCustomFlag: hasCustomStandardDeductions[type]
+        })
+        handleStandardDeductionChange(type, null, true)
+    }
+
+    // Get default standard deduction values
+    const getDefaultStandardDeduction = (type) => {
+        const csvFilingStatus = mapFilingStatusToCSV(data.filingStatus || 'Single')
+        const region = type === 'federal' ? 'Federal' : 'State_Province'
+        const jurisdiction = type === 'federal' ? data.country : data.state
+
+        return getStandardDeduction(region, jurisdiction, csvFilingStatus, 1)
+    }
+
+    // Handle tax credit changes
+    const handleTaxCreditChange = (type, value, shouldReload = false) => {
+        const newCredits = {
+            ...taxCredits,
+            [type]: value === '' || value === null ? null : Number(value)
+        }
+        setTaxCredits(newCredits)
+
+        // Save to storage
+        const customCredits = storage.load('customTaxCredits') || {}
+        const profile = storage.load('profile') || {}
+        const csvFilingStatus = mapFilingStatusToCSV(profile.filingStatus || 'Single')
+        const jurisdictionKey = `${data.country}_${data.state}_${csvFilingStatus}`
+
+        if (newCredits.federal === null && newCredits.state === null) {
+            // Both are default, remove from storage
+            delete customCredits[jurisdictionKey]
+        } else {
+            customCredits[jurisdictionKey] = {
+                federal: newCredits.federal,
+                state: newCredits.state
+            }
+        }
+
+        storage.save('customTaxCredits', customCredits)
+
+        // Only reload if explicitly requested (blur) AND value changed
+        if (shouldReload) {
+            const changed = newCredits[type] !== prevTaxCredits[type]
+            if (changed) {
+                // Update custom flag only when saving
+                setHasCustomTaxCredits({
+                    ...hasCustomTaxCredits,
+                    [type]: newCredits[type] !== null
+                })
+                // Small delay to ensure state update
+                setTimeout(() => {
+                    window.location.reload()
+                }, 10)
+            } else {
+                // Update prev to current even if no reload (for next comparison)
+                setPrevTaxCredits(newCredits)
+            }
+        }
+    }
+
+    // Reset tax credit to default
+    const handleResetTaxCredit = (type) => {
+        handleTaxCreditChange(type, null, true)
+    }
+
+    // Get default tax credit values
+    const getDefaultTaxCredit = (type) => {
+        const csvFilingStatus = mapFilingStatusToCSV(data.filingStatus || 'Single')
+        const region = type === 'federal' ? 'Federal' : 'State_Province'
+        const jurisdiction = type === 'federal' ? data.country : data.state
+
+        return getTaxCredit(region, jurisdiction, csvFilingStatus, 1)
+    }
+
     return {
         data,
         calculations,
@@ -244,6 +482,16 @@ export function useTaxData() {
         missingFilingStatus,
         remapOptions,
         handleRemapChange,
+        standardDeductions,
+        handleStandardDeductionChange,
+        handleResetStandardDeduction,
+        getDefaultStandardDeduction,
+        hasCustomStandardDeductions,
+        taxCredits,
+        handleTaxCreditChange,
+        handleResetTaxCredit,
+        getDefaultTaxCredit,
+        hasCustomTaxCredits,
         FILING_STATUS_OPTIONS
     }
 }

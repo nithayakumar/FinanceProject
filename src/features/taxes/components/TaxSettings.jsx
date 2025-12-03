@@ -6,7 +6,17 @@ export function TaxSettings({
     filingStatusRemap,
     handleRemapChange,
     remapOptions,
-    missingFilingStatus
+    missingFilingStatus,
+    standardDeductions,
+    handleStandardDeductionChange,
+    handleResetStandardDeduction,
+    getDefaultStandardDeduction,
+    hasCustomStandardDeductions,
+    taxCredits,
+    handleTaxCreditChange,
+    handleResetTaxCredit,
+    getDefaultTaxCredit,
+    hasCustomTaxCredits
 }) {
     return (
         <div className="space-y-6">
@@ -77,6 +87,174 @@ export function TaxSettings({
                     </p>
                 )}
             </div>
+
+            {/* Standard Deductions */}
+            {standardDeductions && (
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h3 className="font-medium text-gray-900 mb-3">Standard Deductions</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                        Deductions are applied to reduce taxable income. Values are automatically set based on your location and filing status, but can be customized.
+                    </p>
+
+                    <div className="space-y-4">
+                        {/* Federal Standard Deduction */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                                Federal Standard Deduction ({data.country})
+                            </label>
+                            <div className="flex items-center space-x-2">
+                                <div className="relative flex-1">
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                    <input
+                                        type="number"
+                                        value={standardDeductions.federal ?? getDefaultStandardDeduction('federal')}
+                                        onChange={(e) => handleStandardDeductionChange('federal', e.target.value)}
+                                        onBlur={(e) => handleStandardDeductionChange('federal', e.target.value, true)}
+                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder={getDefaultStandardDeduction('federal')?.toString()}
+                                    />
+                                </div>
+                                {hasCustomStandardDeductions?.federal && (
+                                    <button
+                                        onClick={() => handleResetStandardDeduction('federal')}
+                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition"
+                                        title="Reset to default"
+                                    >
+                                        Reset
+                                    </button>
+                                )}
+                            </div>
+                            {hasCustomStandardDeductions?.federal && (
+                                <p className="mt-1 text-xs text-blue-600">
+                                    Custom value (default: ${getDefaultStandardDeduction('federal')?.toLocaleString()})
+                                </p>
+                            )}
+                        </div>
+
+                        {/* State Standard Deduction */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                                {data.country === 'Canada' ? 'Provincial' : 'State'} Standard Deduction ({data.state})
+                            </label>
+                            <div className="flex items-center space-x-2">
+                                <div className="relative flex-1">
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                    <input
+                                        type="number"
+                                        value={standardDeductions.state ?? getDefaultStandardDeduction('state')}
+                                        onChange={(e) => handleStandardDeductionChange('state', e.target.value)}
+                                        onBlur={(e) => handleStandardDeductionChange('state', e.target.value, true)}
+                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder={getDefaultStandardDeduction('state')?.toString()}
+                                    />
+                                </div>
+                                {hasCustomStandardDeductions?.state && (
+                                    <button
+                                        onClick={() => handleResetStandardDeduction('state')}
+                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition"
+                                        title="Reset to default"
+                                    >
+                                        Reset
+                                    </button>
+                                )}
+                            </div>
+                            {hasCustomStandardDeductions?.state && (
+                                <p className="mt-1 text-xs text-blue-600">
+                                    Custom value (default: ${getDefaultStandardDeduction('state')?.toLocaleString()})
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <p className="mt-3 text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
+                        💡 Standard deductions are inflation-adjusted over time in long-term projections.
+                    </p>
+                </div>
+            )}
+
+            {/* Tax Credits (Editable) */}
+            {taxCredits && (
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                    <h3 className="font-medium text-gray-900 mb-3">Tax Credits</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                        Tax credits directly reduce your tax liability after calculating your taxes. Values are automatically set based on your location and filing status, but can be customized.
+                    </p>
+
+                    <div className="space-y-4">
+                        {/* Federal Tax Credit */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                                Federal Tax Credit ({data.country})
+                            </label>
+                            <div className="flex items-center space-x-2">
+                                <div className="relative flex-1">
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                    <input
+                                        type="number"
+                                        value={taxCredits.federal ?? getDefaultTaxCredit('federal')?.amount ?? 0}
+                                        onChange={(e) => handleTaxCreditChange('federal', e.target.value)}
+                                        onBlur={(e) => handleTaxCreditChange('federal', e.target.value, true)}
+                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder={(getDefaultTaxCredit('federal')?.amount ?? 0).toString()}
+                                    />
+                                </div>
+                                {hasCustomTaxCredits?.federal && (
+                                    <button
+                                        onClick={() => handleResetTaxCredit('federal')}
+                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition"
+                                        title="Reset to default"
+                                    >
+                                        Reset
+                                    </button>
+                                )}
+                            </div>
+                            {hasCustomTaxCredits?.federal && (
+                                <p className="mt-1 text-xs text-blue-600">
+                                    Custom value (default: ${(getDefaultTaxCredit('federal')?.amount ?? 0).toLocaleString()})
+                                </p>
+                            )}
+                        </div>
+
+                        {/* State/Provincial Tax Credit */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                                {data.country === 'Canada' ? 'Provincial' : 'State'} Tax Credit ({data.state})
+                            </label>
+                            <div className="flex items-center space-x-2">
+                                <div className="relative flex-1">
+                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                    <input
+                                        type="number"
+                                        value={taxCredits.state ?? getDefaultTaxCredit('state')?.amount ?? 0}
+                                        onChange={(e) => handleTaxCreditChange('state', e.target.value)}
+                                        onBlur={(e) => handleTaxCreditChange('state', e.target.value, true)}
+                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder={(getDefaultTaxCredit('state')?.amount ?? 0).toString()}
+                                    />
+                                </div>
+                                {hasCustomTaxCredits?.state && (
+                                    <button
+                                        onClick={() => handleResetTaxCredit('state')}
+                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition"
+                                        title="Reset to default"
+                                    >
+                                        Reset
+                                    </button>
+                                )}
+                            </div>
+                            {hasCustomTaxCredits?.state && (
+                                <p className="mt-1 text-xs text-blue-600">
+                                    Custom value (default: ${(getDefaultTaxCredit('state')?.amount ?? 0).toLocaleString()})
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <p className="mt-3 text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
+                        💡 Tax credits are inflation-adjusted over time in long-term projections.
+                    </p>
+                </div>
+            )}
         </div>
     )
 }

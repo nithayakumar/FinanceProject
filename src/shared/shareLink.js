@@ -10,13 +10,22 @@ import { storage } from '../core/storage'
  * Generate a shareable link with compressed state in URL hash
  * @returns {string} Full URL with encoded state
  */
+import { minifyState, inflateState } from './urlCompression'
+
+/**
+ * Generate a shareable link with compressed state in URL hash
+ * @returns {string} Full URL with encoded state
+ */
 export function generateShareLink() {
   try {
     // Export all data
     const data = storage.exportAll()
 
+    // Minify data (convert to compact array structure)
+    const minifiedData = minifyState(data)
+
     // Convert to JSON string
-    const jsonString = JSON.stringify(data)
+    const jsonString = JSON.stringify(minifiedData)
 
     // Compress using lz-string (URI-safe base64)
     const compressed = LZString.compressToEncodedURIComponent(jsonString)
@@ -26,9 +35,9 @@ export function generateShareLink() {
     const shareUrl = `${baseUrl}#share=${compressed}`
 
     console.log('📋 Share link generated:', {
-      originalSize: `${(jsonString.length / 1024).toFixed(2)} KB`,
+      originalSize: `${(JSON.stringify(data).length / 1024).toFixed(2)} KB`,
+      minifiedSize: `${(jsonString.length / 1024).toFixed(2)} KB`,
       compressedSize: `${(compressed.length / 1024).toFixed(2)} KB`,
-      compressionRatio: `${((1 - compressed.length / jsonString.length) * 100).toFixed(1)}%`,
       urlLength: shareUrl.length
     })
 
@@ -72,7 +81,20 @@ export function loadStateFromURL() {
     }
 
     // Parse JSON
-    const data = JSON.parse(jsonString)
+    let data = JSON.parse(jsonString)
+
+    // Check if it's the new minified format (Array) or legacy (Object)
+    if (Array.isArray(data)) {
+      console.log('📦 Detected minified share link format')
+      data = inflateState(data)
+    } else {
+      console.log('📦 Detected legacy share link format')
+    }
+
+    if (!data) {
+      console.error('❌ Failed to inflate state data')
+      return null
+    }
 
     console.log('✅ Loaded shared state from URL:', {
       keys: Object.keys(data),

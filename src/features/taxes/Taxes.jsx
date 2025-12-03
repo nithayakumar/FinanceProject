@@ -1,6 +1,5 @@
-import React from 'react'
+import React, { useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import SplitLayout from '../../shared/components/SplitLayout'
 import { useTaxData } from './hooks/useTaxData'
 import { TaxSummary } from './components/TaxSummary'
 import { TaxBreakdownChart } from './components/TaxBreakdownChart'
@@ -10,6 +9,12 @@ import { TaxMappingNotification } from './components/TaxMappingNotification'
 
 function Taxes() {
   const navigate = useNavigate()
+  const leftPanelRef = useRef(null)
+  const hasRestoredRef = useRef(false)
+
+  // Check if we need to restore scroll BEFORE first render
+  const savedScrollPosition = sessionStorage.getItem('taxesScrollPosition')
+  const [isScrollRestored, setIsScrollRestored] = React.useState(!savedScrollPosition)
   const {
     data,
     calculations,
@@ -17,12 +22,80 @@ function Taxes() {
     filingStatusRemap,
     missingFilingStatus,
     remapOptions,
-    handleRemapChange
+    handleRemapChange,
+    standardDeductions,
+    handleStandardDeductionChange,
+    handleResetStandardDeduction,
+    getDefaultStandardDeduction,
+    hasCustomStandardDeductions,
+    taxCredits,
+    handleTaxCreditChange,
+    handleResetTaxCredit,
+    getDefaultTaxCredit,
+    hasCustomTaxCredits
   } = useTaxData()
 
   const handleNextFeature = () => {
     navigate('/dashboard')
   }
+
+  // Disable browser's automatic scroll restoration
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+  }, [])
+
+  // Restore scroll position after page reload
+  useEffect(() => {
+    // Prevent double-restoration from React StrictMode
+    if (hasRestoredRef.current) {
+      console.log('⏭️ Already restored, skipping')
+      return
+    }
+
+    const savedScrollPosition = sessionStorage.getItem('taxesScrollPosition')
+    console.log('🔄 useEffect running. Scroll position:', savedScrollPosition, 'isScrollRestored:', isScrollRestored, 'hasRestored:', hasRestoredRef.current)
+
+    if (savedScrollPosition && leftPanelRef.current) {
+      const scrollPos = parseInt(savedScrollPosition)
+      console.log('📜 Will restore scroll position to:', scrollPos)
+
+      // Set scroll position IMMEDIATELY, synchronously
+      console.log('⏰ Setting scroll. Current position:', leftPanelRef.current.scrollTop, 'Target:', scrollPos)
+      leftPanelRef.current.scrollTop = scrollPos
+      console.log('✅ Scroll set. Position:', leftPanelRef.current?.scrollTop)
+
+      // Mark as restored
+      hasRestoredRef.current = true
+
+      // Remove from storage and show content
+      sessionStorage.removeItem('taxesScrollPosition')
+      setIsScrollRestored(true)
+    } else if (!savedScrollPosition) {
+      // No scroll to restore, show immediately
+      console.log('📭 No scroll to restore, showing content')
+      hasRestoredRef.current = true
+      setIsScrollRestored(true)
+    }
+  }, [])
+
+  // Save scroll position before page unloads (most reliable timing)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (leftPanelRef.current) {
+        const scrollPos = leftPanelRef.current.scrollTop
+        console.log('💾 Saving scroll position on unload:', scrollPos)
+        sessionStorage.setItem('taxesScrollPosition', scrollPos.toString())
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [])
 
   // Left Panel Content (Settings & Configuration)
   const InputSection = (
@@ -52,6 +125,16 @@ function Taxes() {
           handleRemapChange={handleRemapChange}
           remapOptions={remapOptions}
           missingFilingStatus={missingFilingStatus}
+          standardDeductions={standardDeductions}
+          handleStandardDeductionChange={handleStandardDeductionChange}
+          handleResetStandardDeduction={handleResetStandardDeduction}
+          getDefaultStandardDeduction={getDefaultStandardDeduction}
+          hasCustomStandardDeductions={hasCustomStandardDeductions}
+          taxCredits={taxCredits}
+          handleTaxCreditChange={handleTaxCreditChange}
+          handleResetTaxCredit={handleResetTaxCredit}
+          getDefaultTaxCredit={getDefaultTaxCredit}
+          hasCustomTaxCredits={hasCustomTaxCredits}
         />
       </section>
 
@@ -139,10 +222,27 @@ function Taxes() {
   )
 
   return (
-    <SplitLayout
-      inputSection={InputSection}
-      outputSection={OutputSection}
-    />
+    <div
+      className="flex h-screen bg-gray-50 overflow-hidden font-sans"
+      style={{ opacity: isScrollRestored ? 1 : 0, transition: 'opacity 0s' }}
+    >
+      {/* Left Panel - Input */}
+      <div
+        ref={leftPanelRef}
+        className="w-1/2 h-full overflow-y-auto border-r border-gray-200 bg-gray-50/50"
+      >
+        <div className="max-w-2xl mx-auto p-8">
+          {InputSection}
+        </div>
+      </div>
+
+      {/* Right Panel - Output */}
+      <div className="w-1/2 h-full bg-white overflow-y-auto">
+        <div className="max-w-2xl mx-auto p-8 h-full">
+          {OutputSection}
+        </div>
+      </div>
+    </div>
   )
 }
 

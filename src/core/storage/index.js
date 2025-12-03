@@ -75,11 +75,10 @@ export const storage = {
       income: this.load('income'),
       expenses: this.load('expenses'),
       investmentsDebt: this.load('investmentsDebt'),
-      taxes: this.load('taxes'),
-      taxLadders: this.load('taxLadders'),
-      scenarios: this.load('scenarios') || [],
       filingStatusRemapping: this.load('filingStatusRemapping'),
-      customTaxLadder: this.load('customTaxLadder')
+      customTaxLadder: this.load('customTaxLadder'),
+      customStandardDeductions: this.load('customStandardDeductions'),
+      customTaxCredits: this.load('customTaxCredits')
     }
   },
 

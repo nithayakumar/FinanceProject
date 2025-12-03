@@ -4,9 +4,13 @@
  */
 
 import taxLaddersCSV from '../../data/taxLadders.csv?raw';
+import standardDeductionsCSV from '../../data/standardDeductions.csv?raw';
+import taxCreditsCSV from '../../data/taxCredits.csv?raw';
 
 // Parsed and indexed tax ladder data
 let parsedData = null;
+let standardDeductionsData = null;
+let taxCreditsData = null;
 
 /**
  * Parse CSV string into array of objects
@@ -147,18 +151,82 @@ function buildTaxLadderIndex(rows) {
 }
 
 /**
+ * Parse standard deductions CSV into indexed structure
+ */
+function parseStandardDeductions(csvString) {
+  const lines = csvString.trim().split('\n');
+  const deductions = {};
+
+  lines.slice(1).forEach(line => {
+    const values = line.split(',');
+    const region = values[0].trim();
+    const jurisdiction = values[1].trim();
+    const country = values[2].trim();
+    const filingStatus = values[3].trim();
+    const amount = parseFloat(values[4]);
+
+    // Create key matching tax ladder format: Region_Jurisdiction_FilingStatus
+    const key = `${region}_${jurisdiction}_${filingStatus}`;
+    deductions[key] = amount;
+  });
+
+  return deductions;
+}
+
+/**
+ * Initialize standard deductions data
+ */
+function initializeStandardDeductions() {
+  if (!standardDeductionsData) {
+    standardDeductionsData = parseStandardDeductions(standardDeductionsCSV);
+  }
+  return standardDeductionsData;
+}
+
+/**
+ * Parse tax credits CSV into indexed structure
+ */
+function parseTaxCredits(csvString) {
+  const lines = csvString.trim().split('\n');
+  const credits = {};
+
+  lines.slice(1).forEach(line => {
+    const values = line.split(',');
+    const region = values[0].trim();
+    const jurisdiction = values[1].trim();
+    const country = values[2].trim();
+    const filingStatus = values[3].trim();
+    const amount = parseFloat(values[4]);
+    const creditType = values[5].trim(); // 'federal' or 'state'
+
+    // Create key matching tax ladder format: Region_Jurisdiction_FilingStatus
+    const key = `${region}_${jurisdiction}_${filingStatus}`;
+    credits[key] = {
+      amount,
+      type: creditType
+    };
+  });
+
+  return credits;
+}
+
+/**
+ * Initialize tax credits data
+ */
+function initializeTaxCredits() {
+  if (!taxCreditsData) {
+    taxCreditsData = parseTaxCredits(taxCreditsCSV);
+  }
+  return taxCreditsData;
+}
+
+/**
  * Initialize and parse the tax ladder data
  */
 export function initializeTaxLadders() {
   if (!parsedData) {
     const rows = parseCSV(taxLaddersCSV);
     parsedData = buildTaxLadderIndex(rows);
-    console.log('Tax ladders initialized:', {
-      totalLadders: Object.keys(parsedData.ladders).length,
-      states: parsedData.metadata.states,
-      countries: parsedData.metadata.countries,
-      sampleKeys: Object.keys(parsedData.ladders).slice(0, 5)
-    });
   }
   return parsedData;
 }
@@ -188,9 +256,6 @@ export function getTaxLadder(region, state, taxType, filingStatus) {
       // Canada: All filing statuses fall back to Single
       const singleKey = `${region}_${state}_${taxType}_Single`;
       ladder = parsedData.ladders[singleKey];
-      if (ladder) {
-        console.log(`Canada fallback: ${filingStatus} → Single for ${state} ${taxType}`);
-      }
     } else if (country === 'USA') {
       // USA fallback chain
       let fallbackStatus = null;
@@ -206,9 +271,6 @@ export function getTaxLadder(region, state, taxType, filingStatus) {
       if (fallbackStatus) {
         const fallbackKey = `${region}_${state}_${taxType}_${fallbackStatus}`;
         ladder = parsedData.ladders[fallbackKey];
-        if (ladder) {
-          console.log(`USA fallback: ${filingStatus} → ${fallbackStatus} for ${state} ${taxType}`);
-        }
       }
     }
 
@@ -224,6 +286,59 @@ export function getTaxLadder(region, state, taxType, filingStatus) {
   }
 
   return ladder || null;
+}
+
+/**
+ * Get standard deduction for a jurisdiction and filing status
+ * @param {string} region - 'Federal' or 'State_Province'
+ * @param {string} jurisdiction - State name or country
+ * @param {string} filingStatus - 'Single' or 'Married'
+ * @param {number} inflationMultiplier - Multiplier for inflation adjustment (default 1)
+ * @returns {number} Standard deduction amount (inflation-adjusted)
+ */
+export function getStandardDeduction(region, jurisdiction, filingStatus, inflationMultiplier = 1) {
+  if (!standardDeductionsData) {
+    initializeStandardDeductions();
+  }
+
+  const key = `${region}_${jurisdiction}_${filingStatus}`;
+  const baseDeduction = standardDeductionsData[key];
+
+  if (baseDeduction === undefined) {
+    console.warn(`Standard deduction not found for: ${key}`);
+    return 0;
+  }
+
+  // Apply inflation adjustment
+  return baseDeduction * inflationMultiplier;
+}
+
+/**
+ * Get tax credit for a jurisdiction and filing status
+ * @param {string} region - 'Federal' or 'State_Province'
+ * @param {string} jurisdiction - State name or country
+ * @param {string} filingStatus - 'Single' or 'Married'
+ * @param {number} inflationMultiplier - Multiplier for inflation adjustment (default 1)
+ * @returns {Object} Tax credit info { amount: number, type: 'federal'|'state' }
+ */
+export function getTaxCredit(region, jurisdiction, filingStatus, inflationMultiplier = 1) {
+  if (!taxCreditsData) {
+    initializeTaxCredits();
+  }
+
+  const key = `${region}_${jurisdiction}_${filingStatus}`;
+  const creditInfo = taxCreditsData[key];
+
+  if (!creditInfo) {
+    console.warn(`Tax credit not found for: ${key}`);
+    return { amount: 0, type: region === 'Federal' ? 'federal' : 'state' };
+  }
+
+  // Apply inflation adjustment to amount
+  return {
+    amount: creditInfo.amount * inflationMultiplier,
+    type: creditInfo.type
+  };
 }
 
 /**
@@ -412,6 +527,8 @@ export default {
   getTaxLadder,
   getStateTaxLadder,
   getFederalTaxLadder,
+  getStandardDeduction,
+  getTaxCredit,
   getAvailableStates,
   getStatesByCountry,
   getAvailableCountries,

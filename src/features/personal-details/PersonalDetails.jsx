@@ -38,11 +38,13 @@ function PersonalDetails() {
     }
   })
 
-  // Filing status options
-  const filingStatusOptions = [
-    { label: 'Single', value: 'Single' },
-    { label: 'Couple', value: 'Married' }
-  ]
+  // Filing status options - Canada only has Single
+  const filingStatusOptions = data.country === 'Canada'
+    ? [{ label: 'Single', value: 'Single' }]
+    : [
+        { label: 'Single', value: 'Single' },
+        { label: 'Couple', value: 'Married' }
+      ]
 
   // Helper function to get filing status label
   const getFilingStatusLabel = (value) => {
