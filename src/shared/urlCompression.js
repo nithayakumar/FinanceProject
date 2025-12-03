@@ -51,7 +51,8 @@ const trimArray = (arr, defaults = []) => {
         const defaultVal = defaults[i] !== undefined ? defaults[i] : null
 
         // Check if value is "empty" or matches default
-        const isEmpty = val === null || val === undefined || val === '' || val === 0 || (Array.isArray(val) && val.length === 0)
+        // Note: 0 is NOT empty, only null/undefined/empty string/empty array
+        const isEmpty = val === null || val === undefined || val === '' || (Array.isArray(val) && val.length === 0)
         const isDefault = val === defaultVal
 
         if (isEmpty || isDefault) {
@@ -242,8 +243,9 @@ export function inflateState(minified) {
 
         const isPercent = c[1] !== 0 // Default to percent (1) if undefined/omitted
 
-        return {
+        const inflated = {
             id: typeof c[0] === 'number' ? id : `custom-${idx}`,
+            category: name || 'Expense', // For UI compatibility
             name: name || 'Expense',
             amountType: isPercent ? 'percent' : 'fixed',
             percentOfIncome: isPercent ? (c[2] || 0) : '',
@@ -257,6 +259,8 @@ export function inflateState(minified) {
                 description: j[3]
             }))
         }
+
+        return inflated
     })
 
     // 4. One Time Expenses
