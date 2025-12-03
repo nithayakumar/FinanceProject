@@ -140,65 +140,69 @@ function Navigation() {
             </div> */}
           </div>
 
-          {/* Tools Dropdown */}
-          <div className="relative">
+          {/* Actions Area */}
+          <div className="flex items-center space-x-2">
+            {/* Share Link Button */}
             <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+              onClick={handleShareLink}
+              className="p-2 rounded-md text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition"
+              title="Copy Share Link"
             >
-              ⚙️ Tools
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
             </button>
 
-            {dropdownOpen && (
-              <>
-                {/* Backdrop */}
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setDropdownOpen(false)}
-                />
+            {/* Tools Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition"
+                title="Tools"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
 
-                {/* Dropdown Menu */}
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-20">
-                  <div className="py-1">
-                    {/* Data Management Section */}
-                    <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
-                      Data Management
-                    </div>
-                    <button
-                      onClick={handleShareLink}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      📋 Copy Share Link
-                    </button>
-                    <button
-                      onClick={handleExportJSON}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      📥 Export JSON
-                    </button>
-                    <button
-                      onClick={handleImportJSON}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      📤 Import JSON
-                    </button>
+              {dropdownOpen && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setDropdownOpen(false)}
+                  />
 
-                    {/* Developer Tools Section */}
-                    <div className="border-t border-gray-200 mt-1 pt-1">
-                      <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
-                        Developer Tools
-                      </div>
+                  {/* Dropdown Menu */}
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-20">
+                    <div className="py-1">
+                      <button
+                        onClick={handleExportJSON}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      >
+                        <span>💾</span> Save (Export JSON)
+                      </button>
+                      <button
+                        onClick={handleImportJSON}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      >
+                        <span>📂</span> Load (Import JSON)
+                      </button>
+
+                      <div className="border-t border-gray-100 my-1"></div>
+
                       <button
                         onClick={handleClearData}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                       >
-                        🗑️ Clear All Data
+                        <span>🗑️</span> Clear All Data
                       </button>
                     </div>
                   </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
