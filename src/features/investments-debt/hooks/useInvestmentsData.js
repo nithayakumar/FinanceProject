@@ -60,8 +60,48 @@ export function useInvestmentsData() {
     })
 
     const [errors, setErrors] = useState({})
-    const [projections, setProjections] = useState(null)
+    const [projections, setProjections] = useState(() => {
+        // Calculate initial projections synchronously to avoid loading delay
+        const profile = storage.load('profile') || {}
+        const incomeData = storage.load('income')
+        const expensesData = storage.load('expenses')
+
+        const hasIncome = incomeData?.incomeStreams?.length > 0
+        const hasExpenses = expensesData?.expenseCategories?.length > 0
+
+        if (!hasIncome || !hasExpenses) {
+            return null
+        }
+
+        const yearsToRetirement = (profile.retirementAge && profile.age)
+            ? profile.retirementAge - profile.age
+            : 30
+
+        const enrichedProfile = { ...profile, yearsToRetirement }
+
+        // Get current data value from the useState initializer above
+        const currentData = storage.load('investmentsDebt')
+        if (!currentData) return null
+
+        const incomeProjections = calculateIncomeProjections(incomeData, enrichedProfile)
+        const expenseProjections = calculateExpenseProjections(
+            expensesData,
+            enrichedProfile,
+            incomeProjections.projections
+        )
+
+        const incomeWithProjections = { ...incomeData, projections: incomeProjections.projections }
+        const expensesWithProjections = { ...expensesData, projections: expenseProjections.projections }
+
+        return calculateGapProjections(
+            incomeWithProjections,
+            expensesWithProjections,
+            currentData,
+            enrichedProfile
+        )
+    })
     const [isCalculating, setIsCalculating] = useState(false)
+    const isInitialCalculation = useRef(true)
 
     // Auto-save effect
     const isFirstRender = useRef(true)
@@ -87,13 +127,23 @@ export function useInvestmentsData() {
     // Debounced Calculation
     useEffect(() => {
         const calculate = () => {
-            setIsCalculating(true)
+            // Only show loading state for subsequent calculations, not initial load
+            if (!isInitialCalculation.current) {
+                setIsCalculating(true)
+            }
+
             const profile = storage.load('profile') || {}
             const incomeData = storage.load('income')
             const expensesData = storage.load('expenses')
 
-            if (!incomeData || !expensesData) {
+            // Check if we have actual data (not just empty objects)
+            const hasIncome = incomeData?.incomeStreams?.length > 0
+            const hasExpenses = expensesData?.expenseCategories?.length > 0
+
+            if (!hasIncome || !hasExpenses) {
+                setProjections(null)
                 setIsCalculating(false)
+                isInitialCalculation.current = false
                 return
             }
 
@@ -126,9 +176,12 @@ export function useInvestmentsData() {
 
             setProjections(gapProjections)
             setIsCalculating(false)
+            isInitialCalculation.current = false
         }
 
-        const timer = setTimeout(calculate, 500) // 500ms debounce for heavier calc
+        // Use shorter delay for initial calculation (100ms), longer for subsequent edits (300ms)
+        const delay = isInitialCalculation.current ? 100 : 300
+        const timer = setTimeout(calculate, delay)
         return () => clearTimeout(timer)
     }, [data])
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import SplitLayout from '../../shared/components/SplitLayout'
 import { Button } from '../../shared/ui/Button'
@@ -20,6 +20,13 @@ function InvestmentsDebt() {
   } = useInvestmentsData()
 
   const [viewMode, setViewMode] = useState('nominal') // 'nominal' or 'real'
+  const [showChart, setShowChart] = useState(false)
+
+  // Trigger chart animation on mount
+  useEffect(() => {
+    const timer = setTimeout(() => setShowChart(true), 50)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleNextFeature = () => {
     navigate('/taxes')
@@ -63,34 +70,38 @@ function InvestmentsDebt() {
 
   const OutputSection = (
     <div className="h-full flex flex-col">
-      {isCalculating ? (
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          Calculating projections...
-        </div>
-      ) : projections ? (
-        <>
-          <InvestmentsSummary
-            summary={projections.summary}
-            yearsToRetirement={projections.projections.length}
-            chartData={projections.projections}
-            investments={data.investments}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-          />
-
-          <div className="mt-6">
-            <InvestmentsChart
-              data={projections.projections}
+      <div className="flex-1">
+        {isCalculating ? (
+          <div className="flex items-center justify-center h-64 text-gray-500">
+            Calculating projections...
+          </div>
+        ) : projections ? (
+          <>
+            <InvestmentsSummary
+              summary={projections.summary}
+              yearsToRetirement={projections.projections.length}
+              chartData={projections.projections}
               investments={data.investments}
               viewMode={viewMode}
+              setViewMode={setViewMode}
             />
+
+            {showChart && (
+              <div className="mt-6">
+                <InvestmentsChart
+                  data={projections.projections}
+                  investments={data.investments}
+                  viewMode={viewMode}
+                />
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-64 text-gray-500">
+            Please complete Income and Expenses sections to see projections.
           </div>
-        </>
-      ) : (
-        <div className="flex items-center justify-center h-64 text-gray-500">
-          Please complete Income and Expenses sections to see projections.
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="mt-8 pt-2">
         <button

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
 
 function NetWorthTab({ data }) {
-  const [viewMode, setViewMode] = useState('nominal')
+  const [viewMode, setViewMode] = useState('pv')
   const [tableViewMode, setTableViewMode] = useState('simple') // 'simple' or 'detailed'
   const isPV = viewMode === 'pv'
 
@@ -33,16 +33,6 @@ function NetWorthTab({ data }) {
       <div className="flex justify-end mb-6">
         <div className="flex gap-2">
           <button
-            onClick={() => setViewMode('nominal')}
-            className={`px-4 py-2 text-sm rounded-md transition ${
-              viewMode === 'nominal'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Nominal
-          </button>
-          <button
             onClick={() => setViewMode('pv')}
             className={`px-4 py-2 text-sm rounded-md transition ${
               viewMode === 'pv'
@@ -50,7 +40,17 @@ function NetWorthTab({ data }) {
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
             }`}
           >
-            Present Value
+            Today's Dollars
+          </button>
+          <button
+            onClick={() => setViewMode('nominal')}
+            className={`px-4 py-2 text-sm rounded-md transition ${
+              viewMode === 'nominal'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Future Dollars
           </button>
         </div>
       </div>

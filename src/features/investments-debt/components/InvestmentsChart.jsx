@@ -66,6 +66,8 @@ export function InvestmentsChart({ data, investments, viewMode }) {
                         stroke="#10b981"
                         fill="#10b981"
                         name="Cash"
+                        animationDuration={1000}
+                        animationEasing="ease-out"
                     />
                     <Area
                         type="monotone"
@@ -74,6 +76,8 @@ export function InvestmentsChart({ data, investments, viewMode }) {
                         stroke="#3b82f6"
                         fill="#3b82f6"
                         name="401(k)"
+                        animationDuration={1000}
+                        animationEasing="ease-out"
                     />
                     {investments.map((_, index) => (
                         <Area
@@ -84,6 +88,8 @@ export function InvestmentsChart({ data, investments, viewMode }) {
                             stroke={['#8b5cf6', '#f59e0b', '#ef4444'][index % 3]}
                             fill={['#8b5cf6', '#f59e0b', '#ef4444'][index % 3]}
                             name={`Investment ${index + 1}`}
+                            animationDuration={1000}
+                            animationEasing="ease-out"
                         />
                     ))}
                 </AreaChart>

@@ -6,6 +6,7 @@ function ForecastTab({ data }) {
 
   // State for year slider
   const [selectedYear, setSelectedYear] = useState(1)
+  const [viewMode, setViewMode] = useState('pv') // 'pv' (Today's Dollars) or 'nominal' (Future Dollars)
 
   // State for impact analysis
   const [incomeAdjustment, setIncomeAdjustment] = useState(0) // -50% to +50%
@@ -106,12 +107,14 @@ function ForecastTab({ data }) {
 
     // % of Net Worth Growth from Investment Growth (vs contributions)
     let netWorthChange = 0
+    let netWorthChangePV = 0
     let investmentGrowth = 0
     let contributions = 0
     let growthPercent = 0
 
     if (prevP) {
       netWorthChange = p.netWorth - prevP.netWorth
+      netWorthChangePV = p.netWorthPV - prevP.netWorthPV
       const investmentMarketGrowth = (p.totalInvestmentValue - prevP.totalInvestmentValue) - p.investedThisYear
       const ret401kGrowth = (p.retirement401kValue - prevP.retirement401kValue) - p.totalIndividual401k - p.annualCompany401k
       investmentGrowth = investmentMarketGrowth + ret401kGrowth
@@ -121,6 +124,7 @@ function ForecastTab({ data }) {
       }
     } else {
       netWorthChange = p.netWorth
+      netWorthChangePV = p.netWorthPV
       contributions = p.cashContribution + p.investedThisYear + p.totalIndividual401k + p.annualCompany401k
       investmentGrowth = netWorthChange - contributions
       if (netWorthChange > 0) {
@@ -134,6 +138,7 @@ function ForecastTab({ data }) {
       incomePV: adjustedIncomePV,
       taxRate,
       netWorthChange,
+      netWorthChangePV,
       investmentGrowth,
       contributions,
       growthPercent,
@@ -695,9 +700,33 @@ function ForecastTab({ data }) {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">📊 Your Current Trajectory by Year</h3>
-            <div className="text-sm text-gray-600">
-              <span className="font-medium">Year {selectedYear}</span>
-              <span className="text-gray-400 ml-2">(Age {currentAge + selectedYear - 1})</span>
+            <div className="flex items-center gap-4">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setViewMode('pv')}
+                  className={`px-3 py-1.5 text-xs rounded-md transition ${
+                    viewMode === 'pv'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Today's Dollars
+                </button>
+                <button
+                  onClick={() => setViewMode('nominal')}
+                  className={`px-3 py-1.5 text-xs rounded-md transition ${
+                    viewMode === 'nominal'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Future Dollars
+                </button>
+              </div>
+              <div className="text-sm text-gray-600">
+                <span className="font-medium">Year {selectedYear}</span>
+                <span className="text-gray-400 ml-2">(Age {currentAge + selectedYear - 1})</span>
+              </div>
             </div>
           </div>
 
@@ -743,31 +772,35 @@ function ForecastTab({ data }) {
               </div>
             </div>
 
-            {/* Income - Present Value (Today's Dollars) */}
+            {/* Income */}
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Income (Today's $)</span>
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  Income ({viewMode === 'pv' ? "Today's $" : "Future $"})
+                </span>
                 <span className="text-lg">💵</span>
               </div>
               <p className="text-2xl font-bold text-blue-700">
-                {fmtCompact(yearMetrics.incomePV)}
+                {fmtCompact(viewMode === 'pv' ? yearMetrics.incomePV : yearMetrics.incomeNominal)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Present value (inflation-adjusted)
+                {viewMode === 'pv' ? 'Inflation-adjusted' : 'Nominal value'}
               </p>
             </div>
 
-            {/* Net Worth - Present Value (Today's Dollars) */}
+            {/* Net Worth */}
             <div className="bg-gray-50 rounded-lg p-4">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Net Worth (Today's $)</span>
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  Net Worth ({viewMode === 'pv' ? "Today's $" : "Future $"})
+                </span>
                 <span className="text-lg">💎</span>
               </div>
               <p className="text-2xl font-bold text-purple-700">
-                {fmtCompact(yearMetrics.netWorthPV)}
+                {fmtCompact(viewMode === 'pv' ? yearMetrics.netWorthPV : yearMetrics.netWorth)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Present value (inflation-adjusted)
+                {viewMode === 'pv' ? 'Inflation-adjusted' : 'Nominal value'}
               </p>
             </div>
 
@@ -828,12 +861,12 @@ function ForecastTab({ data }) {
           {/* Summary Row */}
           <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center text-sm">
             <div className="text-gray-600">
-              <span className="font-medium">Net Worth:</span> {fmtCompact(yearMetrics.netWorth)}
+              <span className="font-medium">Net Worth ({viewMode === 'pv' ? "Today's $" : "Future $"}):</span> {fmtCompact(viewMode === 'pv' ? yearMetrics.netWorthPV : yearMetrics.netWorth)}
             </div>
             <div className="text-gray-600">
               <span className="font-medium">YoY Change:</span>{' '}
-              <span className={yearMetrics.netWorthChange >= 0 ? 'text-green-600' : 'text-red-600'}>
-                {yearMetrics.netWorthChange >= 0 ? '+' : ''}{fmtCompact(yearMetrics.netWorthChange)}
+              <span className={(viewMode === 'pv' ? yearMetrics.netWorthChangePV : yearMetrics.netWorthChange) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                {(viewMode === 'pv' ? yearMetrics.netWorthChangePV : yearMetrics.netWorthChange) >= 0 ? '+' : ''}{fmtCompact(viewMode === 'pv' ? yearMetrics.netWorthChangePV : yearMetrics.netWorthChange)}
               </span>
             </div>
           </div>
