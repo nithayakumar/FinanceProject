@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 
 function ForecastTab({ data }) {
   const { gapProjections, profile } = data
@@ -19,8 +19,8 @@ function ForecastTab({ data }) {
   // State for life planner
   const [lifeEvents, setLifeEvents] = useState([])
 
-  // State for withdrawal calculator
-  const [retirementWithdrawal, setRetirementWithdrawal] = useState('')
+  // State for monthly retirement spend
+  const [monthlyRetirementSpend, setMonthlyRetirementSpend] = useState('')
 
   // Life event templates
   const lifeEventTemplates = {
@@ -56,6 +56,23 @@ function ForecastTab({ data }) {
   const inflationRate = (profile?.inflationRate || 2.7) / 100
   const maxYear = projections.length || 30
 
+  // Calculate default monthly spend from last year before retirement
+  const defaultMonthlySpend = useMemo(() => {
+    const yearsToRetirement = retirementAge - currentAge
+    const retirementYearIndex = Math.min(yearsToRetirement - 1, projections.length - 1)
+    if (retirementYearIndex >= 0 && projections[retirementYearIndex]) {
+      return Math.round(projections[retirementYearIndex].annualExpenses / 12)
+    }
+    return 5000 // Fallback default
+  }, [projections, retirementAge, currentAge])
+
+  // Set default monthly spend on mount or when it changes
+  useEffect(() => {
+    if (!monthlyRetirementSpend && defaultMonthlySpend) {
+      setMonthlyRetirementSpend(defaultMonthlySpend.toString())
+    }
+  }, [defaultMonthlySpend, monthlyRetirementSpend])
+
   // Calculate metrics for selected year (with adjustments applied)
   const yearMetrics = useMemo(() => {
     if (!projections.length || selectedYear < 1 || selectedYear > projections.length) return null
@@ -74,7 +91,7 @@ function ForecastTab({ data }) {
 
     // Check if any adjustments are active
     const noAdjustments = incomeAdjustment === 0 && expenseAdjustment === 0 &&
-                          sensitivityGrowthRate === 7 && sensitivityInflation === (profile?.inflationRate || 2.7)
+      sensitivityGrowthRate === 7 && sensitivityInflation === (profile?.inflationRate || 2.7)
 
     // Adjusted values
     const adjustedIncome = p.grossIncome * incomeMultiplier
@@ -95,9 +112,9 @@ function ForecastTab({ data }) {
     for (let i = 1; i <= yearIndex; i++) {
       const yearP = projections[i]
       const yearAdjustedGap = (yearP.grossIncome * incomeMultiplier) -
-                              (yearP.annualTaxes * incomeMultiplier) -
-                              (yearP.annualExpenses * expenseMultiplier) -
-                              (yearP.totalIndividual401k * incomeMultiplier)
+        (yearP.annualTaxes * incomeMultiplier) -
+        (yearP.annualExpenses * expenseMultiplier) -
+        (yearP.totalIndividual401k * incomeMultiplier)
       adjustedNetWorth = adjustedNetWorth * (1 + growthRate) + yearAdjustedGap
     }
 
@@ -173,8 +190,13 @@ function ForecastTab({ data }) {
     // Savings Rate = Gap / Gross Income (what % of income you're saving)
     const savingsRate = year1GrossIncome > 0 ? (year1Gap / year1GrossIncome) * 100 : 0
 
-    // FIRE Number = Annual Expenses × 25 (4% safe withdrawal rate)
-    const fireNumber = year1Expenses * 25
+    // Annual Retirement Spend - use user input if available, otherwise Year 1 expenses
+    const annualRetirementSpend = monthlyRetirementSpend
+      ? parseFloat(monthlyRetirementSpend) * 12
+      : year1Expenses
+
+    // FIRE Number = Annual Retirement Spend × 25 (4% safe withdrawal rate)
+    const fireNumber = annualRetirementSpend * 25
 
     // Simulate net worth trajectory with sensitivity growth rate
     const yearsToRetirement = retirementAge - currentAge
@@ -211,13 +233,16 @@ function ForecastTab({ data }) {
       }
     }
 
-    // Net worth at retirement
-    const netWorthAtRetirement = simulatedNetWorths[yearsToRetirement] || simNetWorth
-    const netWorthAtRetirementPV = netWorthAtRetirement / Math.pow(1 + adjInflationRate, yearsToRetirement)
+    // Net worth at retirement - use actual projection data instead of simplified simulation
+    const retirementYearIndex = Math.min(yearsToRetirement - 1, projections.length - 1)
+    const retirementProjection = projections[retirementYearIndex]
+    const netWorthAtRetirement = retirementProjection?.netWorth || year1NetWorth
+    const netWorthAtRetirementPV = retirementProjection?.netWorthPV || year1NetWorth
 
     return {
       savingsRate,
       fireNumber,
+      annualRetirementSpend,
       yearsToFire,
       fireAge: yearsToFire ? currentAge + yearsToFire : null,
       coastFireAge,
@@ -228,7 +253,7 @@ function ForecastTab({ data }) {
       netWorthAtRetirement,
       netWorthAtRetirementPV
     }
-  }, [projections, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, currentAge, retirementAge])
+  }, [projections, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, currentAge, retirementAge, monthlyRetirementSpend])
 
   // Calculate impact analysis metrics
   const impactAnalysis = useMemo(() => {
@@ -256,12 +281,17 @@ function ForecastTab({ data }) {
     // Adjusted savings rate
     const adjustedSavingsRate = adjustedIncome > 0 ? (adjustedGap / adjustedIncome) * 100 : 0
 
-    // Adjusted FIRE number (based on adjusted expenses)
-    const adjustedFireNumber = adjustedExpenses * 25
+    // Annual Retirement Spend - use user input if available, otherwise adjusted expenses
+    const annualRetirementSpend = monthlyRetirementSpend
+      ? parseFloat(monthlyRetirementSpend) * 12
+      : adjustedExpenses
+
+    // Adjusted FIRE number (based on retirement spending goal)
+    const adjustedFireNumber = annualRetirementSpend * 25
 
     // If no adjustments, use actual values from fireMetrics
     const noAdjustments = incomeAdjustment === 0 && expenseAdjustment === 0 &&
-                          sensitivityGrowthRate === 7 && sensitivityInflation === (profile?.inflationRate || 2.7)
+      sensitivityGrowthRate === 7 && sensitivityInflation === (profile?.inflationRate || 2.7)
 
     let adjustedYearsToFire = null
     let adjustedCoastFireAge = null
@@ -366,7 +396,7 @@ function ForecastTab({ data }) {
       // Real return for display
       realReturn: adjGrowthRate - adjInflationRate
     }
-  }, [projections, fireMetrics, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, inflationRate, currentAge, retirementAge, profile])
+  }, [projections, fireMetrics, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, inflationRate, currentAge, retirementAge, profile, monthlyRetirementSpend])
 
   // Calculate life planner impact
   const lifePlannerImpact = useMemo(() => {
@@ -459,14 +489,16 @@ function ForecastTab({ data }) {
       totalExtraIncome,
       eventCount: lifeEvents.length
     }
-  }, [projections, fireMetrics, lifeEvents, sensitivityGrowthRate, sensitivityInflation, currentAge, retirementAge])
+  }, [projections, fireMetrics, lifeEvents, sensitivityGrowthRate, sensitivityInflation, currentAge, retirementAge, monthlyRetirementSpend])
 
-  // Calculate withdrawal duration (how long money will last)
-  const withdrawalCalculation = useMemo(() => {
-    if (!fireMetrics || !retirementWithdrawal) return null
+  // Calculate monthly spend metrics (withdrawal duration and rate)
+  const monthlySpendMetrics = useMemo(() => {
+    if (!fireMetrics || !monthlyRetirementSpend) return null
 
-    const withdrawal = parseFloat(retirementWithdrawal)
-    if (isNaN(withdrawal) || withdrawal <= 0) return null
+    const monthlySpend = parseFloat(monthlyRetirementSpend)
+    if (isNaN(monthlySpend) || monthlySpend <= 0) return null
+
+    const annualWithdrawal = monthlySpend * 12
 
     // Use global sensitivity sliders for retirement growth (typically lower than accumulation)
     const retirementGrowthRate = sensitivityGrowthRate / 100
@@ -475,7 +507,7 @@ function ForecastTab({ data }) {
     const netWorthAtRetirement = fireMetrics.netWorthAtRetirement
 
     // Simple calculation: years = net worth / withdrawal (no growth)
-    const simpleYears = netWorthAtRetirement / withdrawal
+    const simpleYears = netWorthAtRetirement / annualWithdrawal
 
     // With growth calculation: simulate year by year
     let currentNetWorth = netWorthAtRetirement
@@ -484,7 +516,7 @@ function ForecastTab({ data }) {
 
     while (currentNetWorth > 0 && yearsWithGrowth < maxYears) {
       // Apply growth first, then withdraw
-      currentNetWorth = currentNetWorth * (1 + retirementGrowthRate) - withdrawal
+      currentNetWorth = currentNetWorth * (1 + retirementGrowthRate) - annualWithdrawal
       yearsWithGrowth++
     }
 
@@ -493,21 +525,26 @@ function ForecastTab({ data }) {
     }
 
     // Calculate safe withdrawal rate (what % is the withdrawal of net worth)
-    const withdrawalRate = (withdrawal / netWorthAtRetirement) * 100
+    const withdrawalRate = (annualWithdrawal / netWorthAtRetirement) * 100
 
     // Calculate max sustainable withdrawal (4% rule)
     const sustainableWithdrawal = netWorthAtRetirement * 0.04
 
+    // Format withdrawal term
+    const withdrawalTerm = yearsWithGrowth === Infinity ? 'Funds last forever' : `Funds last ${Math.round(yearsWithGrowth)} years`
+
     return {
-      withdrawal,
+      monthlySpend,
+      annualWithdrawal,
       netWorthAtRetirement,
       simpleYears: Math.round(simpleYears),
       yearsWithGrowth: yearsWithGrowth === Infinity ? 'Forever' : Math.round(yearsWithGrowth),
       withdrawalRate,
       sustainableWithdrawal,
-      isSustainable: withdrawalRate <= 4
+      isSustainable: withdrawalRate <= 4,
+      withdrawalTerm
     }
-  }, [fireMetrics, retirementWithdrawal, sensitivityGrowthRate, sensitivityInflation])
+  }, [fireMetrics, monthlyRetirementSpend, sensitivityGrowthRate, sensitivityInflation])
 
   // Calculate milestones
   const milestones = useMemo(() => {
@@ -541,9 +578,11 @@ function ForecastTab({ data }) {
 
   const fmt = (val) => `$${Math.round(val).toLocaleString()}`
   const fmtCompact = (val) => {
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`
-    if (val >= 1000) return `$${Math.round(val / 1000)}k`
-    return `$${Math.round(val)}`
+    const absVal = Math.abs(val)
+    const sign = val < 0 ? '-' : ''
+    if (absVal >= 1000000) return `${sign}$${(absVal / 1000000).toFixed(1)}M`
+    if (absVal >= 1000) return `${sign}$${Math.round(absVal / 1000)}k`
+    return `${sign}$${Math.round(absVal)}`
   }
 
   return (
@@ -551,35 +590,104 @@ function ForecastTab({ data }) {
       {/* Early Retirement Metrics Summary */}
       {fireMetrics && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">🎯 Early Retirement Targets</h3>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">🎯 Early Retirement Targets</h1>
+              <p className="text-gray-500 text-sm mt-1">Plan your path to financial independence</p>
+            </div>
+            <div className="flex bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => setViewMode('pv')}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'pv'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-900'
+                  }`}
+              >
+                Today's Dollars
+              </button>
+              <button
+                onClick={() => setViewMode('nominal')}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'nominal'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-900'
+                  }`}
+              >
+                Future Dollars
+              </button>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Net Worth for Early Retirement */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Net Worth for Early Retirement</span>
-                <span className="text-2xl">🎯</span>
+            {/* Retirement Spend in Today's Dollars */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-sm font-medium text-gray-600">Retirement Spend in Today's Dollars</span>
+                <span className="text-2xl">🧮</span>
               </div>
-              <p className="text-3xl font-bold text-purple-600">
-                {fmtCompact(fireMetrics.fireNumber)}
-              </p>
-              <p className="text-xs text-gray-500 mt-2">
-                25× annual expenses ({fmtCompact(fireMetrics.year1Expenses)})
-              </p>
+              <div className="relative mb-1.5">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                <input
+                  type="number"
+                  value={monthlyRetirementSpend}
+                  onChange={(e) => setMonthlyRetirementSpend(e.target.value)}
+                  placeholder="Monthly spend"
+                  className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              {monthlySpendMetrics ? (
+                <>
+                  <p className={`text-2xl font-bold ${monthlySpendMetrics.isSustainable ? 'text-green-600' : 'text-red-600'}`}>
+                    {fmtCompact(monthlySpendMetrics.annualWithdrawal)} <span className="text-base">({monthlySpendMetrics.withdrawalRate.toFixed(1)}% annual)</span>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {monthlySpendMetrics.withdrawalTerm}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-gray-400 mt-1">
+                  Enter your monthly retirement budget
+                </p>
+              )}
             </div>
 
-            {/* Years to Early Retirement */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Years to Early Retirement</span>
-                <span className="text-2xl">📅</span>
-              </div>
-              {fireMetrics.yearsToFire ? (
-                <>
-                  <p className="text-3xl font-bold text-green-600">
-                    {fireMetrics.yearsToFire} years
+            {/* Net Worth for Early Retirement */}
+            {(() => {
+              // Calculate FIRE number in both present and future dollars
+              const yearsToRetirement = retirementAge - currentAge
+              const fireNumberPV = fireMetrics.fireNumber // Already in today's dollars
+              const fireNumberNominal = fireMetrics.fireNumber * Math.pow(1 + inflationRate, yearsToRetirement)
+              const displayValue = viewMode === 'pv' ? fireNumberPV : fireNumberNominal
+              const alternateValue = viewMode === 'pv' ? fireNumberNominal : fireNumberPV
+              const alternateLabel = viewMode === 'pv' ? 'Future Dollars' : "Today's Dollars"
+
+              return (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-600">Net Worth for Early Retirement</span>
+                    <span className="text-2xl">🎯</span>
+                  </div>
+                  <p className="text-3xl font-bold text-purple-600">
+                    {fmtCompact(displayValue)}
                   </p>
                   <p className="text-xs text-gray-500 mt-2">
-                    Retire early at age {fireMetrics.fireAge}
+                    25× annual expenses • {fmtCompact(alternateValue)} in {alternateLabel}
+                  </p>
+                </div>
+              )
+            })()}
+
+            {/* Early Retirement Age */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-600">Early Retirement Age</span>
+                <span className="text-2xl">📅</span>
+              </div>
+              {fireMetrics.fireAge ? (
+                <>
+                  <p className="text-3xl font-bold text-green-600">
+                    Age {fireMetrics.fireAge}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {fireMetrics.yearsToFire} years away
                   </p>
                 </>
               ) : (
@@ -587,8 +695,8 @@ function ForecastTab({ data }) {
                   <p className="text-3xl font-bold text-gray-400">
                     {projections.length}+ years
                   </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Beyond projection window
+                  <p className="text-xs text-gray-400 mt-2">
+                    Beyond projection range
                   </p>
                 </>
               )}
@@ -606,7 +714,7 @@ function ForecastTab({ data }) {
                     Age {fireMetrics.coastFireAge}
                   </p>
                   <p className="text-xs text-gray-500 mt-2">
-                    Stop saving, still retire on time
+                    {fireMetrics.coastFireAge - currentAge} years away
                   </p>
                 </>
               ) : (
@@ -614,8 +722,8 @@ function ForecastTab({ data }) {
                   <p className="text-3xl font-bold text-gray-400">
                     Not reached
                   </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Within projection window
+                  <p className="text-xs text-gray-400 mt-2">
+                    Keep saving to hit coast FIRE
                   </p>
                 </>
               )}
@@ -659,38 +767,6 @@ function ForecastTab({ data }) {
                 )
               })()}
             </div>
-
-            {/* Withdrawal Calculator - Compact */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Withdrawal Calculator</span>
-                <span className="text-2xl">🧮</span>
-              </div>
-              <div className="relative mb-2">
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <input
-                  type="number"
-                  value={retirementWithdrawal}
-                  onChange={(e) => setRetirementWithdrawal(e.target.value)}
-                  placeholder="Annual withdrawal"
-                  className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              {withdrawalCalculation ? (
-                <>
-                  <p className={`text-2xl font-bold ${withdrawalCalculation.isSustainable ? 'text-green-600' : 'text-red-600'}`}>
-                    {withdrawalCalculation.yearsWithGrowth === 'Forever' ? '∞ years' : `${withdrawalCalculation.yearsWithGrowth} years`}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {withdrawalCalculation.withdrawalRate.toFixed(1)}% rate • {withdrawalCalculation.isSustainable ? 'Sustainable' : 'High risk'}
-                  </p>
-                </>
-              ) : (
-                <p className="text-xs text-gray-400 mt-2">
-                  Enter amount to calculate
-                </p>
-              )}
-            </div>
           </div>
         </div>
       )}
@@ -700,33 +776,9 @@ function ForecastTab({ data }) {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">📊 Your Current Trajectory by Year</h3>
-            <div className="flex items-center gap-4">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setViewMode('pv')}
-                  className={`px-3 py-1.5 text-xs rounded-md transition ${
-                    viewMode === 'pv'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Today's Dollars
-                </button>
-                <button
-                  onClick={() => setViewMode('nominal')}
-                  className={`px-3 py-1.5 text-xs rounded-md transition ${
-                    viewMode === 'nominal'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Future Dollars
-                </button>
-              </div>
-              <div className="text-sm text-gray-600">
-                <span className="font-medium">Year {selectedYear}</span>
-                <span className="text-gray-400 ml-2">(Age {currentAge + selectedYear - 1})</span>
-              </div>
+            <div className="text-sm text-gray-600">
+              <span className="font-medium">Year {selectedYear}</span>
+              <span className="text-gray-400 ml-2">(Age {currentAge + selectedYear - 1})</span>
             </div>
           </div>
 
@@ -898,13 +950,12 @@ function ForecastTab({ data }) {
               <button
                 key={key}
                 onClick={() => addLifeEvent(key)}
-                className={`px-3 py-2 text-xs rounded-lg border transition flex items-center gap-2 ${
-                  template.incomeImpact > 0 || template.expenseImpact < 0
-                    ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
-                    : template.incomeImpact < 0 || template.expenseImpact > 0
+                className={`px-3 py-2 text-xs rounded-lg border transition flex items-center gap-2 ${template.incomeImpact > 0 || template.expenseImpact < 0
+                  ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                  : template.incomeImpact < 0 || template.expenseImpact > 0
                     ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
                     : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 <span>{template.icon}</span>
                 <span>{template.name}</span>

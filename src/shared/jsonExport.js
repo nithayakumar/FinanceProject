@@ -83,7 +83,7 @@ export async function importFromJSON(file) {
     const hasValidKeys = dataKeys.some(key => validKeys.includes(key))
 
     if (!hasValidKeys) {
-      throw new Error('JSON file does not contain valid Finance Project data')
+      throw new Error('JSON file does not contain valid Net Worth Project data')
     }
 
     console.log('✅ Imported data from JSON:', {

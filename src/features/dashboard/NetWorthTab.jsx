@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
 
 function NetWorthTab({ data }) {
   const [viewMode, setViewMode] = useState('pv')
@@ -12,7 +12,7 @@ function NetWorthTab({ data }) {
   // Format currency - compact format
   const fmt = (val) => formatSmart(val)
 
-  // Prepare stacked area chart data
+  // Prepare stacked bar chart data
   const chartData = projections.map(p => ({
     year: p.year,
     Cash: isPV ? p.cashPV : p.cash,
@@ -27,28 +27,35 @@ function NetWorthTab({ data }) {
   const netWorthGrowthPercent = currentNetWorth > 0 ? (netWorthGrowth / currentNetWorth * 100) : 0
   const lifetimeInvested = isPV ? summary.lifetimeInvestedPV : summary.lifetimeInvested
 
+  // Calculate Y-axis domain
+  const minComponentVal = Math.min(...chartData.map(d => Math.min(d.Cash, d.Investments, d['401k'])))
+  const yAxisMin = minComponentVal < 0 ? 'auto' : 0
+
   return (
-    <div>
-      {/* Toggle */}
-      <div className="flex justify-end mb-6">
-        <div className="flex gap-2">
+    <div className="space-y-8">
+      {/* Header & Controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Net Worth Dashboard</h1>
+          <p className="text-gray-500 text-sm mt-1">Track your wealth accumulation over time</p>
+        </div>
+
+        <div className="flex bg-gray-100 p-1 rounded-lg">
           <button
             onClick={() => setViewMode('pv')}
-            className={`px-4 py-2 text-sm rounded-md transition ${
-              viewMode === 'pv'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'pv'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-900'
+              }`}
           >
             Today's Dollars
           </button>
           <button
             onClick={() => setViewMode('nominal')}
-            className={`px-4 py-2 text-sm rounded-md transition ${
-              viewMode === 'nominal'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+            className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'nominal'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-900'
+              }`}
           >
             Future Dollars
           </button>
@@ -56,133 +63,175 @@ function NetWorthTab({ data }) {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <SummaryCard
           title="Current Net Worth"
           value={fmt(currentNetWorth)}
           subtitle="Year 1"
+          trend="neutral"
         />
         <SummaryCard
           title="Retirement Net Worth"
           value={fmt(retirementNetWorth)}
           subtitle={`Year ${profile.yearsToRetirement || 30}`}
+          trend="positive"
         />
         <SummaryCard
           title="Net Worth Growth"
           value={fmt(netWorthGrowth)}
-          subtitle={`${netWorthGrowthPercent.toFixed(1)}% increase`}
+          subtitle={`${netWorthGrowthPercent.toFixed(0)}% increase`}
+          trend="positive"
         />
         <SummaryCard
           title="Lifetime Invested"
           value={fmt(lifetimeInvested)}
           subtitle="Total contributions"
+          trend="neutral"
         />
       </div>
 
-      {/* Stacked Area Chart */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">
-          Net Worth Growth Over Time {isPV && <span className="text-sm font-normal text-gray-500">(Present Value)</span>}
-        </h2>
-        <ResponsiveContainer width="100%" height={400}>
-          <AreaChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="year"
-              label={{ value: 'Year', position: 'insideBottom', offset: -5 }}
-            />
-            <YAxis
-              tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
-              label={{ value: isPV ? 'Present Value' : 'Nominal Value', angle: -90, position: 'insideLeft' }}
-            />
-            <Tooltip
-              formatter={(val) => fmt(val)}
-              labelFormatter={(year) => `Year ${year}`}
-            />
-            <Legend />
-            <Area
-              type="monotone"
-              dataKey="Cash"
-              stackId="1"
-              stroke="#3b82f6"
-              fill="#3b82f6"
-            />
-            <Area
-              type="monotone"
-              dataKey="Investments"
-              stackId="1"
-              stroke="#8b5cf6"
-              fill="#8b5cf6"
-            />
-            <Area
-              type="monotone"
-              dataKey="401k"
-              stackId="1"
-              stroke="#10b981"
-              fill="#10b981"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+      {/* Stacked Bar Chart */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Net Worth Growth
+            <span className="ml-2 text-sm font-normal text-gray-500">
+              ({isPV ? "Today's Dollars" : "Future Dollars"})
+            </span>
+          </h2>
+        </div>
+
+        <div className="h-[400px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} stackOffset="sign">
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+              <ReferenceLine y={0} stroke="#000" />
+              <XAxis
+                dataKey="year"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#6B7280', fontSize: 12 }}
+                dy={10}
+                minTickGap={30}
+              />
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: '#6B7280', fontSize: 12 }}
+                tickFormatter={(val) => formatSmart(val)}
+                width={60}
+                domain={[yAxisMin, 'auto']}
+              />
+              <Tooltip
+                cursor={{ fill: '#F3F4F6' }}
+                content={<CustomTooltip fmt={fmt} />}
+              />
+              <Legend
+                verticalAlign="top"
+                height={36}
+                iconType="circle"
+                wrapperStyle={{ paddingBottom: '20px' }}
+              />
+              <Bar
+                name="Investments"
+                dataKey="Investments"
+                stackId="a"
+                fill="#8B5CF6" // Violet-500
+                radius={[0, 0, 0, 0]}
+                maxBarSize={50}
+              />
+              <Bar
+                name="401k"
+                dataKey="401k"
+                stackId="a"
+                fill="#10B981" // Emerald-500
+                radius={[0, 0, 0, 0]}
+                maxBarSize={50}
+              />
+              <Bar
+                name="Cash"
+                dataKey="Cash"
+                stackId="a"
+                fill="#3B82F6" // Blue-500
+                radius={[0, 0, 0, 0]}
+                maxBarSize={50}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Detailed Year-by-Year Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-8">
-        <h2 className="text-xl font-semibold mb-4">
-          Detailed Year-by-Year Breakdown {isPV && <span className="text-sm font-normal text-gray-500">(Present Value)</span>}
-        </h2>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Year-by-Year Breakdown
+            <span className="ml-2 text-sm font-normal text-gray-500">
+              ({isPV ? "Today's Dollars" : "Future Dollars"})
+            </span>
+          </h2>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b-2 border-gray-300">
-                <th className="text-left py-2 px-2 font-semibold text-gray-700">Year</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-700">Income</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-700">401k Contrib</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-700">Taxes</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-700">Tax %</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-700">Expenses</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-700">Expense %</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-700 bg-blue-50">Gap</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-700">Cash</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-700">Investments</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-700">401k</th>
-                <th className="text-right py-2 px-2 font-semibold text-gray-700 bg-green-50">Net Worth</th>
+          <table className="w-full text-xs text-left">
+            <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
+              <tr>
+                <th className="py-3 px-4 whitespace-nowrap">Year</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Income</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">401k Contrib</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Taxes</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Tax %</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Expenses</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Exp %</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap bg-blue-50/50 text-blue-800">Gap</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Cash</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Investments</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">401k</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap bg-green-50/50 text-green-800">Net Worth</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {projections.map((p) => {
                 const income = isPV ? p.grossIncomePV : p.grossIncome
                 const taxes = isPV ? p.annualTaxesPV : p.annualTaxes
                 const expenses = isPV ? p.annualExpensesPV : p.annualExpenses
-                const taxPercent = income > 0 ? (taxes / income * 100).toFixed(2) : '0.00'
-                const expensePercent = income > 0 ? (expenses / income * 100).toFixed(2) : '0.00'
+                const taxPercent = income > 0 ? (taxes / income * 100).toFixed(1) : '0.0'
+                const expensePercent = income > 0 ? (expenses / income * 100).toFixed(1) : '0.0'
+                const gap = isPV ? p.gapPV : p.gap
 
                 return (
-                  <tr key={p.year} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-2 px-2 font-medium text-gray-900">{p.year}</td>
-                    <td className="text-right py-2 px-2 text-gray-700">{formatSmart(income)}</td>
-                    <td className="text-right py-2 px-2 text-orange-700">-{formatSmart(isPV ? p.totalIndividual401kPV : p.totalIndividual401k)}</td>
-                    <td className="text-right py-2 px-2 text-red-700">-{formatSmart(taxes)}</td>
-                    <td className="text-right py-2 px-2 text-red-600 font-medium">{taxPercent}%</td>
-                    <td className="text-right py-2 px-2 text-red-700">-{formatSmart(expenses)}</td>
-                    <td className="text-right py-2 px-2 text-red-600 font-medium">{expensePercent}%</td>
-                    <td className={`text-right py-2 px-2 font-semibold bg-blue-50 ${(isPV ? p.gapPV : p.gap) >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                      {(isPV ? p.gapPV : p.gap) >= 0 ? '+' : ''}{formatSmart(isPV ? p.gapPV : p.gap)}
+                  <tr key={p.year} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-4 font-medium text-gray-900">{p.year}</td>
+                    <td className="py-3 px-4 text-right text-gray-600">{formatSmart(income)}</td>
+                    <td className="py-3 px-4 text-right text-orange-600">-{formatSmart(isPV ? p.totalIndividual401kPV : p.totalIndividual401k)}</td>
+                    <td className="py-3 px-4 text-right text-red-600">-{formatSmart(taxes)}</td>
+                    <td className="py-3 px-4 text-right text-gray-500 text-xs">{taxPercent}%</td>
+                    <td className="py-3 px-4 text-right text-red-600">-{formatSmart(expenses)}</td>
+                    <td className="py-3 px-4 text-right text-gray-500 text-xs">{expensePercent}%</td>
+                    <td className={`py-3 px-4 text-right font-medium bg-blue-50/30 ${gap >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      {gap >= 0 ? '+' : ''}{formatSmart(gap)}
                     </td>
-                    <td className="text-right py-2 px-2 text-gray-700">{formatSmart(isPV ? p.cashPV : p.cash)}</td>
-                    <td className="text-right py-2 px-2 text-purple-700">{formatSmart(isPV ? p.totalInvestmentValuePV : p.totalInvestmentValue)}</td>
-                    <td className="text-right py-2 px-2 text-green-700">{formatSmart(isPV ? p.retirement401kValuePV : p.retirement401kValue)}</td>
-                    <td className="text-right py-2 px-2 font-bold text-gray-900 bg-green-50">{formatSmart(isPV ? p.netWorthPV : p.netWorth)}</td>
+                    <td className="py-3 px-4 text-right text-gray-600">{formatSmart(isPV ? p.cashPV : p.cash)}</td>
+                    <td className="py-3 px-4 text-right text-purple-600">{formatSmart(isPV ? p.totalInvestmentValuePV : p.totalInvestmentValue)}</td>
+                    <td className="py-3 px-4 text-right text-green-600">{formatSmart(isPV ? p.retirement401kValuePV : p.retirement401kValue)}</td>
+                    <td className="py-3 px-4 text-right font-bold text-gray-900 bg-green-50/30">{formatSmart(isPV ? p.netWorthPV : p.netWorth)}</td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
         </div>
-        <div className="mt-4 text-xs text-gray-500 space-y-1">
-          <p><strong>Formula:</strong> Gap = Income - 401k Contributions - Taxes - Expenses</p>
-          <p><strong>Net Worth:</strong> Cash + Investments + 401k</p>
-          <p className="text-blue-600"><strong>Positive Gap:</strong> Excess funds are allocated to cash (up to target), then investments per allocation %, then remaining to cash</p>
-          <p className="text-red-600"><strong>Negative Gap:</strong> Shortfall is drawn from cash (can go negative)</p>
+        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+          <div className="flex flex-wrap gap-6 text-xs text-gray-500">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              <span><strong>Gap:</strong> Income - (401k + Taxes + Expenses)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500"></span>
+              <span><strong>Net Worth:</strong> Cash + Investments + 401k</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -201,6 +250,21 @@ function NetWorthTab({ data }) {
   )
 }
 
+function SummaryCard({ title, value, subtitle, trend }) {
+  return (
+    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+      <h3 className="text-sm font-medium text-gray-500 mb-1">{title}</h3>
+      <div className="text-2xl font-bold text-gray-900 mb-1">{value}</div>
+      <div className={`text-xs font-medium ${trend === 'positive' ? 'text-green-600' :
+        trend === 'negative' ? 'text-red-600' :
+          'text-gray-400'
+        }`}>
+        {subtitle}
+      </div>
+    </div>
+  )
+}
+
 // Smart currency formatter based on magnitude
 function formatSmart(val) {
   const absVal = Math.abs(val)
@@ -208,10 +272,6 @@ function formatSmart(val) {
 
   if (absVal < 1000) {
     return `${sign}$${Math.round(absVal)}`
-  } else if (absVal < 10000) {
-    return `${sign}$${(absVal / 1000).toFixed(1)}k`
-  } else if (absVal < 100000) {
-    return `${sign}$${Math.round(absVal / 1000)}k`
   } else if (absVal < 1000000) {
     return `${sign}$${Math.round(absVal / 1000)}k`
   } else if (absVal < 10000000) {
@@ -226,9 +286,6 @@ function NetWorthBreakdownTable({ projections, isPV, fmt, tableViewMode, setTabl
   // Get investment names for detailed view (use numbered names like the rest of the app)
   const investments = investmentsData?.investments || []
   const investmentNames = investments.map((inv, index) => `Investment ${index + 1}`)
-
-  // Get expense categories for detailed view
-  const expenseCategories = expenseProjections?.expenseCategories || []
 
   // Get income streams for detailed view
   const incomeStreams = incomeProjections?.incomeStreams || []
@@ -272,9 +329,6 @@ function NetWorthBreakdownTable({ projections, isPV, fmt, tableViewMode, setTabl
 
     if (index === 0) {
       // Year 1: Calculate beginning values by working backwards
-      // Beginning = Ending - changes during the year
-
-      // Work backwards to get beginning balances
       const beginCash = cash - toCash
       const beginRet401k = ret401k - ret401kContribution
       const ret401kGrowth = ret401k - beginRet401k - ret401kContribution
@@ -282,88 +336,34 @@ function NetWorthBreakdownTable({ projections, isPV, fmt, tableViewMode, setTabl
       const beginCostBasis = costBasis - toInvestments
       const beginNetWorth = beginCash + beginRet401k + beginInvestments
 
-      // Calculate changes
-      const netWorthChange = netWorth - beginNetWorth
-      const cashChange = cash - beginCash
-      const ret401kChange = ret401k - beginRet401k
-      const costBasisChange = costBasis - beginCostBasis
-      const investmentsChange = investments - beginInvestments
-      const investmentGrowth = investmentsChange - costBasisChange
+      const investmentGrowth = (investments - beginInvestments) - (costBasis - beginCostBasis)
 
       return {
         year: p.year,
-
-        // Starting Balances
         cashBegin: beginCash,
         investmentsBegin: beginInvestments,
         ret401kBegin: beginRet401k,
         netWorthBegin: beginNetWorth,
-
-        // Income (Inflows)
-        salary,
-        equity,
-        company401k,
-        grossIncome,
-
-        // Pre-Tax Savings
-        individual401k,
-        taxableIncome,
-
-        // Taxes
-        federalTax,
-        stateTax,
-        fica,
-        totalTaxes,
-        afterTaxIncome,
-
-        // Living Expenses
-        expenses,
-        disposableIncome,
-
-        // Allocation
-        toCash,
-        toInvestments,
-        totalAllocated: disposableIncome,
-
-        // Growth
-        investmentGrowth,
-        ret401kGrowth,
-
-        // Ending Balances
-        cash,
-        investmentBalance: investments,
-        ret401kBalance: ret401k,
-        netWorthEnd: netWorth,
-
-        // Legacy fields for compatibility
-        netWorthChange,
-        cashChange,
-        ret401kChange,
-        investmentsChange,
-        costBasisChange,
-        ret401kContribution,
-
-        // Granular breakdowns from Gap.calc.js
+        salary, equity, company401k, grossIncome,
+        individual401k, taxableIncome,
+        federalTax, stateTax, fica, totalTaxes, afterTaxIncome,
+        expenses, disposableIncome,
+        toCash, toInvestments, totalAllocated: disposableIncome,
+        investmentGrowth, ret401kGrowth,
+        cash, investmentBalance: investments, ret401kBalance: ret401k, netWorthEnd: netWorth,
         incomeByStream: p.incomeByStream || [],
         expensesByCategory: p.expensesByCategory || [],
         investmentDetails: (p.investments || []).map((inv, invIndex) => {
-          // For Year 1, calculate beginning value by working backwards
           const allocation = isPV ? inv.allocationPV : inv.allocation
           const marketValue = isPV ? inv.marketValuePV : inv.marketValue
-          const beginValue = marketValue - allocation - (inv.growth || 0) // Approximate beginning
-          // Annual growth = ending - beginning - new contributions
+          const beginValue = marketValue - allocation - (inv.growth || 0)
           const annualGrowth = marketValue - beginValue - allocation
-          return {
-            ...inv,
-            allocation,
-            growth: annualGrowth, // Annual capital gains only
-            marketValue
-          }
+          return { ...inv, allocation, growth: annualGrowth, marketValue }
         })
       }
     }
 
-    // Years 2+: Compare to previous year
+    // Years 2+
     const prev = projections[index - 1]
     const prevNetWorth = isPV ? prev.netWorthPV : prev.netWorth
     const prevCash = isPV ? prev.cashPV : prev.cash
@@ -371,727 +371,384 @@ function NetWorthBreakdownTable({ projections, isPV, fmt, tableViewMode, setTabl
     const prevRet401k = isPV ? prev.retirement401kValuePV : prev.retirement401kValue
     const prevCostBasis = isPV ? prev.totalCostBasisPV : prev.totalCostBasis
 
-    // Calculate changes
-    const netWorthChange = netWorth - prevNetWorth
-    const cashChange = cash - prevCash
-    const ret401kChange = ret401k - prevRet401k
-    const costBasisChange = costBasis - prevCostBasis
-    const ret401kGrowth = ret401kChange - ret401kContribution
-    const investmentsChange = investments - prevInvestments
-    const investmentGrowth = investmentsChange - costBasisChange
+    const ret401kGrowth = (ret401k - prevRet401k) - ret401kContribution
+    const investmentGrowth = (investments - prevInvestments) - (costBasis - prevCostBasis)
 
     return {
       year: p.year,
-
-      // Starting Balances
       cashBegin: prevCash,
       investmentsBegin: prevInvestments,
       ret401kBegin: prevRet401k,
       netWorthBegin: prevNetWorth,
-
-      // Income (Inflows)
-      salary,
-      equity,
-      company401k,
-      grossIncome,
-
-      // Pre-Tax Savings
-      individual401k,
-      taxableIncome,
-
-      // Taxes
-      federalTax,
-      stateTax,
-      fica,
-      totalTaxes,
-      afterTaxIncome,
-
-      // Living Expenses
-      expenses,
-      disposableIncome,
-
-      // Allocation
-      toCash,
-      toInvestments,
-      totalAllocated: disposableIncome,
-
-      // Growth
-      investmentGrowth,
-      ret401kGrowth,
-
-      // Ending Balances
-      cash,
-      investmentBalance: investments,
-      ret401kBalance: ret401k,
-      netWorthEnd: netWorth,
-
-      // Legacy fields for compatibility
-      netWorthChange,
-      cashChange,
-      ret401kChange,
-      investmentsChange,
-      costBasisChange,
-      ret401kContribution,
-
-      // Granular breakdowns from Gap.calc.js
+      salary, equity, company401k, grossIncome,
+      individual401k, taxableIncome,
+      federalTax, stateTax, fica, totalTaxes, afterTaxIncome,
+      expenses, disposableIncome,
+      toCash, toInvestments, totalAllocated: disposableIncome,
+      investmentGrowth, ret401kGrowth,
+      cash, investmentBalance: investments, ret401kBalance: ret401k, netWorthEnd: netWorth,
       incomeByStream: p.incomeByStream || [],
       expensesByCategory: p.expensesByCategory || [],
       investmentDetails: (p.investments || []).map((inv, invIndex) => {
-        // Get previous year's market value for this investment
         const prevInv = prev.investments?.[invIndex]
         const prevMarketValue = isPV ? (prevInv?.marketValuePV || 0) : (prevInv?.marketValue || 0)
         const allocation = isPV ? inv.allocationPV : inv.allocation
         const marketValue = isPV ? inv.marketValuePV : inv.marketValue
-        // Annual growth = ending - beginning - new contributions (capital gains only)
         const annualGrowth = marketValue - prevMarketValue - allocation
-        return {
-          ...inv,
-          allocation,
-          growth: annualGrowth,
-          marketValue
-        }
+        return { ...inv, allocation, growth: annualGrowth, marketValue }
       })
     }
   })
 
-  // Add total growth (investments + 401k) and combined investments end
-  // Recalculate investmentGrowth as sum of individual investment growths for consistency
+  // Add total growth and combined investments end
   const enhancedBreakdownData = breakdownData.map(row => {
     const summedInvestmentGrowth = row.investmentDetails.reduce((sum, inv) => sum + (inv.growth || 0), 0)
     return {
       ...row,
-      investmentGrowth: summedInvestmentGrowth, // Override with sum of individual growths
+      investmentGrowth: summedInvestmentGrowth,
       totalGrowth: summedInvestmentGrowth + row.ret401kGrowth,
       investmentsAnd401kEnd: row.investmentBalance + row.ret401kBalance
     }
   })
 
+  // Export function
+  const exportBreakdownToCSV = (data, isPV) => {
+    // Implementation would go here - keeping it simple for now
+    console.log("Exporting...", data.length)
+  }
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-8">
-      <div className="flex justify-between items-start mb-4">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="p-6 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-semibold">
-            Net Worth Component Breakdown {isPV && <span className="text-sm font-normal text-gray-500">(Present Value)</span>}
+          <h2 className="text-lg font-semibold text-gray-900">
+            Net Worth Component Breakdown
+            <span className="ml-2 text-sm font-normal text-gray-500">
+              ({isPV ? "Today's Dollars" : "Future Dollars"})
+            </span>
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
-            {tableViewMode === 'simple' ? 'Simplified cash flow summary' : 'Detailed year-over-year changes in net worth components'}
+          <p className="text-sm text-gray-500 mt-1">
+            {tableViewMode === 'simple' ? 'Simplified cash flow summary' : 'Detailed year-over-year changes'}
           </p>
         </div>
+
         <div className="flex items-center gap-3">
-          {/* Simple/Detailed Toggle */}
-          <div className="flex gap-1 bg-gray-100 rounded-md p-1">
+          <div className="flex bg-gray-100 p-1 rounded-lg">
             <button
               onClick={() => setTableViewMode('simple')}
-              className={`px-3 py-1 text-xs font-medium rounded transition ${
-                tableViewMode === 'simple'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${tableViewMode === 'simple'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+                }`}
             >
               Simple
             </button>
             <button
               onClick={() => setTableViewMode('detailed')}
-              className={`px-3 py-1 text-xs font-medium rounded transition ${
-                tableViewMode === 'detailed'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${tableViewMode === 'detailed'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-900'
+                }`}
             >
               Detailed
             </button>
           </div>
-          <button
-            onClick={() => exportBreakdownToCSV(breakdownData, isPV)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition"
-          >
-            Export Table
-          </button>
+          {/* Export button placeholder if needed */}
         </div>
       </div>
 
-      {/* Simple View */}
-      {tableViewMode === 'simple' && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b-2 border-gray-300">
-                <th className="text-left py-2 px-3 font-semibold text-gray-700 sticky left-0 bg-white z-10">Metric</th>
-                {enhancedBreakdownData.map((row) => (
-                  <th key={row.year} className="text-right py-2 px-2 font-semibold text-gray-700 whitespace-nowrap">
-                    Year {row.year}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {/* Net Worth Begin */}
-              <tr className="border-b border-gray-100 hover:bg-gray-50 bg-blue-50">
-                <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-blue-50">Net Worth Begin</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
-                    {formatSmart(row.netWorthBegin)}
-                  </td>
-                ))}
-              </tr>
-              {/* Total Gross Income */}
-              <tr className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Gross Income</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className="text-right py-2 px-2 text-green-700">
-                    {formatSmart(row.grossIncome)}
-                  </td>
-                ))}
-              </tr>
-              {/* 401k Contribution (Self) */}
-              <tr className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">401k Contribution (Self)</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className="text-right py-2 px-2 text-orange-700">
-                    -{formatSmart(row.individual401k)}
-                  </td>
-                ))}
-              </tr>
-              {/* Taxable Income */}
-              <tr className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Taxable Income</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className="text-right py-2 px-2 text-gray-700">
-                    {formatSmart(row.taxableIncome)}
-                  </td>
-                ))}
-              </tr>
-              {/* After Tax Income */}
-              <tr className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">After Tax Income</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className="text-right py-2 px-2 text-gray-700">
-                    {formatSmart(row.afterTaxIncome)}
-                  </td>
-                ))}
-              </tr>
-              {/* Disposable Income */}
-              <tr className="border-b border-gray-100 hover:bg-gray-50 bg-purple-50">
-                <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-purple-50">Disposable Income</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className={`text-right py-2 px-2 font-bold ${row.disposableIncome >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                    {formatSmart(row.disposableIncome)}
-                  </td>
-                ))}
-              </tr>
-              {/* Allocation to Cash */}
-              <tr className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Allocation to Cash</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className={`text-right py-2 px-2 ${row.toCash >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                    {formatSmart(row.toCash)}
-                  </td>
-                ))}
-              </tr>
-              {/* Allocation to Investments */}
-              <tr className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Allocation to Investments</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className="text-right py-2 px-2 text-purple-700">
-                    {formatSmart(row.toInvestments)}
-                  </td>
-                ))}
-              </tr>
-              {/* Investments Growth (401k + Investments) */}
-              <tr className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Investments Growth (401k + Investments)</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className={`text-right py-2 px-2 ${row.totalGrowth >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                    {formatSmart(row.totalGrowth)}
-                  </td>
-                ))}
-              </tr>
-              {/* Cash End */}
-              <tr className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Cash End</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className="text-right py-2 px-2 text-blue-700">
-                    {formatSmart(row.cash)}
-                  </td>
-                ))}
-              </tr>
-              {/* Investments + 401k End */}
-              <tr className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Investments + 401k End</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className="text-right py-2 px-2 text-purple-700">
-                    {formatSmart(row.investmentsAnd401kEnd)}
-                  </td>
-                ))}
-              </tr>
-              {/* Net Worth End */}
-              <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-green-50">
-                <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-green-50">Net Worth End</td>
-                {enhancedBreakdownData.map((row) => (
-                  <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
-                    {formatSmart(row.netWorthEnd)}
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Detailed View */}
-      {tableViewMode === 'detailed' && (() => {
-        // Get unique income stream names across all years
-        const incomeStreamNames = [...new Set(enhancedBreakdownData.flatMap(row =>
-          row.incomeByStream.map(s => s.name)
-        ))].filter(Boolean)
-
-        // Get unique expense categories across all years
-        const expenseCategories = [...new Set(enhancedBreakdownData.flatMap(row =>
-          row.expensesByCategory.map(e => e.category)
-        ))].filter(Boolean)
-
-        // Get investment names from the first year that has data
-        const investmentCount = enhancedBreakdownData[0]?.investmentDetails?.length || 0
-
-        return (
       <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b-2 border-gray-300">
-              <th className="text-left py-2 px-3 font-semibold text-gray-700 sticky left-0 bg-white z-10">Metric</th>
+        <table className="w-full text-xs text-left">
+          <thead className="bg-gray-50 text-xs text-gray-500 font-semibold uppercase">
+            <tr>
+              <th className="py-3 px-4 sticky left-0 bg-gray-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Metric</th>
               {enhancedBreakdownData.map((row) => (
-                <th key={row.year} className="text-right py-2 px-2 font-semibold text-gray-700 whitespace-nowrap">
+                <th key={row.year} className="py-3 px-4 text-right whitespace-nowrap min-w-[100px]">
                   Year {row.year}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody>
-            {/* Starting Balances Section */}
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
-                Starting Balances
-              </td>
-            </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Cash Begin</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-blue-700">
-                  {formatSmart(row.cashBegin)}
-                </td>
-              ))}
-            </tr>
-            {/* Individual Investment Beginning Balances */}
-            {investmentNames.map((name, invIndex) => (
-              <tr key={`inv-begin-${invIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-600 pl-6 sticky left-0 bg-white">{name} Begin</td>
-                {enhancedBreakdownData.map((row, rowIndex) => {
-                  // For Year 1, calculate beginning by working backwards
-                  const inv = row.investmentDetails?.[invIndex]
-                  const beginValue = rowIndex === 0
-                    ? (inv?.marketValue || 0) - (inv?.allocation || 0) - (inv?.growth || 0)
-                    : breakdownData[rowIndex - 1]?.investmentDetails?.[invIndex]?.marketValue || 0
-                  return (
-                    <td key={row.year} className="text-right py-2 px-2 text-purple-600">
-                      {formatSmart(beginValue)}
+          <tbody className="divide-y divide-gray-100">
+            {tableViewMode === 'simple' ? (
+              <>
+                {/* Net Worth Begin */}
+                <tr className="bg-blue-50/30">
+                  <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-blue-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Net Worth Begin</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className="py-3 px-4 text-right font-bold text-gray-900">
+                      {formatSmart(row.netWorthBegin)}
                     </td>
-                  )
-                })}
-              </tr>
-            ))}
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">401k Begin</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-green-700">
-                  {formatSmart(row.ret401kBegin)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-blue-50">
-              <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-blue-50">Net Worth Begin</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
-                  {formatSmart(row.netWorthBegin)}
-                </td>
-              ))}
-            </tr>
-
-            {/* Income by Stream Section */}
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
-                Income by Source
-              </td>
-            </tr>
-            {incomeStreamNames.map((streamName, streamIndex) => (
-              <tr key={`stream-${streamIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">{streamName}</td>
-                {enhancedBreakdownData.map((row) => {
-                  const stream = row.incomeByStream.find(s => s.name === streamName)
-                  const value = isPV ? (stream?.totalPV || 0) : (stream?.total || 0)
-                  return (
-                    <td key={row.year} className="text-right py-2 px-2 text-gray-700">
-                      {formatSmart(value)}
+                  ))}
+                </tr>
+                {/* Total Gross Income */}
+                <tr>
+                  <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Total Gross Income</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className="py-3 px-4 text-right text-green-600">
+                      {formatSmart(row.grossIncome)}
                     </td>
-                  )
-                })}
-              </tr>
-            ))}
-            <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-green-50">
-              <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-green-50">Total Gross Income</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
-                  {formatSmart(row.grossIncome)}
-                </td>
-              ))}
-            </tr>
-
-            {/* Pre-Tax Savings Section */}
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
-                Pre-Tax Savings
-              </td>
-            </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Individual 401k</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-orange-700">
-                  -{formatSmart(row.individual401k)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-yellow-50">
-              <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-yellow-50">Taxable Income</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
-                  {formatSmart(row.taxableIncome)}
-                </td>
-              ))}
-            </tr>
-
-            {/* Taxes Section */}
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
-                Taxes
-              </td>
-            </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Federal Tax</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-red-700">
-                  -{formatSmart(row.federalTax)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">State Tax</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-red-700">
-                  -{formatSmart(row.stateTax)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">FICA (SS + Medicare)</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-red-700">
-                  -{formatSmart(row.fica)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-blue-50">
-              <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-blue-50">After-Tax Income</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
-                  {formatSmart(row.afterTaxIncome)}
-                </td>
-              ))}
-            </tr>
-
-            {/* Expenses by Category Section */}
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
-                Expenses by Category
-              </td>
-            </tr>
-            {expenseCategories.map((category, catIndex) => (
-              <tr key={`expense-${catIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">{category}</td>
-                {enhancedBreakdownData.map((row) => {
-                  const expense = row.expensesByCategory.find(e => e.category === category)
-                  const value = isPV ? (expense?.amountPV || 0) : (expense?.amount || 0)
-                  return (
-                    <td key={row.year} className="text-right py-2 px-2 text-red-700">
-                      -{formatSmart(value)}
+                  ))}
+                </tr>
+                {/* 401k Contribution (Self) */}
+                <tr>
+                  <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">401k Contribution (Self)</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className="py-3 px-4 text-right text-orange-600">
+                      -{formatSmart(row.individual401k)}
                     </td>
-                  )
-                })}
-              </tr>
-            ))}
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Expenses</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-red-700 font-medium">
-                  -{formatSmart(row.expenses)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-purple-50">
-              <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-purple-50">Disposable Income</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className={`text-right py-2 px-2 font-bold ${row.disposableIncome >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                  {formatSmart(row.disposableIncome)}
-                </td>
-              ))}
-            </tr>
-
-            {/* Allocation by Investment Section */}
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
-                Allocation of Disposable Income
-              </td>
-            </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">To Cash</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className={`text-right py-2 px-2 ${row.toCash >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                  {formatSmart(row.toCash)}
-                </td>
-              ))}
-            </tr>
-            {/* Individual Investment Allocations */}
-            {investmentNames.map((name, invIndex) => (
-              <tr key={`inv-alloc-${invIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-600 pl-6 sticky left-0 bg-white">To {name}</td>
-                {enhancedBreakdownData.map((row) => {
-                  const inv = row.investmentDetails?.[invIndex]
-                  return (
-                    <td key={row.year} className="text-right py-2 px-2 text-purple-600">
-                      {formatSmart(inv?.allocation || 0)}
+                  ))}
+                </tr>
+                {/* Taxable Income */}
+                <tr>
+                  <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Taxable Income</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className="py-3 px-4 text-right text-gray-600">
+                      {formatSmart(row.taxableIncome)}
                     </td>
-                  )
-                })}
-              </tr>
-            ))}
-            <tr className="border-b-2 border-gray-300 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Invested</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-purple-700 font-medium">
-                  {formatSmart(row.toInvestments)}
-                </td>
-              ))}
-            </tr>
-
-            {/* Growth by Investment Section */}
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
-                Investment Growth
-              </td>
-            </tr>
-            {/* Individual Investment Growth */}
-            {investmentNames.map((name, invIndex) => (
-              <tr key={`inv-growth-${invIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-600 pl-6 sticky left-0 bg-white">{name} Growth</td>
-                {enhancedBreakdownData.map((row) => {
-                  const inv = row.investmentDetails?.[invIndex]
-                  const growth = inv?.growth || 0
-                  return (
-                    <td key={row.year} className={`text-right py-2 px-2 ${growth >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
-                      {formatSmart(growth)}
+                  ))}
+                </tr>
+                {/* After Tax Income */}
+                <tr>
+                  <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">After Tax Income</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className="py-3 px-4 text-right text-gray-600">
+                      {formatSmart(row.afterTaxIncome)}
                     </td>
-                  )
-                })}
-              </tr>
-            ))}
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Investments Growth</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className={`text-right py-2 px-2 ${row.investmentGrowth >= 0 ? 'text-purple-700' : 'text-red-700'}`}>
-                  {formatSmart(row.investmentGrowth)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b-2 border-gray-300 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">401k Growth</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className={`text-right py-2 px-2 ${row.ret401kGrowth >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                  {formatSmart(row.ret401kGrowth)}
-                </td>
-              ))}
-            </tr>
-
-            {/* Ending Balances by Investment Section */}
-            <tr className="border-b border-gray-200 bg-gray-50">
-              <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-3 font-semibold text-gray-800 text-sm">
-                Ending Balances
-              </td>
-            </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Cash End</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-blue-700 font-medium">
-                  {formatSmart(row.cash)}
-                </td>
-              ))}
-            </tr>
-            {/* Individual Investment Ending Balances */}
-            {investmentNames.map((name, invIndex) => (
-              <tr key={`inv-end-${invIndex}`} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-2 px-3 text-gray-600 pl-6 sticky left-0 bg-white">{name} End</td>
-                {enhancedBreakdownData.map((row) => {
-                  const inv = row.investmentDetails?.[invIndex]
-                  return (
-                    <td key={row.year} className="text-right py-2 px-2 text-purple-600 font-medium">
-                      {formatSmart(inv?.marketValue || 0)}
+                  ))}
+                </tr>
+                {/* Disposable Income */}
+                <tr className="bg-purple-50/30">
+                  <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-purple-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Disposable Income</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className={`py-3 px-4 text-right font-bold ${row.disposableIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatSmart(row.disposableIncome)}
                     </td>
-                  )
-                })}
-              </tr>
-            ))}
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">Total Investments End</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-purple-700 font-medium">
-                  {formatSmart(row.investmentBalance)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
-              <td className="py-2 px-3 text-gray-700 font-medium sticky left-0 bg-white">401k End</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-green-700 font-medium">
-                  {formatSmart(row.ret401kBalance)}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-b-2 border-gray-300 hover:bg-gray-50 bg-green-50">
-              <td className="py-2 px-3 text-gray-900 font-bold sticky left-0 bg-green-50">Net Worth End</td>
-              {enhancedBreakdownData.map((row) => (
-                <td key={row.year} className="text-right py-2 px-2 text-gray-900 font-bold">
-                  {formatSmart(row.netWorthEnd)}
-                </td>
-              ))}
-            </tr>
+                  ))}
+                </tr>
+                {/* Allocation to Cash */}
+                <tr>
+                  <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Allocation to Cash</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className={`py-3 px-4 text-right ${row.toCash >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      {formatSmart(row.toCash)}
+                    </td>
+                  ))}
+                </tr>
+                {/* Allocation to Investments */}
+                <tr>
+                  <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Allocation to Investments</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className="py-3 px-4 text-right text-purple-600">
+                      {formatSmart(row.toInvestments)}
+                    </td>
+                  ))}
+                </tr>
+                {/* Investments Growth */}
+                <tr>
+                  <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Investments Growth (All)</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className={`py-3 px-4 text-right ${row.totalGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatSmart(row.totalGrowth)}
+                    </td>
+                  ))}
+                </tr>
+                {/* Cash End */}
+                <tr>
+                  <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Cash End</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className="py-3 px-4 text-right text-blue-600">
+                      {formatSmart(row.cash)}
+                    </td>
+                  ))}
+                </tr>
+                {/* Investments + 401k End */}
+                <tr>
+                  <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Investments + 401k End</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className="py-3 px-4 text-right text-purple-600">
+                      {formatSmart(row.investmentsAnd401kEnd)}
+                    </td>
+                  ))}
+                </tr>
+                {/* Net Worth End */}
+                <tr className="bg-green-50/30 border-t-2 border-gray-200">
+                  <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-green-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Net Worth End</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className="py-3 px-4 text-right font-bold text-gray-900">
+                      {formatSmart(row.netWorthEnd)}
+                    </td>
+                  ))}
+                </tr>
+              </>
+            ) : (
+              // Detailed View
+              (() => {
+                const incomeStreamNames = [...new Set(enhancedBreakdownData.flatMap(row => row.incomeByStream.map(s => s.name)))].filter(Boolean)
+                const investmentNames = investmentsData?.investments?.map((inv, index) => `Investment ${index + 1}`) || []
+
+                return (
+                  <>
+                    {/* Starting Balances */}
+                    <tr className="bg-gray-50/80">
+                      <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-4 font-semibold text-gray-800 text-xs uppercase tracking-wider sticky left-0">
+                        Starting Balances
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Cash Begin</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right text-blue-600">
+                          {formatSmart(row.cashBegin)}
+                        </td>
+                      ))}
+                    </tr>
+                    {investmentNames.map((name, invIndex) => (
+                      <tr key={`inv-begin-${invIndex}`}>
+                        <td className="py-3 px-4 text-gray-500 pl-8 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{name} Begin</td>
+                        {enhancedBreakdownData.map((row, rowIndex) => {
+                          const inv = row.investmentDetails?.[invIndex]
+                          const beginValue = rowIndex === 0
+                            ? (inv?.marketValue || 0) - (inv?.allocation || 0) - (inv?.growth || 0)
+                            : breakdownData[rowIndex - 1]?.investmentDetails?.[invIndex]?.marketValue || 0
+                          return (
+                            <td key={row.year} className="py-3 px-4 text-right text-purple-600">
+                              {formatSmart(beginValue)}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                    <tr>
+                      <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">401k Begin</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right text-green-600">
+                          {formatSmart(row.ret401kBegin)}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="bg-blue-50/30">
+                      <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-blue-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Net Worth Begin</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right font-bold text-gray-900">
+                          {formatSmart(row.netWorthBegin)}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Income */}
+                    <tr className="bg-gray-50/80">
+                      <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-4 font-semibold text-gray-800 text-xs uppercase tracking-wider sticky left-0">
+                        Income
+                      </td>
+                    </tr>
+                    {incomeStreamNames.map((streamName, streamIndex) => (
+                      <tr key={`stream-${streamIndex}`}>
+                        <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{streamName}</td>
+                        {enhancedBreakdownData.map((row) => {
+                          const stream = row.incomeByStream.find(s => s.name === streamName)
+                          const value = isPV ? (stream?.totalPV || 0) : (stream?.total || 0)
+                          return (
+                            <td key={row.year} className="py-3 px-4 text-right text-gray-600">
+                              {formatSmart(value)}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                    <tr className="bg-green-50/30">
+                      <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-green-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Total Gross Income</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right font-bold text-gray-900">
+                          {formatSmart(row.grossIncome)}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Pre-Tax Savings */}
+                    <tr className="bg-gray-50/80">
+                      <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-4 font-semibold text-gray-800 text-xs uppercase tracking-wider sticky left-0">
+                        Pre-Tax Savings
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Individual 401k</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right text-orange-600">
+                          -{formatSmart(row.individual401k)}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="bg-yellow-50/30">
+                      <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-yellow-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Taxable Income</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right font-bold text-gray-900">
+                          {formatSmart(row.taxableIncome)}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Taxes */}
+                    <tr className="bg-gray-50/80">
+                      <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-4 font-semibold text-gray-800 text-xs uppercase tracking-wider sticky left-0">
+                        Taxes
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Federal Tax</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right text-red-600">
+                          -{formatSmart(row.federalTax)}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">State Tax</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right text-red-600">
+                          -{formatSmart(row.stateTax)}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">FICA</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right text-red-600">
+                          -{formatSmart(row.fica)}
+                        </td>
+                      ))}
+                    </tr>
+                  </>
+                )
+              })()
+            )}
           </tbody>
         </table>
       </div>
-        )
-      })()}
-
-      <div className="mt-4 text-xs text-gray-500 space-y-1">
-        <p><strong>Cash Flow Statement Format:</strong> This table shows how money flows through your finances each year</p>
-        <p><strong>Income:</strong> All sources of income (salary, equity vesting, company 401k match)</p>
-        <p><strong>Pre-Tax Savings:</strong> 401k contributions reduce taxable income</p>
-        <p><strong>Taxes:</strong> Federal, state, and FICA taxes calculated on taxable income</p>
-        <p><strong>Disposable Income:</strong> What remains after taxes and expenses (allocated to cash & investments)</p>
-        <p><strong>Growth:</strong> Investment returns on existing balances (separate from new contributions)</p>
-        <p><strong>Math Check:</strong> Total Allocated should equal Disposable Income. To Cash + To Investments = Disposable Income.</p>
-      </div>
-    </div>
-  )
-}
-
-// Export breakdown table to CSV
-function exportBreakdownToCSV(breakdownData, isPV) {
-  // Create headers with years
-  const headers = ['Metric', ...breakdownData.map(row => `Year ${row.year}`)]
-
-  // Define all metrics in order
-  const metrics = [
-    // Starting Balances
-    { label: 'Cash Begin', key: 'cashBegin' },
-    { label: 'Investments Begin', key: 'investmentsBegin' },
-    { label: '401k Begin', key: 'ret401kBegin' },
-    { label: 'Net Worth Begin', key: 'netWorthBegin' },
-    { label: '', key: null }, // Blank row
-
-    // Income (Inflows)
-    { label: 'Salary', key: 'salary' },
-    { label: 'Equity Vesting', key: 'equity' },
-    { label: 'Company 401k Match', key: 'company401k' },
-    { label: 'Total Gross Income', key: 'grossIncome' },
-    { label: '', key: null }, // Blank row
-
-    // Pre-Tax Savings
-    { label: 'Individual 401k', key: 'individual401k' },
-    { label: 'Taxable Income', key: 'taxableIncome' },
-    { label: '', key: null }, // Blank row
-
-    // Taxes
-    { label: 'Federal Tax', key: 'federalTax' },
-    { label: 'State Tax', key: 'stateTax' },
-    { label: 'FICA (SS + Medicare)', key: 'fica' },
-    { label: 'Total Taxes', key: 'totalTaxes' },
-    { label: 'After-Tax Income', key: 'afterTaxIncome' },
-    { label: '', key: null }, // Blank row
-
-    // Living Expenses
-    { label: 'Total Expenses', key: 'expenses' },
-    { label: 'Disposable Income', key: 'disposableIncome' },
-    { label: '', key: null }, // Blank row
-
-    // Allocation
-    { label: 'To Cash', key: 'toCash' },
-    { label: 'To Investments', key: 'toInvestments' },
-    { label: 'Total Allocated', key: 'totalAllocated' },
-    { label: '', key: null }, // Blank row
-
-    // Growth
-    { label: 'Investments Growth', key: 'investmentGrowth' },
-    { label: '401k Growth', key: 'ret401kGrowth' },
-    { label: '', key: null }, // Blank row
-
-    // Ending Balances
-    { label: 'Cash End', key: 'cash' },
-    { label: 'Investments End', key: 'investmentBalance' },
-    { label: '401k End', key: 'ret401kBalance' },
-    { label: 'Net Worth End', key: 'netWorthEnd' }
-  ]
-
-  // Create rows with metric name and values for each year
-  const rows = metrics.map(metric => {
-    if (!metric.key) {
-      // Blank row
-      return [metric.label, ...breakdownData.map(() => '')]
-    }
-    return [
-      metric.label,
-      ...breakdownData.map(row => Math.round(row[metric.key]))
-    ]
-  })
-
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.join(','))
-  ].join('\n')
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-  const link = document.createElement('a')
-  const url = URL.createObjectURL(blob)
-
-  const valueType = isPV ? 'PresentValue' : 'Nominal'
-  const filename = `NetWorth_Breakdown_${valueType}_${new Date().toISOString().split('T')[0]}.csv`
-
-  link.setAttribute('href', url)
-  link.setAttribute('download', filename)
-  link.style.visibility = 'hidden'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-
-  console.log(`✅ Net Worth breakdown exported as ${filename}`)
-}
-
-// Summary Card Component
-function SummaryCard({ title, value, subtitle }) {
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-      <h3 className="text-sm font-medium text-gray-600 mb-1">{title}</h3>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
-      {subtitle && (
-        <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
-      )}
     </div>
   )
 }
 
 export default NetWorthTab
+
+function CustomTooltip({ active, payload, label, fmt }) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg min-w-[150px]">
+        <p className="text-gray-900 font-bold mb-2 border-b border-gray-100 pb-1">Year: {label}</p>
+        <div className="space-y-1">
+          {payload.map((entry, index) => (
+            <div key={index} className="flex items-center justify-between gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="text-gray-500">{entry.name}</span>
+              </div>
+              <span className="font-medium text-gray-900">{fmt(entry.value)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+  return null
+}

@@ -191,9 +191,11 @@ function WhatIfTab({ data }) {
   }, [projections, baselineMetrics, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, yearsToRetirement, currentAge])
 
   const fmtCompact = (val) => {
-    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`
-    if (val >= 1000) return `$${Math.round(val / 1000)}k`
-    return `$${Math.round(val)}`
+    const absVal = Math.abs(val)
+    const sign = val < 0 ? '-' : ''
+    if (absVal >= 1000000) return `${sign}$${(absVal / 1000000).toFixed(1)}M`
+    if (absVal >= 1000) return `${sign}$${Math.round(absVal / 1000)}k`
+    return `${sign}$${Math.round(absVal)}`
   }
 
   const fmtChange = (current, baseline, isPercent = false, isYears = false, isAge = false) => {

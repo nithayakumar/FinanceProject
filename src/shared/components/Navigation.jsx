@@ -5,6 +5,9 @@ import { exportAsJSON, triggerJSONImport } from '../jsonExport'
 import { clearAllData } from '../devTools'
 import { generateCSVExport, downloadCSV, generateFilename } from '../../features/export/CSVExporter'
 import { storage } from '../../core/storage'
+import { calculateIncomeProjections } from '../../features/income/Income.calc'
+import { calculateExpenseProjections } from '../../features/expenses/Expenses.calc'
+import { calculateGapProjections } from '../../features/gap/Gap.calc'
 // DISABLED: Scenarios feature
 // import { useScenarioData } from '../../features/scenarios/hooks/useScenarioData'
 import ConfirmModal from './ConfirmModal'
@@ -99,12 +102,71 @@ function Navigation() {
     })
   }
 
+  const handleExportCSV = () => {
+    setDropdownOpen(false)
+    try {
+      // Load data from storage
+      const profile = storage.load('profile')
+      const incomeData = storage.load('income')
+      const expensesData = storage.load('expenses')
+      const investmentsData = storage.load('investmentsDebt')
+
+      // Validate required data
+      if (!profile || !incomeData || !expensesData || !investmentsData) {
+        showNotification('Missing required data for export. Please complete all sections first.', 'error')
+        return
+      }
+
+      // Enrich profile
+      const enrichedProfile = {
+        ...profile,
+        yearsToRetirement: profile.retirementAge - profile.age,
+        currentAge: profile.age
+      }
+
+      // Calculate projections
+      const incomeProjections = calculateIncomeProjections(incomeData, enrichedProfile)
+      const expenseProjections = calculateExpenseProjections(expensesData, enrichedProfile, incomeProjections.projections)
+
+      const incomeWithProjections = {
+        ...incomeData,
+        projections: incomeProjections.projections
+      }
+      const expensesWithProjections = {
+        ...expensesData,
+        projections: expenseProjections.projections
+      }
+      const gapProjections = calculateGapProjections(incomeWithProjections, expensesWithProjections, investmentsData, enrichedProfile)
+
+      // Build data object
+      const data = {
+        profile: enrichedProfile,
+        incomeData,
+        expensesData,
+        investmentsData,
+        incomeProjections,
+        expenseProjections,
+        gapProjections
+      }
+
+      // Generate and download CSV
+      const csv = generateCSVExport(data)
+      const filename = generateFilename(enrichedProfile)
+      downloadCSV(csv, filename)
+
+      showNotification('CSV exported successfully!')
+    } catch (error) {
+      console.error('CSV export failed:', error)
+      showNotification(error.message || 'Failed to export CSV', 'error')
+    }
+  }
+
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="text-xl font-bold text-gray-900">
-            💰 Finance Project
+            💰 Net Worth Project
           </Link>
 
           <div className="hidden md:flex items-center space-x-1">
@@ -177,6 +239,12 @@ function Navigation() {
                   {/* Dropdown Menu */}
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-20">
                     <div className="py-1">
+                      <button
+                        onClick={handleExportCSV}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      >
+                        <span>📊</span> Export CSV
+                      </button>
                       <button
                         onClick={handleExportJSON}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"

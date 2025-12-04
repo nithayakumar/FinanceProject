@@ -6,7 +6,6 @@ import { calculateGapProjections } from '../gap/Gap.calc'
 import NetWorthTab from './NetWorthTab'
 import ForecastTab from './ForecastTab'
 import WhatIfTab from './WhatIfTab'
-import ExportButton from '../../components/ExportButton'
 
 function Dashboard() {
   const [activeTab, setActiveTab] = useState('networth')
@@ -48,8 +47,8 @@ function Dashboard() {
     const hasIncome = !!(incomeData && incomeData.incomeStreams && incomeData.incomeStreams.length > 0)
     const hasExpenses = !!(expensesData && expensesData.expenseCategories && expensesData.expenseCategories.length > 0)
     const hasInvestments = !!(investmentsData &&
-                          investmentsData.currentCash !== undefined &&
-                          investmentsData.targetCash !== undefined)
+      investmentsData.currentCash !== undefined &&
+      investmentsData.targetCash !== undefined)
 
     console.log('Validation results:', {
       hasProfile,
@@ -196,127 +195,122 @@ function Dashboard() {
     const rawInvestments = storage.load('investmentsDebt')
 
     return (
-      <div className="max-w-7xl mx-auto p-8">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-yellow-900 mb-4">⚠️ Dashboard Not Ready</h2>
-          <p className="text-gray-700 mb-4">
-            The dashboard requires data from all sections. Check the status below:
-          </p>
+      <div className="max-w-2xl mx-auto mt-12 px-4">
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+            <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">Let's build your dashboard</h2>
+          <p className="text-gray-500 text-lg">Complete the following steps to unlock your financial insights.</p>
+        </div>
 
-          {/* Calculation Error */}
-          {data?.calculationError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
-              <p className="font-medium text-red-900">Calculation Error:</p>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-xl shadow-gray-100/50 overflow-hidden">
+          {/* Personal Details */}
+          <StepItem
+            title="Personal Details"
+            description="Set your age and retirement goals"
+            isComplete={errors.hasProfile}
+            missingText={!errors.hasProfile && `Missing: ${!errors.profile?.age ? 'age' : ''}${!errors.profile?.age && !errors.profile?.retirementAge ? ', ' : ''}${!errors.profile?.retirementAge ? 'retirement age' : ''}`}
+          />
+
+          {/* Income */}
+          <StepItem
+            title="Income"
+            description="Add your income streams"
+            isComplete={errors.hasIncome}
+          />
+
+          {/* Expenses */}
+          <StepItem
+            title="Expenses"
+            description="Define your expense categories"
+            isComplete={errors.hasExpenses}
+          />
+
+          {/* Investments & Debt */}
+          <StepItem
+            title="Investments"
+            description="Add your investments"
+            isComplete={errors.hasInvestments}
+          />
+        </div>
+
+        {/* Calculation Error */}
+        {data?.calculationError && (
+          <div className="mt-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3">
+            <svg className="w-5 h-5 text-red-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="font-medium text-red-900">Calculation Error</p>
               <p className="text-sm text-red-700 mt-1">{data.calculationError}</p>
-              <p className="text-xs text-red-600 mt-2">Check the browser console for more details.</p>
-            </div>
-          )}
-
-          {/* Debug Info */}
-          <details className="mb-4 p-3 bg-gray-100 rounded">
-            <summary className="cursor-pointer font-medium text-sm">Debug: View Raw localStorage Data</summary>
-            <pre className="mt-2 text-xs overflow-auto max-h-60 bg-white p-2 rounded">
-              {JSON.stringify({
-                profile: rawProfile,
-                income: rawIncome,
-                expenses: rawExpenses,
-                investments: rawInvestments,
-                validationResults: {
-                  hasProfile: !!(rawProfile && rawProfile.age && rawProfile.retirementAge),
-                  hasIncome: !!(rawIncome && rawIncome.incomeStreams && rawIncome.incomeStreams.length > 0),
-                  hasExpenses: !!(rawExpenses && rawExpenses.expenseCategories && rawExpenses.expenseCategories.length > 0),
-                  hasInvestments: !!(rawInvestments && rawInvestments.currentCash !== undefined && rawInvestments.targetCash !== undefined)
-                }
-              }, null, 2)}
-            </pre>
-          </details>
-
-          <div className="space-y-3">
-            {/* Personal Details */}
-            <div className="flex items-start space-x-3">
-              <input
-                type="checkbox"
-                checked={errors.hasProfile}
-                readOnly
-                className="mt-1 h-5 w-5"
-              />
-              <div className="flex-1">
-                <p className={`font-medium ${errors.hasProfile ? 'text-green-700' : 'text-red-700'}`}>
-                  Personal Details
-                </p>
-                {!errors.hasProfile && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Missing: {!errors.profile?.age && 'age'} {!errors.profile?.retirementAge && 'retirement age'}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Income */}
-            <div className="flex items-start space-x-3">
-              <input
-                type="checkbox"
-                checked={errors.hasIncome}
-                readOnly
-                className="mt-1 h-5 w-5"
-              />
-              <div className="flex-1">
-                <p className={`font-medium ${errors.hasIncome ? 'text-green-700' : 'text-red-700'}`}>
-                  Income
-                </p>
-                {!errors.hasIncome && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Need at least one income stream. Current: {errors.incomeData?.incomeStreams?.length || 0}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Expenses */}
-            <div className="flex items-start space-x-3">
-              <input
-                type="checkbox"
-                checked={errors.hasExpenses}
-                readOnly
-                className="mt-1 h-5 w-5"
-              />
-              <div className="flex-1">
-                <p className={`font-medium ${errors.hasExpenses ? 'text-green-700' : 'text-red-700'}`}>
-                  Expenses
-                </p>
-                {!errors.hasExpenses && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Missing expense categories. Found: {errors.expensesData?.expenseCategories?.length || 0}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Investments & Debt */}
-            <div className="flex items-start space-x-3">
-              <input
-                type="checkbox"
-                checked={errors.hasInvestments}
-                readOnly
-                className="mt-1 h-5 w-5"
-              />
-              <div className="flex-1">
-                <p className={`font-medium ${errors.hasInvestments ? 'text-green-700' : 'text-red-700'}`}>
-                  Investments & Debt
-                </p>
-                {!errors.hasInvestments && (
-                  <p className="text-sm text-gray-600 mt-1">
-                    Missing: {errors.investmentsData?.currentCash === undefined && 'current cash'}
-                    {errors.investmentsData?.targetCash === undefined && ' target cash'}
-                  </p>
-                )}
-              </div>
             </div>
           </div>
+        )}
 
-          <p className="text-sm text-gray-600 mt-6">
-            💡 Navigate through each section and click the save/continue button to enable the Dashboard.
+        {/* Debug Info (Collapsed) */}
+        <div className="mt-8 text-center">
+          <details className="inline-block text-left">
+            <summary className="cursor-pointer text-xs text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+              </svg>
+              Debug Data
+            </summary>
+            <div className="mt-2 p-4 bg-gray-50 rounded-lg border border-gray-200 w-[500px] max-w-[90vw] mx-auto overflow-hidden">
+              <pre className="text-[10px] text-gray-600 overflow-auto max-h-40">
+                {JSON.stringify({
+                  profile: rawProfile,
+                  validationResults: {
+                    hasProfile: errors.hasProfile,
+                    hasIncome: errors.hasIncome,
+                    hasExpenses: errors.hasExpenses,
+                    hasInvestments: errors.hasInvestments
+                  }
+                }, null, 2)}
+              </pre>
+            </div>
+          </details>
+        </div>
+      </div>
+    )
+  }
+
+  function StepItem({ title, description, isComplete, missingText }) {
+    return (
+      <div className={`flex items-center p-5 border-b border-gray-50 last:border-0 transition-colors ${isComplete ? 'bg-white' : 'bg-gray-50/30'}`}>
+        <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center mr-5 flex-shrink-0 transition-all ${isComplete ? 'bg-blue-500 border-blue-500' : 'border-gray-300 bg-white'
+          }`}>
+          {isComplete && (
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            <h3 className={`font-semibold text-lg ${isComplete ? 'text-gray-900' : 'text-gray-700'}`}>
+              {title}
+            </h3>
+            {isComplete ? (
+              <span className="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full">Completed</span>
+            ) : (
+              <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-1 rounded-full">To Do</span>
+            )}
+          </div>
+          <p className={`text-sm mt-0.5 ${isComplete ? 'text-gray-500' : 'text-gray-600'}`}>
+            {description}
           </p>
+          {!isComplete && missingText && (
+            <p className="text-xs text-red-500 mt-2 font-medium flex items-center gap-1">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              {missingText}
+            </p>
+          )}
         </div>
       </div>
     )
@@ -330,19 +324,6 @@ function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Financial Dashboard</h1>
-            <p className="text-gray-600">
-              Comprehensive view of your financial projections and retirement readiness
-            </p>
-          </div>
-          <ExportButton appData={data} />
-        </div>
-      </div>
-
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="flex space-x-8">
@@ -350,11 +331,10 @@ function Dashboard() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-                activeTab === tab.id
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition ${activeTab === tab.id
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               {tab.label}
             </button>
