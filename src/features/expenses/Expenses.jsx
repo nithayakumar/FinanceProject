@@ -25,7 +25,7 @@ function Expenses() {
   } = useExpensesData()
 
   const handleNextFeature = () => {
-    navigate('/investments-debt')
+    navigate('/investments')
   }
 
   const scrollToSection = (ref) => {

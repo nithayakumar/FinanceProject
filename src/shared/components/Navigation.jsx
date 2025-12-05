@@ -26,7 +26,7 @@ function Navigation() {
     { path: '/personal-details', label: 'Personal' },
     { path: '/income', label: 'Income' },
     { path: '/expenses', label: 'Expenses' },
-    { path: '/investments-debt', label: 'Investments' },
+    { path: '/investments', label: 'Investments' },
     { path: '/taxes', label: 'Taxes' },
     // DISABLED: Scenarios feature
     // { path: '/scenarios', label: 'Scenarios' },

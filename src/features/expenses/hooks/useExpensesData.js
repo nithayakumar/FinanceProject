@@ -34,10 +34,23 @@ export function useExpensesData() {
                     annualAmount: cat.annualAmount || ''
                 }
             })
+
+            // Reorder categories based on DEFAULT_EXPENSE_CATEGORIES order
+            const reorderedCategories = DEFAULT_EXPENSE_CATEGORIES
+                .map(defaultCat => migratedCategories.find(cat => cat.id === defaultCat.id))
+                .filter(cat => cat !== undefined) // Only include categories that exist in saved data
+
+            // Add any custom categories (not in defaults) at the end
+            const customCategories = migratedCategories.filter(cat =>
+                !DEFAULT_EXPENSE_CATEGORIES.find(d => d.id === cat.id)
+            )
+
+            const finalCategories = [...reorderedCategories, ...customCategories]
+
             // Ensure oneTimeExpenses exists
             return {
                 ...saved,
-                expenseCategories: migratedCategories,
+                expenseCategories: finalCategories,
                 oneTimeExpenses: saved.oneTimeExpenses || []
             }
         }

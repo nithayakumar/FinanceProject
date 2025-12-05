@@ -15,50 +15,41 @@ function WhatIfTab({ data }) {
   const baselineInflationRate = (profile?.inflationRate || 2.7) / 100
   const yearsToRetirement = retirementAge - currentAge
 
-  // Calculate baseline metrics (no adjustments)
+  // Calculate baseline metrics (no adjustments) - uses actual Gap projections
   const baselineMetrics = useMemo(() => {
     if (!projections.length) return null
 
-    const growthRate = 0.07 // 7% baseline
+    const growthRate = 0.07 // 7% baseline for coast FIRE projection
     const inflationRate = baselineInflationRate
     const currentYear = projections[0]
+    const retirementYearIndex = Math.min(yearsToRetirement - 1, projections.length - 1)
 
-    // Year 1 baseline values
+    // Year 1 baseline values from actual projections
     const year1GrossIncome = currentYear.grossIncome
     const year1Expenses = currentYear.annualExpenses
-    const year1Taxes = currentYear.annualTaxes
-    const year1_401k = currentYear.totalIndividual401k
-    const year1Gap = year1GrossIncome - year1Taxes - year1Expenses - year1_401k
+    const year1Gap = currentYear.gap
     const year1NetWorth = currentYear.netWorth
 
-    // Savings Rate
+    // Savings Rate from actual values
     const savingsRate = year1GrossIncome > 0 ? (year1Gap / year1GrossIncome) * 100 : 0
 
     // FIRE Number
     const fireNumber = year1Expenses * 25
 
-    // Simulate net worth trajectory
-    const simulatedNetWorths = [year1NetWorth]
-    let simNetWorth = year1NetWorth
-    for (let i = 1; i <= Math.max(projections.length, yearsToRetirement); i++) {
-      simNetWorth = simNetWorth * (1 + growthRate) + year1Gap
-      simulatedNetWorths.push(simNetWorth)
-    }
-
-    // Years to Early Retirement
+    // Years to Early Retirement - use actual Gap projections
     let yearsToFire = null
-    for (let i = 0; i < simulatedNetWorths.length; i++) {
+    for (let i = 0; i < projections.length; i++) {
       const inflatedFireNumber = fireNumber * Math.pow(1 + inflationRate, i)
-      if (simulatedNetWorths[i] >= inflatedFireNumber) {
+      if (projections[i].netWorth >= inflatedFireNumber) {
         yearsToFire = i + 1
         break
       }
     }
 
-    // Coast FIRE Age (Live on Investments Age)
+    // Coast FIRE Age - use actual projections
     let coastFireAge = null
-    for (let i = 0; i < Math.min(simulatedNetWorths.length, yearsToRetirement); i++) {
-      const yearNetWorth = simulatedNetWorths[i]
+    for (let i = 0; i < Math.min(projections.length, yearsToRetirement); i++) {
+      const yearNetWorth = projections[i].netWorth
       const yearsRemaining = yearsToRetirement - i
       if (yearsRemaining <= 0) break
 
@@ -71,12 +62,13 @@ function WhatIfTab({ data }) {
       }
     }
 
-    // Net worth at retirement
-    const netWorthAtRetirement = simulatedNetWorths[yearsToRetirement] || simNetWorth
-    const netWorthAtRetirementPV = netWorthAtRetirement / Math.pow(1 + inflationRate, yearsToRetirement)
+    // Net worth at retirement - use actual projections
+    const retirementProjection = projections[retirementYearIndex]
+    const netWorthAtRetirement = retirementProjection?.netWorth || year1NetWorth
+    const netWorthAtRetirementPV = retirementProjection?.netWorthPV || (netWorthAtRetirement / Math.pow(1 + inflationRate, yearsToRetirement))
 
-    // Calculate growth from investing (at retirement)
-    const totalContributed = year1Gap * yearsToRetirement
+    // Calculate growth from investing - sum actual contributions vs growth
+    const totalContributed = projections.slice(0, yearsToRetirement).reduce((sum, p) => sum + p.gap, 0)
     const growthFromInvesting = netWorthAtRetirement - year1NetWorth - totalContributed
     const growthPercent = (netWorthAtRetirement - year1NetWorth) > 0
       ? (growthFromInvesting / (netWorthAtRetirement - year1NetWorth)) * 100
@@ -101,7 +93,7 @@ function WhatIfTab({ data }) {
     }
   }, [projections, baselineInflationRate, yearsToRetirement, currentAge])
 
-  // Calculate adjusted metrics (with adjustments applied)
+  // Calculate adjusted metrics (with adjustments applied) - uses Gap projections with multipliers
   const adjustedMetrics = useMemo(() => {
     if (!projections.length || !baselineMetrics) return null
 
@@ -111,14 +103,15 @@ function WhatIfTab({ data }) {
     const expenseMultiplier = 1 + (expenseAdjustment / 100)
 
     const currentYear = projections[0]
+    const retirementYearIndex = Math.min(yearsToRetirement - 1, projections.length - 1)
 
     // Year 1 adjusted values
     const year1GrossIncome = currentYear.grossIncome * incomeMultiplier
     const year1Expenses = currentYear.annualExpenses * expenseMultiplier
-    const year1Taxes = currentYear.annualTaxes * incomeMultiplier
-    const year1_401k = currentYear.totalIndividual401k * incomeMultiplier
-    const year1Gap = year1GrossIncome - year1Taxes - year1Expenses - year1_401k
     const year1NetWorth = currentYear.netWorth
+
+    // Calculate adjusted gap for Year 1 (for savings rate display)
+    const year1Gap = currentYear.gap * incomeMultiplier - (currentYear.annualExpenses * (expenseMultiplier - 1))
 
     // Savings Rate
     const savingsRate = year1GrossIncome > 0 ? (year1Gap / year1GrossIncome) * 100 : 0
@@ -126,46 +119,58 @@ function WhatIfTab({ data }) {
     // FIRE Number
     const fireNumber = year1Expenses * 25
 
-    // Simulate net worth trajectory
-    const simulatedNetWorths = [year1NetWorth]
-    let simNetWorth = year1NetWorth
-    for (let i = 1; i <= Math.max(projections.length, yearsToRetirement); i++) {
-      simNetWorth = simNetWorth * (1 + growthRate) + year1Gap
-      simulatedNetWorths.push(simNetWorth)
-    }
-
-    // Years to Early Retirement
+    // Years to Early Retirement - simulate with adjusted gaps from projections
     let yearsToFire = null
-    for (let i = 0; i < simulatedNetWorths.length; i++) {
+    let simNetWorth = year1NetWorth
+    for (let i = 0; i < projections.length; i++) {
+      const baseGap = projections[i].gap
+      const baseExpenses = projections[i].annualExpenses
+      // Adjust gap: scale by income multiplier, subtract extra expenses
+      const adjustedGap = baseGap * incomeMultiplier - (baseExpenses * (expenseMultiplier - 1))
+
       const inflatedFireNumber = fireNumber * Math.pow(1 + inflationRate, i)
-      if (simulatedNetWorths[i] >= inflatedFireNumber) {
+      if (simNetWorth >= inflatedFireNumber) {
         yearsToFire = i + 1
         break
       }
+      simNetWorth = simNetWorth * (1 + growthRate) + adjustedGap
     }
 
-    // Coast FIRE Age (Live on Investments Age)
+    // Coast FIRE Age - simulate with adjusted gaps
     let coastFireAge = null
-    for (let i = 0; i < Math.min(simulatedNetWorths.length, yearsToRetirement); i++) {
-      const yearNetWorth = simulatedNetWorths[i]
+    simNetWorth = year1NetWorth
+    for (let i = 0; i < Math.min(projections.length, yearsToRetirement); i++) {
+      const baseGap = projections[i].gap
+      const baseExpenses = projections[i].annualExpenses
+      const adjustedGap = baseGap * incomeMultiplier - (baseExpenses * (expenseMultiplier - 1))
+
       const yearsRemaining = yearsToRetirement - i
       if (yearsRemaining <= 0) break
 
-      const futureValue = yearNetWorth * Math.pow(1 + growthRate, yearsRemaining)
+      const futureValue = simNetWorth * Math.pow(1 + growthRate, yearsRemaining)
       const targetFireNumber = fireNumber * Math.pow(1 + inflationRate, yearsToRetirement)
 
       if (futureValue >= targetFireNumber) {
         coastFireAge = currentAge + i
         break
       }
+      simNetWorth = simNetWorth * (1 + growthRate) + adjustedGap
     }
 
-    // Net worth at retirement
-    const netWorthAtRetirement = simulatedNetWorths[yearsToRetirement] || simNetWorth
+    // Net worth at retirement - simulate with adjusted gaps
+    simNetWorth = year1NetWorth
+    let totalContributed = 0
+    for (let i = 0; i < yearsToRetirement && i < projections.length; i++) {
+      const baseGap = projections[i].gap
+      const baseExpenses = projections[i].annualExpenses
+      const adjustedGap = baseGap * incomeMultiplier - (baseExpenses * (expenseMultiplier - 1))
+      totalContributed += adjustedGap
+      simNetWorth = simNetWorth * (1 + growthRate) + adjustedGap
+    }
+    const netWorthAtRetirement = simNetWorth
     const netWorthAtRetirementPV = netWorthAtRetirement / Math.pow(1 + inflationRate, yearsToRetirement)
 
-    // Calculate growth from investing (at retirement)
-    const totalContributed = year1Gap * yearsToRetirement
+    // Calculate growth from investing
     const growthFromInvesting = netWorthAtRetirement - year1NetWorth - totalContributed
     const growthPercent = (netWorthAtRetirement - year1NetWorth) > 0
       ? (growthFromInvesting / (netWorthAtRetirement - year1NetWorth)) * 100
@@ -227,7 +232,7 @@ function WhatIfTab({ data }) {
   }
 
   const isAdjusted = incomeAdjustment !== 0 || expenseAdjustment !== 0 ||
-                     sensitivityGrowthRate !== 7 || sensitivityInflation !== (profile?.inflationRate || 2.7)
+    sensitivityGrowthRate !== 7 || sensitivityInflation !== (profile?.inflationRate || 2.7)
 
   return (
     <div className="space-y-8">
@@ -377,7 +382,7 @@ function WhatIfTab({ data }) {
       {/* Simulation Results */}
       {adjustedMetrics && baselineMetrics && (
         <div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">📊 Simulation Results</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">📊 Simulation Results (Beta)</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Savings Rate */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">

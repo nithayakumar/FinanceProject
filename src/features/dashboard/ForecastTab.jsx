@@ -56,15 +56,18 @@ function ForecastTab({ data }) {
   const inflationRate = (profile?.inflationRate || 2.7) / 100
   const maxYear = projections.length || 30
 
-  // Calculate default monthly spend from last year before retirement
+  // Calculate default monthly spend from last year before retirement (in today's dollars)
   const defaultMonthlySpend = useMemo(() => {
     const yearsToRetirement = retirementAge - currentAge
     const retirementYearIndex = Math.min(yearsToRetirement - 1, projections.length - 1)
     if (retirementYearIndex >= 0 && projections[retirementYearIndex]) {
-      return Math.round(projections[retirementYearIndex].annualExpenses / 12)
+      // Use annualExpensesPV (present value / today's dollars)
+      const expensesPV = projections[retirementYearIndex].annualExpensesPV ||
+        (projections[retirementYearIndex].annualExpenses / Math.pow(1 + inflationRate, retirementYearIndex + 1))
+      return Math.round(expensesPV / 12)
     }
     return 5000 // Fallback default
-  }, [projections, retirementAge, currentAge])
+  }, [projections, retirementAge, currentAge, inflationRate])
 
   // Set default monthly spend on mount or when it changes
   useEffect(() => {
@@ -198,32 +201,27 @@ function ForecastTab({ data }) {
     // FIRE Number = Annual Retirement Spend × 25 (4% safe withdrawal rate)
     const fireNumber = annualRetirementSpend * 25
 
-    // Simulate net worth trajectory with sensitivity growth rate
+    // Years to FIRE - use actual Gap projections instead of simplified simulation
     const yearsToRetirement = retirementAge - currentAge
-    const simulatedNetWorths = [year1NetWorth]
-    let simNetWorth = year1NetWorth
-    for (let i = 1; i <= Math.max(projections.length, yearsToRetirement); i++) {
-      simNetWorth = simNetWorth * (1 + growthRate) + year1Gap
-      simulatedNetWorths.push(simNetWorth)
-    }
 
-    // Years to FIRE = Find first year where simulated Net Worth >= FIRE Number (inflation-adjusted)
+    // Find first year where actual Net Worth >= inflation-adjusted FIRE Number
     let yearsToFire = null
-    for (let i = 0; i < simulatedNetWorths.length; i++) {
+    for (let i = 0; i < projections.length; i++) {
       const inflatedFireNumber = fireNumber * Math.pow(1 + adjInflationRate, i)
-      if (simulatedNetWorths[i] >= inflatedFireNumber) {
+      if (projections[i].netWorth >= inflatedFireNumber) {
         yearsToFire = i + 1
         break
       }
     }
 
-    // Coast FIRE Age calculation
+    // Coast FIRE Age - find when current investments can grow to cover retirement
     let coastFireAge = null
-    for (let i = 0; i < Math.min(simulatedNetWorths.length, yearsToRetirement); i++) {
-      const yearNetWorth = simulatedNetWorths[i]
+    for (let i = 0; i < Math.min(projections.length, yearsToRetirement); i++) {
+      const yearNetWorth = projections[i].netWorth
       const yearsRemaining = yearsToRetirement - i
       if (yearsRemaining <= 0) break
 
+      // Project current net worth forward at growth rate (no new contributions)
       const futureValue = yearNetWorth * Math.pow(1 + growthRate, yearsRemaining)
       const targetFireNumber = fireNumber * Math.pow(1 + adjInflationRate, yearsToRetirement)
 
@@ -407,23 +405,20 @@ function ForecastTab({ data }) {
     const adjInflationRate = sensitivityInflation / 100
 
     const yearsToRetirement = retirementAge - currentAge
-    const year1Gap = fireMetrics.year1Gap
-    const year1Income = fireMetrics.year1GrossIncome
-    const year1Expenses = fireMetrics.year1Expenses
-    const startingNetWorth = fireMetrics.year1NetWorth
+    const retirementYearIndex = Math.min(yearsToRetirement - 1, projections.length - 1)
 
-    // Simulate without life events (baseline)
-    let baselineNetWorth = startingNetWorth
-    for (let i = 0; i < yearsToRetirement; i++) {
-      baselineNetWorth = baselineNetWorth * (1 + growthRate) + year1Gap
-    }
+    // Use actual Gap projections for baseline (not simplified simulation)
+    const baselineNetWorth = projections[retirementYearIndex]?.netWorth || projections[0].netWorth
 
-    // Simulate with life events
-    let adjustedNetWorth = startingNetWorth
+    // Simulate with life events - apply deltas to actual yearly gap values
+    let adjustedNetWorth = projections[0].netWorth
     let totalExtraExpenses = 0
     let totalExtraIncome = 0
 
     for (let year = 1; year <= yearsToRetirement; year++) {
+      const yearIndex = year - 1
+      const yearProjection = projections[yearIndex] || projections[projections.length - 1]
+
       // Calculate impact for this year from all events
       let yearlyExpenseImpact = 0
       let yearlyIncomeImpact = 0
@@ -440,15 +435,19 @@ function ForecastTab({ data }) {
       totalExtraExpenses += yearlyExpenseImpact
       totalExtraIncome += yearlyIncomeImpact
 
-      // Adjusted gap for this year
-      const adjustedGap = year1Gap + yearlyIncomeImpact - yearlyExpenseImpact
+      // Use actual gap from projections, adjusted for life events
+      const baseGap = yearProjection.gap
+      const adjustedGap = baseGap + yearlyIncomeImpact - yearlyExpenseImpact
       adjustedNetWorth = adjustedNetWorth * (1 + growthRate) + adjustedGap
     }
 
-    // Calculate years to FIRE with life events
+    // Calculate years to FIRE with life events - use actual projections as base
     let adjustedYearsToFire = null
-    let simNetWorth = startingNetWorth
-    for (let year = 1; year <= 100; year++) {
+    let simNetWorth = projections[0].netWorth
+    for (let year = 1; year <= Math.min(100, projections.length); year++) {
+      const yearIndex = year - 1
+      const yearProjection = projections[yearIndex] || projections[projections.length - 1]
+
       // Calculate impact for this year
       let yearlyExpenseImpact = 0
       let yearlyIncomeImpact = 0
@@ -462,7 +461,8 @@ function ForecastTab({ data }) {
         }
       })
 
-      const adjustedGap = year1Gap + yearlyIncomeImpact - yearlyExpenseImpact
+      const baseGap = yearProjection.gap
+      const adjustedGap = baseGap + yearlyIncomeImpact - yearlyExpenseImpact
       const inflatedFireNumber = fireMetrics.fireNumber * Math.pow(1 + adjInflationRate, year - 1)
 
       if (simNetWorth >= inflatedFireNumber) {
@@ -505,6 +505,9 @@ function ForecastTab({ data }) {
     const adjInflationRate = sensitivityInflation / 100
 
     const netWorthAtRetirement = fireMetrics.netWorthAtRetirement
+
+    // Return null for invalid net worth scenarios
+    if (!netWorthAtRetirement || netWorthAtRetirement <= 0) return null
 
     // Simple calculation: years = net worth / withdrawal (no growth)
     const simpleYears = netWorthAtRetirement / annualWithdrawal
@@ -617,10 +620,10 @@ function ForecastTab({ data }) {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Retirement Spend in Today's Dollars */}
+            {/* Monthly Retired Spend (Today's Dollars) */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm font-medium text-gray-600">Retirement Spend in Today's Dollars</span>
+                <span className="text-sm font-medium text-gray-600">Monthly Retired Spend (Today's Dollars)</span>
                 <span className="text-2xl">🧮</span>
               </div>
               <div className="relative mb-1.5">
@@ -642,6 +645,10 @@ function ForecastTab({ data }) {
                     {monthlySpendMetrics.withdrawalTerm}
                   </p>
                 </>
+              ) : monthlyRetirementSpend && parseFloat(monthlyRetirementSpend) > 0 ? (
+                <p className="text-xs text-gray-400 mt-1">
+                  N/A — Net worth at retirement unavailable
+                </p>
               ) : (
                 <p className="text-xs text-gray-400 mt-1">
                   Enter your monthly retirement budget
@@ -729,10 +736,10 @@ function ForecastTab({ data }) {
               )}
             </div>
 
-            {/* Net Worth Percentile */}
+            {/* Household Net Worth Percentile */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Net Worth Percentile</span>
+                <span className="text-sm font-medium text-gray-600">Household Net Worth Percentile</span>
                 <span className="text-2xl">📊</span>
               </div>
               {(() => {
@@ -925,10 +932,10 @@ function ForecastTab({ data }) {
         </div>
       )}
 
-      {/* What happens when life happens */}
+      {/* Life Events / What If */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">👨‍👩‍👧 What happens when life happens</h3>
+          <h3 className="text-lg font-semibold text-gray-800">👨‍👩‍👧 Life Events / What If</h3>
           {lifeEvents.length > 0 && (
             <button
               onClick={() => setLifeEvents([])}

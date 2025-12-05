@@ -29,15 +29,15 @@ export const EXPENSE_FIELDS = {
 }
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
-    { id: 'housing', name: 'Housing', defaultPercent: 30, defaultAmount: 0 },
-    { id: 'utilities', name: 'Utilities', defaultPercent: 4, defaultAmount: 0 },
+    { id: 'housing', name: 'Housing', defaultPercent: 22, defaultAmount: 0 },
+    { id: 'utilities', name: 'Utilities', defaultPercent: 3, defaultAmount: 0 },
     { id: 'transportation', name: 'Transportation', defaultPercent: 7, defaultAmount: 0 },
     { id: 'medical', name: 'Medical', defaultPercent: 3, defaultAmount: 0 },
-    { id: 'food', name: 'Food', defaultPercent: 14, defaultAmount: 0 },
-    { id: 'entertainment', name: 'Entertainment', defaultPercent: 9, defaultAmount: 0 },
-    { id: 'other', name: 'Other', defaultPercent: 4, defaultAmount: 0 },
+    { id: 'food', name: 'Food', defaultPercent: 12, defaultAmount: 0 },
+    { id: 'entertainment', name: 'Entertainment', defaultPercent: 8, defaultAmount: 0 },
     { id: 'childcare', name: 'Childcare', defaultPercent: 0, defaultAmount: 0 },
-    { id: 'education', name: 'Education', defaultPercent: 0, defaultAmount: 0 }
+    { id: 'education', name: 'Education', defaultPercent: 0, defaultAmount: 0 },
+    { id: 'other', name: 'Other', defaultPercent: 0, defaultAmount: 0 }
 ]
 
 export const JUMP_TYPES = {

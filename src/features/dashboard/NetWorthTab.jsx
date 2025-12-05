@@ -718,6 +718,180 @@ function NetWorthBreakdownTable({ projections, isPV, fmt, tableViewMode, setTabl
                         </td>
                       ))}
                     </tr>
+                    <tr className="bg-red-50/30">
+                      <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-red-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Total Taxes</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right font-bold text-red-600">
+                          -{formatSmart(row.totalTaxes)}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="bg-blue-50/30">
+                      <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-blue-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">After Tax Income</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right font-bold text-gray-900">
+                          {formatSmart(row.afterTaxIncome)}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Expenses */}
+                    <tr className="bg-gray-50/80">
+                      <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-4 font-semibold text-gray-800 text-xs uppercase tracking-wider sticky left-0">
+                        Expenses
+                      </td>
+                    </tr>
+                    {(() => {
+                      const expenseCategoryNames = [...new Set(enhancedBreakdownData.flatMap(row => row.expensesByCategory.map(c => c.name)))].filter(Boolean)
+                      return expenseCategoryNames.map((catName, catIndex) => (
+                        <tr key={`expense-${catIndex}`}>
+                          <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{catName}</td>
+                          {enhancedBreakdownData.map((row) => {
+                            const cat = row.expensesByCategory.find(c => c.name === catName)
+                            const value = isPV ? (cat?.totalPV || 0) : (cat?.total || 0)
+                            return (
+                              <td key={row.year} className="py-3 px-4 text-right text-red-600">
+                                -{formatSmart(value)}
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))
+                    })()}
+                    <tr className="bg-orange-50/30">
+                      <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-orange-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Total Expenses</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right font-bold text-red-600">
+                          -{formatSmart(row.expenses)}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Disposable Income */}
+                    <tr className="bg-purple-50/30 border-t-2 border-gray-200">
+                      <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-purple-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Disposable Income (Gap)</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className={`py-3 px-4 text-right font-bold ${row.disposableIncome >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatSmart(row.disposableIncome)}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Allocations */}
+                    <tr className="bg-gray-50/80">
+                      <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-4 font-semibold text-gray-800 text-xs uppercase tracking-wider sticky left-0">
+                        Allocations
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">To Cash</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className={`py-3 px-4 text-right ${row.toCash >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                          {formatSmart(row.toCash)}
+                        </td>
+                      ))}
+                    </tr>
+                    {investmentNames.map((name, invIndex) => (
+                      <tr key={`inv-alloc-${invIndex}`}>
+                        <td className="py-3 px-4 text-gray-500 pl-8 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">To {name}</td>
+                        {enhancedBreakdownData.map((row) => {
+                          const inv = row.investmentDetails?.[invIndex]
+                          return (
+                            <td key={row.year} className="py-3 px-4 text-right text-purple-600">
+                              {formatSmart(inv?.allocation || 0)}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                    <tr>
+                      <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">To 401k (Individual + Company)</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right text-green-600">
+                          {formatSmart(row.individual401k + row.company401k)}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Growth */}
+                    <tr className="bg-gray-50/80">
+                      <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-4 font-semibold text-gray-800 text-xs uppercase tracking-wider sticky left-0">
+                        Investment Growth
+                      </td>
+                    </tr>
+                    {investmentNames.map((name, invIndex) => (
+                      <tr key={`inv-growth-${invIndex}`}>
+                        <td className="py-3 px-4 text-gray-500 pl-8 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{name} Growth</td>
+                        {enhancedBreakdownData.map((row) => {
+                          const inv = row.investmentDetails?.[invIndex]
+                          return (
+                            <td key={row.year} className={`py-3 px-4 text-right ${(inv?.growth || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatSmart(inv?.growth || 0)}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                    <tr>
+                      <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">401k Growth</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className={`py-3 px-4 text-right ${row.ret401kGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatSmart(row.ret401kGrowth)}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="bg-green-50/30">
+                      <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-green-50 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Total Growth</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className={`py-3 px-4 text-right font-bold ${row.totalGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatSmart(row.totalGrowth)}
+                        </td>
+                      ))}
+                    </tr>
+
+                    {/* Ending Balances */}
+                    <tr className="bg-gray-50/80">
+                      <td colSpan={enhancedBreakdownData.length + 1} className="py-2 px-4 font-semibold text-gray-800 text-xs uppercase tracking-wider sticky left-0">
+                        Ending Balances
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Cash End</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className={`py-3 px-4 text-right ${row.cash >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                          {formatSmart(row.cash)}
+                        </td>
+                      ))}
+                    </tr>
+                    {investmentNames.map((name, invIndex) => (
+                      <tr key={`inv-end-${invIndex}`}>
+                        <td className="py-3 px-4 text-gray-500 pl-8 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{name} End</td>
+                        {enhancedBreakdownData.map((row) => {
+                          const inv = row.investmentDetails?.[invIndex]
+                          return (
+                            <td key={row.year} className="py-3 px-4 text-right text-purple-600">
+                              {formatSmart(inv?.marketValue || 0)}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                    <tr>
+                      <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">401k End</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right text-green-600">
+                          {formatSmart(row.ret401kBalance)}
+                        </td>
+                      ))}
+                    </tr>
+                    <tr className="bg-green-50/50 border-t-2 border-gray-200">
+                      <td className="py-3 px-4 font-bold text-gray-900 sticky left-0 bg-green-100 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Net Worth End</td>
+                      {enhancedBreakdownData.map((row) => (
+                        <td key={row.year} className="py-3 px-4 text-right font-bold text-gray-900">
+                          {formatSmart(row.netWorthEnd)}
+                        </td>
+                      ))}
+                    </tr>
                   </>
                 )
               })()

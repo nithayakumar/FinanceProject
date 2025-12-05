@@ -104,12 +104,16 @@ export function useTaxData() {
         const currentYear = new Date().getFullYear()
         const csvFilingStatus = mapFilingStatusToCSV(profile.filingStatus || 'Single')
 
-        // Calculate total income excluding 401k contributions
-        const totalSalary = incomeData.incomeStreams.reduce((sum, stream) => {
-            const annualIncome = Number(stream.annualIncome) || 0
-            const individual401k = Number(stream.individual401k) || 0
-            return sum + annualIncome - individual401k
+        // Calculate total gross income and 401k contributions
+        const totalGrossIncome = incomeData.incomeStreams.reduce((sum, stream) => {
+            return sum + (Number(stream.annualIncome) || 0)
         }, 0)
+
+        const total401k = incomeData.incomeStreams.reduce((sum, stream) => {
+            return sum + (Number(stream.individual401k) || 0)
+        }, 0)
+
+        const totalSalary = totalGrossIncome - total401k
 
         // Auto-populate with data from profile and income
         const taxData = {
@@ -175,9 +179,12 @@ export function useTaxData() {
                     currentYear,
                     userInflationRate
                 )
+                // Calculate effective rate based on GROSS income (before 401k deduction)
+                const effectiveRate = totalGrossIncome > 0 ? (csvResult.totalTax / totalGrossIncome) : 0
+
                 // Transform result to match legacy format for display
                 return {
-                    income: csvResult.grossIncome,
+                    income: totalGrossIncome,  // Use gross income for display
                     stateTax: csvResult.stateTax.amount,
                     federalTax: csvResult.federalTax.amount,
                     fica: {
@@ -189,7 +196,7 @@ export function useTaxData() {
                         total: csvResult.payrollTaxes.total
                     },
                     totalTax: csvResult.totalTax,
-                    effectiveRate: csvResult.effectiveRate,
+                    effectiveRate: effectiveRate,  // Use recalculated rate
                     stateTaxBreakdown: csvResult.stateTax.breakdown || [],
                     federalTaxBreakdown: csvResult.federalTax.breakdown || [],
                     actualStateFilingType: taxData.filingType,
