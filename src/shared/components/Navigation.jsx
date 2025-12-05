@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { generateShareLink, copyToClipboard } from '../shareLink'
 import { exportAsJSON, triggerJSONImport } from '../jsonExport'
 import { clearAllData } from '../devTools'
-import { generateCSVExport, downloadCSV, generateFilename } from '../../features/export/CSVExporter'
+import { generateCSVExport, downloadCSV, generateFilename, exportNetWorthTable } from '../../features/export/CSVExporter'
 import { storage } from '../../core/storage'
 import { calculateIncomeProjections } from '../../features/income/Income.calc'
 import { calculateExpenseProjections } from '../../features/expenses/Expenses.calc'
@@ -154,10 +154,56 @@ function Navigation() {
       const filename = generateFilename(enrichedProfile)
       downloadCSV(csv, filename)
 
-      showNotification('CSV exported successfully!')
+      showNotification('Data CSV exported successfully!')
     } catch (error) {
       console.error('CSV export failed:', error)
       showNotification(error.message || 'Failed to export CSV', 'error')
+    }
+  }
+
+  const handleExportTable = () => {
+    setDropdownOpen(false)
+    try {
+      // Load data from storage
+      const profile = storage.load('profile')
+      const incomeData = storage.load('income')
+      const expensesData = storage.load('expenses')
+      const investmentsData = storage.load('investmentsDebt')
+
+      // Validate required data
+      if (!profile || !incomeData || !expensesData || !investmentsData) {
+        showNotification('Missing required data for export. Please complete all sections first.', 'error')
+        return
+      }
+
+      // Enrich profile
+      const enrichedProfile = {
+        ...profile,
+        yearsToRetirement: profile.retirementAge - profile.age,
+        currentAge: profile.age
+      }
+
+      // Calculate projections
+      const incomeProjections = calculateIncomeProjections(incomeData, enrichedProfile)
+      const expenseProjections = calculateExpenseProjections(expensesData, enrichedProfile, incomeProjections.projections)
+
+      const incomeWithProjections = {
+        ...incomeData,
+        projections: incomeProjections.projections
+      }
+      const expensesWithProjections = {
+        ...expensesData,
+        projections: expenseProjections.projections
+      }
+      const gapProjections = calculateGapProjections(incomeWithProjections, expensesWithProjections, investmentsData, enrichedProfile)
+
+      // Export table (always using PV/Today's Dollars)
+      exportNetWorthTable(gapProjections, investmentsData, enrichedProfile, true)
+
+      showNotification('Table CSV exported successfully!')
+    } catch (error) {
+      console.error('Table export failed:', error)
+      showNotification(error.message || 'Failed to export table', 'error')
     }
   }
 
@@ -237,13 +283,19 @@ function Navigation() {
                   />
 
                   {/* Dropdown Menu */}
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-20">
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-20">
                     <div className="py-1">
+                      <button
+                        onClick={handleExportTable}
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      >
+                        <span>📋</span> Export Table CSV
+                      </button>
                       <button
                         onClick={handleExportCSV}
                         className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                       >
-                        <span>📊</span> Export CSV
+                        <span>📊</span> Export Data CSV
                       </button>
                       <button
                         onClick={handleExportJSON}

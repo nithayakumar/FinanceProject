@@ -109,8 +109,8 @@ export function minifyState(data) {
     })
 
     // 3. Expenses
-    // [id(idx), type(0/1), val, growth, jumps[]]
-    const e = (data.expenses?.expenseCategories || []).map(c => {
+    // [simpleMode, totalMonthly, simpleGrowth, [categories...]]
+    const categories = (data.expenses?.expenseCategories || []).map(c => {
         const id = EXPENSE_ID_MAP[c.id] !== undefined ? EXPENSE_ID_MAP[c.id] : c.id
         const isPercent = c.amountType === 'percent'
 
@@ -125,6 +125,13 @@ export function minifyState(data) {
         // Defaults: [null, 1, 0, 2.7, []]
         return trimArray(arr, [null, 1, 0, 2.7, []])
     })
+
+    const e = [
+        data.expenses?.simpleMode ? 1 : 0,
+        Math.round(data.expenses?.totalMonthlyExpense || 0),
+        data.expenses?.simpleGrowthRate !== undefined ? data.expenses.simpleGrowthRate : 3,
+        categories
+    ]
 
     // 4. One Time Expenses
     // [year, amount, desc]
@@ -229,7 +236,24 @@ export function inflateState(minified) {
     }))
 
     // 3. Expenses
-    const expenseCategories = e.map((c, idx) => {
+    const rawExpenses = e
+    let simpleMode = false
+    let totalMonthlyExpense = ''
+    let simpleGrowthRate = 3
+    let categoriesList = []
+
+    if (rawExpenses.length > 0 && !Array.isArray(rawExpenses[0])) {
+        // New format: [simpleMode, totalMonthly, simpleGrowth, categories]
+        simpleMode = !!rawExpenses[0]
+        totalMonthlyExpense = rawExpenses[1] || ''
+        simpleGrowthRate = rawExpenses[2] !== undefined ? rawExpenses[2] : 3
+        categoriesList = rawExpenses[3] || []
+    } else {
+        // Old format: [cat1, cat2, ...]
+        categoriesList = rawExpenses
+    }
+
+    const expenseCategories = categoriesList.map((c, idx) => {
         // Resolve ID
         let id = c[0]
         let name = c[0]
@@ -300,7 +324,13 @@ export function inflateState(minified) {
     return {
         profile,
         income: { incomeStreams },
-        expenses: { expenseCategories, oneTimeExpenses },
+        expenses: {
+            expenseCategories,
+            oneTimeExpenses,
+            simpleMode,
+            totalMonthlyExpense,
+            simpleGrowthRate
+        },
         investmentsDebt,
         filingStatusRemapping,
         customTaxLadder,

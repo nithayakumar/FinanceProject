@@ -67,6 +67,36 @@ export function IncomeStreamCard({
                     <div className="mt-4 pl-2 space-y-6 animate-fadeIn">
                         <div className="grid grid-cols-2 gap-4">
                             <Input
+                                {...INCOME_FIELDS.startYear}
+                                value={stream.startYear || ''}
+                                onChange={(val) => {
+                                    if (!val) { onUpdate(stream.id, 'startYear', ''); return }
+                                    let num = Number(val)
+                                    if (isNaN(num)) return
+                                    if (num < 1) num = 1
+                                    if (num > yearsToRetirement) num = yearsToRetirement
+                                    onUpdate(stream.id, 'startYear', num)
+                                }}
+                                placeholder="1"
+                                min={1}
+                                max={yearsToRetirement}
+                            />
+                            <Input
+                                {...INCOME_FIELDS.endWorkYear}
+                                value={stream.endWorkYear}
+                                onChange={(val) => {
+                                    if (!val) { onUpdate(stream.id, 'endWorkYear', ''); return }
+                                    let num = Number(val)
+                                    if (isNaN(num)) return
+                                    if (num < 1) num = 1
+                                    if (num > yearsToRetirement) num = yearsToRetirement
+                                    onUpdate(stream.id, 'endWorkYear', num)
+                                }}
+                                placeholder={yearsToRetirement.toString()}
+                                min={1}
+                                max={yearsToRetirement}
+                            />
+                            <Input
                                 {...INCOME_FIELDS.growthRate}
                                 value={stream.growthRate}
                                 onChange={(val) => onUpdate(stream.id, 'growthRate', val ? Number(val) : '')}
@@ -80,12 +110,6 @@ export function IncomeStreamCard({
                                 {...INCOME_FIELDS.company401k}
                                 value={stream.company401k}
                                 onChange={(val) => onUpdate(stream.id, 'company401k', val ? Number(val) : '')}
-                            />
-                            <Input
-                                {...INCOME_FIELDS.endWorkYear}
-                                value={stream.endWorkYear}
-                                onChange={(val) => onUpdate(stream.id, 'endWorkYear', val ? Number(val) : '')}
-                                placeholder={yearsToRetirement.toString()}
                             />
                         </div>
 

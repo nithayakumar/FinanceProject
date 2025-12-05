@@ -413,8 +413,88 @@ function NetWorthBreakdownTable({ projections, isPV, fmt, tableViewMode, setTabl
 
   // Export function
   const exportBreakdownToCSV = (data, isPV) => {
-    // Implementation would go here - keeping it simple for now
-    console.log("Exporting...", data.length)
+    const valueMode = isPV ? 'PV' : 'Nominal'
+    const filename = `net-worth-breakdown-${valueMode.toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`
+
+    // Headers
+    const headers = tableViewMode === 'simple'
+      ? ['Year', 'Income', 'Expenses', 'Gap', 'Cash', 'Investments', '401k', 'Net Worth']
+      : ['Metric', ...data.map(row => `Year ${row.year}`)]
+
+    let csvContent = headers.join(',') + '\n'
+
+    if (tableViewMode === 'simple') {
+      // Simple view - one row per year
+      data.forEach(row => {
+        const values = [
+          row.year,
+          row.income,
+          row.expenses,
+          row.gap,
+          row.cashEnd,
+          row.investmentBalance,
+          row.ret401kBalance,
+          row.netWorth
+        ]
+        csvContent += values.join(',') + '\n'
+      })
+    } else {
+      // Detailed view - transpose the table (metrics as rows, years as columns)
+      const metrics = [
+        { label: 'STARTING BALANCES', key: null },
+        { label: 'Cash Begin', key: 'cashBegin' },
+        { label: 'Investment 1 Begin', key: 'inv1Begin' },
+        { label: '401k Begin', key: 'ret401kBegin' },
+        { label: 'Net Worth Begin', key: 'netWorthBegin' },
+        { label: 'INCOME', key: null },
+        { label: 'Income Stream 1', key: 'income' },
+        { label: 'Total Gross Income', key: 'income' },
+        { label: 'PRE-TAX SAVINGS', key: null },
+        { label: 'Individual 401k', key: 'individual401k' },
+        { label: 'Taxable Income', key: 'taxableIncome' },
+        { label: 'TAXES', key: null },
+        { label: 'Federal Tax', key: 'federalTax' },
+        { label: 'State Tax', key: 'stateTax' },
+        { label: 'FICA', key: 'fica' },
+        { label: 'Total Taxes', key: 'totalTax' },
+        { label: 'After-Tax Income', key: 'afterTaxIncome' },
+        { label: 'EXPENSES', key: null },
+        { label: 'Total Expenses', key: 'expenses' },
+        { label: 'CASH FLOW', key: null },
+        { label: 'Gap (Savings)', key: 'gap' },
+        { label: 'Savings Rate', key: 'savingsRate' },
+        { label: 'ALLOCATIONS', key: null },
+        { label: 'To Cash', key: 'cashContribution' },
+        { label: 'To Investments', key: 'investedThisYear' },
+        { label: 'ENDING BALANCES', key: null },
+        { label: 'Cash End', key: 'cashEnd' },
+        { label: 'Investments End', key: 'investmentBalance' },
+        { label: '401k End', key: 'ret401kBalance' },
+        { label: 'Net Worth End', key: 'netWorth' }
+      ]
+
+      metrics.forEach(metric => {
+        if (!metric.key) {
+          // Section header
+          csvContent += `"${metric.label}",${data.map(() => '').join(',')}\n`
+        } else {
+          // Data row
+          const values = data.map(row => row[metric.key] || 0)
+          csvContent += `"${metric.label}",${values.join(',')}\n`
+        }
+      })
+    }
+
+    // Download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', filename)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   return (
@@ -514,6 +594,15 @@ function NetWorthBreakdownTable({ projections, isPV, fmt, tableViewMode, setTabl
                   {enhancedBreakdownData.map((row) => (
                     <td key={row.year} className="py-3 px-4 text-right text-gray-600">
                       {formatSmart(row.afterTaxIncome)}
+                    </td>
+                  ))}
+                </tr>
+                {/* Total Expenses */}
+                <tr>
+                  <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Total Expenses</td>
+                  {enhancedBreakdownData.map((row) => (
+                    <td key={row.year} className="py-3 px-4 text-right text-red-600">
+                      -{formatSmart(row.expenses)}
                     </td>
                   ))}
                 </tr>
@@ -743,6 +832,13 @@ function NetWorthBreakdownTable({ projections, isPV, fmt, tableViewMode, setTabl
                     </tr>
                     {(() => {
                       const expenseCategoryNames = [...new Set(enhancedBreakdownData.flatMap(row => row.expensesByCategory.map(c => c.name)))].filter(Boolean)
+
+                      // If in Simple Mode (only 'Total Expenses' category), hide the breakdown rows 
+                      // to avoid redundancy with the "Total Expenses" summary row below
+                      if (expenseCategoryNames.length === 1 && expenseCategoryNames[0] === 'Total Expenses') {
+                        return null
+                      }
+
                       return expenseCategoryNames.map((catName, catIndex) => (
                         <tr key={`expense-${catIndex}`}>
                           <td className="py-3 px-4 font-medium text-gray-700 sticky left-0 bg-white z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">{catName}</td>

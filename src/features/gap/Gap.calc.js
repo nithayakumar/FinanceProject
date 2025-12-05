@@ -397,9 +397,10 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
 
       // Expenses by category (for detailed view)
       expensesByCategory: Object.entries(expensesByCategory).map(([category, amount]) => ({
+        name: category,
         category,
-        amount,
-        amountPV: amount / discountFactor
+        total: amount,
+        totalPV: amount / discountFactor
       })),
 
       // Present values - Income Components (full precision)

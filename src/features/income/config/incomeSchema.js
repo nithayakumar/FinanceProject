@@ -23,8 +23,7 @@ export const INCOME_FIELDS = {
         step: '0.1'
     },
     equity: {
-        label: 'Equity (RSU) 📜',
-        prefix: '$',
+        label: 'Bonus, Equity, etc. 📈',
         type: 'number',
         tooltip: 'Treated like cash'
     },
@@ -33,6 +32,11 @@ export const INCOME_FIELDS = {
         prefix: '$',
         type: 'number',
         tooltip: 'Employer contributions to your retirement'
+    },
+    startYear: {
+        label: 'Start Year 🏁',
+        type: 'number',
+        tooltip: 'Year this income stream begins (1 = current year)'
     },
     endWorkYear: {
         label: 'End Work Year 🏁',

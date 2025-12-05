@@ -51,7 +51,8 @@ export function useExpensesData() {
             return {
                 ...saved,
                 expenseCategories: finalCategories,
-                oneTimeExpenses: saved.oneTimeExpenses || []
+                oneTimeExpenses: saved.oneTimeExpenses || [],
+                simpleGrowthRate: saved.simpleGrowthRate || 3
             }
         }
 
@@ -69,9 +70,15 @@ export function useExpensesData() {
 
         return {
             expenseCategories: defaultCategories,
-            oneTimeExpenses: []
+            oneTimeExpenses: [],
+            simpleMode: true,
+            totalMonthlyExpense: '',
+            simpleGrowthRate: 3
         }
     })
+
+    // Load income data for defaults
+    const incomeData = storage.load('income')
 
     const [expandedCategories, setExpandedCategories] = useState({})
     const [errors, setErrors] = useState({})
@@ -257,8 +264,18 @@ export function useExpensesData() {
         }))
     }
 
+    const updateSimpleMode = (enabled, totalAmount, growthRate) => {
+        setData(prev => ({
+            ...prev,
+            simpleMode: enabled,
+            totalMonthlyExpense: totalAmount !== undefined ? totalAmount : prev.totalMonthlyExpense,
+            simpleGrowthRate: growthRate !== undefined ? growthRate : (prev.simpleGrowthRate || 3)
+        }))
+    }
+
     return {
         data,
+        incomeData,
         projections,
         expandedCategories,
         actions: {
@@ -272,7 +289,8 @@ export function useExpensesData() {
             removeCategory,
             addOneTimeExpense,
             updateOneTimeExpense,
-            removeOneTimeExpense
+            removeOneTimeExpense,
+            updateSimpleMode
         }
     }
 }

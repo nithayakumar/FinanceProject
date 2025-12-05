@@ -42,11 +42,18 @@ export function validateIncome(data, yearsToRetirement) {
       errors[`${stream.id}-growthRate`] = 'Growth rate seems unrealistic (> 50%)'
     }
 
+    // Start Year
+    if (stream.startYear !== undefined && stream.startYear !== '' && stream.startYear < 1) {
+      errors[`${stream.id}-startYear`] = 'Start year must be 1 or greater'
+    }
+
     // End Work Year
     if (stream.endWorkYear === '' || stream.endWorkYear <= 0) {
       errors[`${stream.id}-endWorkYear`] = 'End work year must be greater than 0'
     } else if (stream.endWorkYear > yearsToRetirement) {
       errors[`${stream.id}-endWorkYear`] = `Cannot exceed retirement year (${yearsToRetirement})`
+    } else if (stream.startYear && stream.endWorkYear < stream.startYear) {
+      errors[`${stream.id}-endWorkYear`] = `End year cannot be before start year (${stream.startYear})`
     }
 
     // Career Breaks Validation
@@ -147,7 +154,8 @@ export function calculateIncomeProjections(data, profile) {
 
     data.incomeStreams.forEach(stream => {
       // Check if stream is still active
-      if (year <= stream.endWorkYear) {
+      const startYear = stream.startYear || 1
+      if (year >= startYear && year <= stream.endWorkYear) {
         activeStreams.push(stream.id)
 
         // Calculate annual values with growth and jumps
@@ -279,7 +287,8 @@ function prepareChartData(projections, incomeStreams, yearsToRetirement, inflati
 
       yearMonths.forEach((monthProj, monthIndex) => {
         // Check if this stream was active this month
-        if (monthProj.activeStreams.includes(stream.id)) {
+        const startYear = stream.startYear || 1
+        if (monthProj.activeStreams.includes(stream.id) && year >= startYear) {
           // Calculate this stream's contribution for this specific month
           const yearsOfGrowth = year - 1
           const growthMultiplier = Math.pow(1 + stream.growthRate / 100, yearsOfGrowth)
@@ -523,7 +532,8 @@ function calculatePerStreamSummaries(projections, incomeStreams, yearsToRetireme
       const { year, month } = proj
 
       // Check if stream is active this month
-      if (!proj.activeStreams.includes(stream.id)) return
+      const startYear = stream.startYear || 1
+      if (!proj.activeStreams.includes(stream.id) || year < startYear) return
 
       // Apply jumps in January
       if (month === 1 && stream.jumps && stream.jumps.length > 0) {

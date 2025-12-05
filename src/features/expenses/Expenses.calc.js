@@ -99,6 +99,20 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
     console.log('Percent of income categories:', percentCategories.map(c => `${c.category}: ${c.percentOfIncome}%`))
   }
 
+  // Handle Simple Mode
+  let categoriesToProcess = data.expenseCategories
+  if (data.simpleMode) {
+    categoriesToProcess = [{
+      id: 'simple-total',
+      name: 'Total Expenses',
+      category: 'Total Expenses',
+      annualAmount: (Number(data.totalMonthlyExpense) || 0) * 12,
+      amountType: 'dollar',
+      growthRate: data.simpleGrowthRate !== undefined ? data.simpleGrowthRate : inflationRate,
+      jumps: []
+    }]
+  }
+
   // Generate monthly projections (1,200 months = 100 years)
   const projections = []
 
@@ -108,7 +122,7 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
   const categoryDollarJumpYears = {}  // Track when dollar jumps were applied for growth calculation
   const categoryPercentOverrides = {}
   const categoryAmountOverrides = {}
-  data.expenseCategories.forEach(category => {
+  categoriesToProcess.forEach(category => {
     categoryMultipliers[category.id] = 1.0
     categoryDollarAdditions[category.id] = 0
     categoryDollarJumpYears[category.id] = []  // Array of {year, basePVAmount, growthRate}
@@ -180,7 +194,7 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
     let totalRecurringNominal = 0
     const categoryBreakdown = {}
 
-    data.expenseCategories.forEach(category => {
+    categoriesToProcess.forEach(category => {
       const amountType = category.amountType || 'percent' // Default to percent now
 
       // Calculate annual values with growth and changes
@@ -313,10 +327,14 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
   }
 
   // Calculate summary statistics
-  const summary = calculateSummary(projections, yearsToRetirement, data, inflationRate)
+  const summaryData = {
+    expenseCategories: categoriesToProcess,
+    oneTimeExpenses: data.oneTimeExpenses
+  }
+  const summary = calculateSummary(projections, yearsToRetirement, summaryData, inflationRate)
 
   // Prepare chart data
-  const chartData = prepareChartData(projections, data.expenseCategories, yearsToRetirement, inflationRate, data.oneTimeExpenses)
+  const chartData = prepareChartData(projections, categoriesToProcess, yearsToRetirement, inflationRate, data.oneTimeExpenses)
 
   console.log('Summary calculated:', summary)
   // console.log('🔴 EXPENSE CALC COMPLETE')
