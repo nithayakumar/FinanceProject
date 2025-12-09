@@ -137,10 +137,17 @@ export function useTaxData() {
 
         const stateHasAll = stateFilingStatuses.includes('All')
         const federalHasAll = federalFilingStatuses.includes('All')
+
+        // If "All" is available, it applies to all filing statuses (e.g., flat tax states like Arizona)
+        // Only show error if status is explicitly missing AND no "All" fallback exists
         const stateHasStatus = stateFilingStatuses.includes(csvFilingStatus) || stateHasAll || stateFilingStatuses.length === 0
         const federalHasStatus = federalFilingStatuses.includes(csvFilingStatus) || federalHasAll
 
-        if (!stateHasStatus || !federalHasStatus) {
+        // Only set missing status if the specific filing status is not available AND there's no "All" option
+        // For states with only "All" (like Arizona), we should never show an error
+        const shouldShowMissingStatus = (!stateHasStatus || !federalHasStatus) && !stateHasAll && !federalHasAll
+
+        if (shouldShowMissingStatus) {
             const scope = !stateHasStatus ? 'state' : 'federal'
             const location = scope === 'state' ? userState : userCountry
             const availableStatuses = scope === 'state' ? stateFilingStatuses : federalFilingStatuses
@@ -286,17 +293,9 @@ export function useTaxData() {
         const remapping = storage.load('filingStatusRemapping') || {}
         const storedRemap = remapping[userState]?.[profile.filingStatus]
 
-        // Check if the remapping is still needed
-        // If the current filing status is available, remove invalid remapping
-        if (storedRemap && stateHasStatus && federalHasStatus) {
-            // Remapping exists but is no longer needed - clean it up
-            delete remapping[userState]?.[profile.filingStatus]
-            if (remapping[userState] && Object.keys(remapping[userState]).length === 0) {
-                delete remapping[userState]
-            }
-            storage.save('filingStatusRemapping', remapping)
-            setFilingStatusRemap('')
-        } else if (storedRemap && storedRemap !== csvFilingStatus) {
+        // Apply stored remapping if it exists and is different from current filing status
+        // This allows manual overrides even when both filing statuses are available
+        if (storedRemap && storedRemap !== csvFilingStatus) {
             // Convert CSV format to user-friendly format if needed (for backwards compatibility)
             const userFriendlyRemap = storedRemap.includes('_') ? mapFilingStatusFromCSV(storedRemap) : storedRemap
             setFilingStatusRemap(userFriendlyRemap)
@@ -355,6 +354,12 @@ export function useTaxData() {
 
         setStandardDeductions(newDeductions)
 
+        // Update custom flag immediately to show/hide Reset button
+        setHasCustomStandardDeductions({
+            ...hasCustomStandardDeductions,
+            [type]: newDeductions[type] !== null
+        })
+
         // Save to storage
         const customDeductions = storage.load('customStandardDeductions') || {}
         const profile = storage.load('profile') || {}
@@ -385,11 +390,6 @@ export function useTaxData() {
 
             if (changed) {
                 console.log('✅ WILL RELOAD - value changed')
-                // Update custom flag only when saving
-                setHasCustomStandardDeductions({
-                    ...hasCustomStandardDeductions,
-                    [type]: newDeductions[type] !== null
-                })
                 // Small delay to ensure state update
                 setTimeout(() => {
                     window.location.reload()
@@ -409,7 +409,31 @@ export function useTaxData() {
             prevValue: prevStandardDeductions[type],
             hasCustomFlag: hasCustomStandardDeductions[type]
         })
-        handleStandardDeductionChange(type, null, true)
+
+        // Clear the custom value from storage
+        const customDeductions = storage.load('customStandardDeductions') || {}
+        const profile = storage.load('profile') || {}
+        const csvFilingStatus = mapFilingStatusToCSV(profile.filingStatus || 'Single')
+        const jurisdictionKey = `${data.country}_${data.state}_${csvFilingStatus}`
+
+        if (customDeductions[jurisdictionKey]) {
+            // Remove just this field
+            delete customDeductions[jurisdictionKey][type]
+
+            // If no custom values left, remove the entire key
+            const remaining = customDeductions[jurisdictionKey]
+            const federalIsEmpty = !remaining.federal && remaining.federal !== 0
+            const stateIsEmpty = !remaining.state && remaining.state !== 0
+
+            if (Object.keys(remaining).length === 0 || (federalIsEmpty && stateIsEmpty)) {
+                delete customDeductions[jurisdictionKey]
+            }
+
+            storage.save('customStandardDeductions', customDeductions)
+        }
+
+        // Reload to recalculate
+        window.location.reload()
     }
 
     // Get default standard deduction values
@@ -428,6 +452,12 @@ export function useTaxData() {
             [type]: value === '' || value === null ? null : Number(value)
         }
         setTaxCredits(newCredits)
+
+        // Update custom flag immediately to show/hide Reset button
+        setHasCustomTaxCredits({
+            ...hasCustomTaxCredits,
+            [type]: newCredits[type] !== null
+        })
 
         // Save to storage
         const customCredits = storage.load('customTaxCredits') || {}
@@ -451,11 +481,6 @@ export function useTaxData() {
         if (shouldReload) {
             const changed = newCredits[type] !== prevTaxCredits[type]
             if (changed) {
-                // Update custom flag only when saving
-                setHasCustomTaxCredits({
-                    ...hasCustomTaxCredits,
-                    [type]: newCredits[type] !== null
-                })
                 // Small delay to ensure state update
                 setTimeout(() => {
                     window.location.reload()
@@ -469,7 +494,36 @@ export function useTaxData() {
 
     // Reset tax credit to default
     const handleResetTaxCredit = (type) => {
-        handleTaxCreditChange(type, null, true)
+        console.log('🔄 Reset tax credit clicked for:', type, {
+            currentValue: taxCredits[type],
+            prevValue: prevTaxCredits[type],
+            hasCustomFlag: hasCustomTaxCredits[type]
+        })
+
+        // Clear the custom value from storage
+        const customCredits = storage.load('customTaxCredits') || {}
+        const profile = storage.load('profile') || {}
+        const csvFilingStatus = mapFilingStatusToCSV(profile.filingStatus || 'Single')
+        const jurisdictionKey = `${data.country}_${data.state}_${csvFilingStatus}`
+
+        if (customCredits[jurisdictionKey]) {
+            // Remove just this field
+            delete customCredits[jurisdictionKey][type]
+
+            // If no custom values left, remove the entire key
+            const remaining = customCredits[jurisdictionKey]
+            const federalIsEmpty = !remaining.federal && remaining.federal !== 0
+            const stateIsEmpty = !remaining.state && remaining.state !== 0
+
+            if (Object.keys(remaining).length === 0 || (federalIsEmpty && stateIsEmpty)) {
+                delete customCredits[jurisdictionKey]
+            }
+
+            storage.save('customTaxCredits', customCredits)
+        }
+
+        // Reload to recalculate
+        window.location.reload()
     }
 
     // Get default tax credit values

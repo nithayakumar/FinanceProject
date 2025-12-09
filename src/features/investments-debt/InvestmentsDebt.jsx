@@ -19,7 +19,7 @@ function InvestmentsDebt() {
     actions
   } = useInvestmentsData()
 
-  const [viewMode, setViewMode] = useState('nominal') // 'nominal' or 'real'
+  const [viewMode, setViewMode] = useState('Nominal') // 'PV' or 'Nominal'
   const [showChart, setShowChart] = useState(false)
 
   // Trigger chart animation on mount
@@ -70,47 +70,45 @@ function InvestmentsDebt() {
 
   const OutputSection = (
     <div className="h-full flex flex-col">
-      <div className="flex-1">
-        {isCalculating ? (
-          <div className="flex items-center justify-center h-64 text-gray-500">
-            Calculating projections...
-          </div>
-        ) : projections ? (
-          <>
-            <InvestmentsSummary
-              summary={projections.summary}
-              yearsToRetirement={projections.projections.length}
-              chartData={projections.projections}
-              investments={data.investments}
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-            />
+      {isCalculating ? (
+        <div className="flex items-center justify-center h-64 text-gray-500">
+          Calculating projections...
+        </div>
+      ) : projections ? (
+        <>
+          <InvestmentsSummary
+            summary={projections.summary}
+            yearsToRetirement={projections.projections.length}
+            chartData={projections.projections}
+            investments={data.investments}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+          />
 
-            {showChart && (
-              <div className="mt-6">
-                <InvestmentsChart
-                  data={projections.projections}
-                  investments={data.investments}
-                  viewMode={viewMode}
-                />
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="flex items-center justify-center h-64 text-gray-500">
-            Please complete Income and Expenses sections to see projections.
-          </div>
-        )}
-      </div>
+          {showChart && (
+            <div className="mt-6">
+              <InvestmentsChart
+                data={projections.projections}
+                investments={data.investments}
+                viewMode={viewMode}
+              />
+            </div>
+          )}
 
-      <div className="mt-8 pt-2">
-        <button
-          onClick={handleNextFeature}
-          className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition shadow-sm"
-        >
-          Continue to Taxes →
-        </button>
-      </div>
+          <div className="mt-8 pt-2">
+            <button
+              onClick={() => navigate('/property')}
+              className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition shadow-sm"
+            >
+              Continue to Property →
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="flex items-center justify-center h-64 text-gray-500">
+          Please complete Income and Expenses sections to see projections.
+        </div>
+      )}
     </div>
   )
 

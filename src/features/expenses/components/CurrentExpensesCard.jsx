@@ -75,15 +75,19 @@ export function CurrentExpensesCard({ categories, onUpdate }) {
                                     )}
                                 </td>
                                 <td className="px-4 py-3">
-                                    <Input
-                                        type="number"
-                                        value={category.growthRate}
-                                        onChange={(val) => onUpdate(category.id, 'growthRate', val)}
-                                        suffix="%"
-                                        placeholder="2.7"
-                                        step="0.1"
-                                        className="w-24"
-                                    />
+                                    {category.amountType === 'fixed' ? (
+                                        <Input
+                                            type="number"
+                                            value={category.growthRate}
+                                            onChange={(val) => onUpdate(category.id, 'growthRate', val)}
+                                            suffix="%"
+                                            placeholder="2.7"
+                                            step="0.1"
+                                            className="w-24"
+                                        />
+                                    ) : (
+                                        <span className="text-xs text-gray-500 italic">Tied to income</span>
+                                    )}
                                 </td>
                             </tr>
                         ))}

@@ -47,13 +47,15 @@ export function ExpenseCategoryCard({
 
                 {isExpanded && (
                     <div className="mt-4 pl-2 space-y-6 animate-fadeIn">
-                        <div className="grid grid-cols-2 gap-4">
-                            <Input
-                                {...EXPENSE_FIELDS.growthRate}
-                                value={category.growthRate}
-                                onChange={(e) => onUpdate(category.id, 'growthRate', e.target.value ? Number(e.target.value) : '')}
-                            />
-                        </div>
+                        {category.amountType === 'fixed' && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <Input
+                                    {...EXPENSE_FIELDS.growthRate}
+                                    value={category.growthRate}
+                                    onChange={(e) => onUpdate(category.id, 'growthRate', e.target.value ? Number(e.target.value) : '')}
+                                />
+                            </div>
+                        )}
 
                         {/* Jumps Section */}
                         <div className="border-t border-gray-100 pt-4">

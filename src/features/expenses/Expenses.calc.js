@@ -15,10 +15,10 @@ export function validateExpenses(data, yearsToRetirement) {
 
   // Validate each expense category
   data.expenseCategories.forEach((category) => {
-    const amountType = category.amountType || 'dollar'
+    const amountType = category.amountType || 'percent'
 
     // Annual Amount
-    if (amountType === 'dollar') {
+    if (amountType === 'fixed') {
       if (category.annualAmount < 0) {
         errors[`${category.id}-annualAmount`] = 'Annual amount must be a positive number or 0'
       }
@@ -26,8 +26,8 @@ export function validateExpenses(data, yearsToRetirement) {
       errors[`${category.id}-percentOfIncome`] = 'Percent of income must be 0 or greater'
     }
 
-    // Growth Rate
-    if (amountType === 'dollar') {
+    // Growth Rate - only validate for fixed amount expenses, not % of income
+    if (amountType === 'fixed') {
       if (category.growthRate !== '' && category.growthRate < 0) {
         errors[`${category.id}-growthRate`] = 'Growth rate must be a positive number'
       } else if (category.growthRate !== '' && category.growthRate > 50) {

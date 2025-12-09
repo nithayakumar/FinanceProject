@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import { Card } from '../../../shared/ui/Card'
 import { getFilingStatusLabel } from '../hooks/useTaxData'
 
 export function TaxSettings({
@@ -18,6 +19,17 @@ export function TaxSettings({
     getDefaultTaxCredit,
     hasCustomTaxCredits
 }) {
+    // Load expanded state from localStorage, default to false
+    const [isExpanded, setIsExpanded] = useState(() => {
+        const saved = sessionStorage.getItem('taxAdvancedOptionsExpanded')
+        return saved === 'true'
+    })
+
+    // Save expanded state to localStorage whenever it changes
+    useEffect(() => {
+        sessionStorage.setItem('taxAdvancedOptionsExpanded', isExpanded.toString())
+    }, [isExpanded])
+
     return (
         <div className="space-y-6">
             {/* Missing Status Warning */}
@@ -45,16 +57,13 @@ export function TaxSettings({
                 </div>
             )}
 
-            {/* Filing Status Remapping */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="font-medium text-gray-900 mb-3">Filing Status Configuration</h3>
-                <p className="text-sm text-gray-600 mb-4">
-                    Override the tax brackets used for {getFilingStatusLabel(data.filingStatus)} in {data.state}.
-                </p>
+            {/* Tax Configuration Card */}
+            <Card>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Tax Configuration</h3>
 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+                        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
                             Your Filing Status
                         </label>
                         <div className="px-3 py-2 bg-gray-50 rounded text-sm text-gray-700 border border-gray-200">
@@ -62,199 +71,173 @@ export function TaxSettings({
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                            Use Brackets For
-                        </label>
-                        <select
-                            value={filingStatusRemap}
-                            onChange={(e) => handleRemapChange(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
-                        >
-                            <option value="">Default ({getFilingStatusLabel(data.filingStatus)})</option>
-                            {remapOptions.map(status => (
-                                <option key={status.value} value={status.value}>
-                                    {status.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    {remapOptions && remapOptions.length > 0 && (
+                        <div>
+                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                                Use Brackets For
+                            </label>
+                            <select
+                                value={filingStatusRemap}
+                                onChange={(e) => handleRemapChange(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                            >
+                                <option value="">Default ({getFilingStatusLabel(data.filingStatus)})</option>
+                                {remapOptions.map(status => (
+                                    <option key={status.value} value={status.value}>
+                                        {status.label}
+                                    </option>
+                                ))}
+                            </select>
+                            {filingStatusRemap && (
+                                <p className="mt-2 text-xs text-blue-600">
+                                    Using <strong>{getFilingStatusLabel(filingStatusRemap)}</strong> brackets
+                                </p>
+                            )}
+                        </div>
+                    )}
                 </div>
 
-                {filingStatusRemap && (
-                    <p className="mt-3 text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-100">
-                        ℹ️ Calculations will use <strong>{getFilingStatusLabel(filingStatusRemap)}</strong> brackets.
-                    </p>
-                )}
-            </div>
-
-            {/* Standard Deductions */}
-            {standardDeductions && (
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 className="font-medium text-gray-900 mb-3">Standard Deductions</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                        Deductions are applied to reduce taxable income. Values are automatically set based on your location and filing status, but can be customized.
-                    </p>
-
-                    <div className="space-y-4">
-                        {/* Federal Standard Deduction */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                                Federal Standard Deduction ({data.country})
-                            </label>
-                            <div className="flex items-center space-x-2">
-                                <div className="relative flex-1">
-                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                                    <input
-                                        type="number"
-                                        value={standardDeductions.federal ?? getDefaultStandardDeduction('federal')}
-                                        onChange={(e) => handleStandardDeductionChange('federal', e.target.value)}
-                                        onBlur={(e) => handleStandardDeductionChange('federal', e.target.value, true)}
-                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder={getDefaultStandardDeduction('federal')?.toString()}
-                                    />
-                                </div>
-                                {hasCustomStandardDeductions?.federal && (
-                                    <button
-                                        onClick={() => handleResetStandardDeduction('federal')}
-                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition"
-                                        title="Reset to default"
-                                    >
-                                        Reset
-                                    </button>
-                                )}
-                            </div>
-                            {hasCustomStandardDeductions?.federal && (
-                                <p className="mt-1 text-xs text-blue-600">
-                                    Custom value (default: ${getDefaultStandardDeduction('federal')?.toLocaleString()})
-                                </p>
-                            )}
+                {/* Expandable Advanced Options */}
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                    <button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        className="flex items-center text-sm text-gray-600 hover:text-gray-900 font-medium group"
+                    >
+                        <div className={`mr-2 w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-gray-200 transition ${isExpanded ? 'rotate-90' : ''}`}>
+                            ▶
                         </div>
+                        Advanced Options (Deductions & Credits)
+                    </button>
 
-                        {/* State Standard Deduction */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                                {data.country === 'Canada' ? 'Provincial' : 'State'} Standard Deduction ({data.state})
-                            </label>
-                            <div className="flex items-center space-x-2">
-                                <div className="relative flex-1">
-                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                                    <input
-                                        type="number"
-                                        value={standardDeductions.state ?? getDefaultStandardDeduction('state')}
-                                        onChange={(e) => handleStandardDeductionChange('state', e.target.value)}
-                                        onBlur={(e) => handleStandardDeductionChange('state', e.target.value, true)}
-                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder={getDefaultStandardDeduction('state')?.toString()}
-                                    />
+                    {isExpanded && (
+                        <div className="mt-4 space-y-6 animate-fadeIn">
+                            {/* Standard Deductions */}
+                            {standardDeductions && (
+                                <div>
+                                    <h4 className="text-sm font-medium text-gray-900 mb-3">Standard Deductions</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-2">
+                                                Federal ({data.country})
+                                            </label>
+                                            <div className="flex items-center space-x-2">
+                                                <div className="relative flex-1">
+                                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                                    <input
+                                                        type="number"
+                                                        value={standardDeductions.federal ?? getDefaultStandardDeduction('federal')}
+                                                        onChange={(e) => handleStandardDeductionChange('federal', e.target.value)}
+                                                        onBlur={(e) => handleStandardDeductionChange('federal', e.target.value, true)}
+                                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                                    />
+                                                </div>
+                                                {hasCustomStandardDeductions?.federal && (
+                                                    <button
+                                                        onClick={() => handleResetStandardDeduction('federal')}
+                                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md whitespace-nowrap"
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-2">
+                                                {data.country === 'Canada' ? 'Provincial' : 'State'} ({data.state})
+                                            </label>
+                                            <div className="flex items-center space-x-2">
+                                                <div className="relative flex-1">
+                                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                                    <input
+                                                        type="number"
+                                                        value={standardDeductions.state ?? getDefaultStandardDeduction('state')}
+                                                        onChange={(e) => handleStandardDeductionChange('state', e.target.value)}
+                                                        onBlur={(e) => handleStandardDeductionChange('state', e.target.value, true)}
+                                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                                    />
+                                                </div>
+                                                {hasCustomStandardDeductions?.state && (
+                                                    <button
+                                                        onClick={() => handleResetStandardDeduction('state')}
+                                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md whitespace-nowrap"
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                {hasCustomStandardDeductions?.state && (
-                                    <button
-                                        onClick={() => handleResetStandardDeduction('state')}
-                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition"
-                                        title="Reset to default"
-                                    >
-                                        Reset
-                                    </button>
-                                )}
-                            </div>
-                            {hasCustomStandardDeductions?.state && (
-                                <p className="mt-1 text-xs text-blue-600">
-                                    Custom value (default: ${getDefaultStandardDeduction('state')?.toLocaleString()})
-                                </p>
                             )}
-                        </div>
-                    </div>
 
-                    <p className="mt-3 text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
-                        💡 Standard deductions are inflation-adjusted over time in long-term projections.
-                    </p>
+                            {/* Tax Credits */}
+                            {taxCredits && (
+                                <div>
+                                    <h4 className="text-sm font-medium text-gray-900 mb-3">Tax Credits</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-2">
+                                                Federal ({data.country})
+                                            </label>
+                                            <div className="flex items-center space-x-2">
+                                                <div className="relative flex-1">
+                                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                                    <input
+                                                        type="number"
+                                                        value={taxCredits.federal ?? getDefaultTaxCredit('federal')?.amount ?? 0}
+                                                        onChange={(e) => handleTaxCreditChange('federal', e.target.value)}
+                                                        onBlur={(e) => handleTaxCreditChange('federal', e.target.value, true)}
+                                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                                    />
+                                                </div>
+                                                {hasCustomTaxCredits?.federal && (
+                                                    <button
+                                                        onClick={() => handleResetTaxCredit('federal')}
+                                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md whitespace-nowrap"
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-2">
+                                                {data.country === 'Canada' ? 'Provincial' : 'State'} ({data.state})
+                                            </label>
+                                            <div className="flex items-center space-x-2">
+                                                <div className="relative flex-1">
+                                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                                                    <input
+                                                        type="number"
+                                                        value={taxCredits.state ?? getDefaultTaxCredit('state')?.amount ?? 0}
+                                                        onChange={(e) => handleTaxCreditChange('state', e.target.value)}
+                                                        onBlur={(e) => handleTaxCreditChange('state', e.target.value, true)}
+                                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                                                    />
+                                                </div>
+                                                {hasCustomTaxCredits?.state && (
+                                                    <button
+                                                        onClick={() => handleResetTaxCredit('state')}
+                                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md whitespace-nowrap"
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <p className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                                💡 Deductions & credits are inflation-adjusted in long-term projections
+                            </p>
+                        </div>
+                    )}
                 </div>
-            )}
-
-            {/* Tax Credits (Editable) */}
-            {taxCredits && (
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                    <h3 className="font-medium text-gray-900 mb-3">Tax Credits</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                        Tax credits directly reduce your tax liability after calculating your taxes. Values are automatically set based on your location and filing status, but can be customized.
-                    </p>
-
-                    <div className="space-y-4">
-                        {/* Federal Tax Credit */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                                Federal Tax Credit ({data.country})
-                            </label>
-                            <div className="flex items-center space-x-2">
-                                <div className="relative flex-1">
-                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                                    <input
-                                        type="number"
-                                        value={taxCredits.federal ?? getDefaultTaxCredit('federal')?.amount ?? 0}
-                                        onChange={(e) => handleTaxCreditChange('federal', e.target.value)}
-                                        onBlur={(e) => handleTaxCreditChange('federal', e.target.value, true)}
-                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder={(getDefaultTaxCredit('federal')?.amount ?? 0).toString()}
-                                    />
-                                </div>
-                                {hasCustomTaxCredits?.federal && (
-                                    <button
-                                        onClick={() => handleResetTaxCredit('federal')}
-                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition"
-                                        title="Reset to default"
-                                    >
-                                        Reset
-                                    </button>
-                                )}
-                            </div>
-                            {hasCustomTaxCredits?.federal && (
-                                <p className="mt-1 text-xs text-blue-600">
-                                    Custom value (default: ${(getDefaultTaxCredit('federal')?.amount ?? 0).toLocaleString()})
-                                </p>
-                            )}
-                        </div>
-
-                        {/* State/Provincial Tax Credit */}
-                        <div>
-                            <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
-                                {data.country === 'Canada' ? 'Provincial' : 'State'} Tax Credit ({data.state})
-                            </label>
-                            <div className="flex items-center space-x-2">
-                                <div className="relative flex-1">
-                                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                                    <input
-                                        type="number"
-                                        value={taxCredits.state ?? getDefaultTaxCredit('state')?.amount ?? 0}
-                                        onChange={(e) => handleTaxCreditChange('state', e.target.value)}
-                                        onBlur={(e) => handleTaxCreditChange('state', e.target.value, true)}
-                                        className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder={(getDefaultTaxCredit('state')?.amount ?? 0).toString()}
-                                    />
-                                </div>
-                                {hasCustomTaxCredits?.state && (
-                                    <button
-                                        onClick={() => handleResetTaxCredit('state')}
-                                        className="px-3 py-2 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition"
-                                        title="Reset to default"
-                                    >
-                                        Reset
-                                    </button>
-                                )}
-                            </div>
-                            {hasCustomTaxCredits?.state && (
-                                <p className="mt-1 text-xs text-blue-600">
-                                    Custom value (default: ${(getDefaultTaxCredit('state')?.amount ?? 0).toLocaleString()})
-                                </p>
-                            )}
-                        </div>
-                    </div>
-
-                    <p className="mt-3 text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100">
-                        💡 Tax credits are inflation-adjusted over time in long-term projections.
-                    </p>
-                </div>
-            )}
+            </Card>
         </div>
     )
 }

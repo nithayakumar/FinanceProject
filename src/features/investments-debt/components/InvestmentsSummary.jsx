@@ -14,7 +14,7 @@ function SummaryCard({ title, value, subtitle, highlight }) {
 }
 
 export function InvestmentsSummary({ summary, yearsToRetirement, chartData, investments, viewMode, setViewMode }) {
-    const isReal = viewMode === 'real'
+    const isPV = viewMode === 'PV'
 
     // Helper to format large numbers compactly
     const formatCompact = (val) => {
@@ -25,9 +25,9 @@ export function InvestmentsSummary({ summary, yearsToRetirement, chartData, inve
     }
 
     // Get correct values based on view mode
-    const currentNetWorth = isReal ? summary.currentNetWorthPV : summary.currentNetWorth
-    const year10NetWorth = isReal ? summary.year10NetWorthPV : summary.year10NetWorth
-    const retirementNetWorth = isReal ? summary.retirementNetWorthPV : summary.retirementNetWorth
+    const currentNetWorth = isPV ? summary.currentNetWorthPV : summary.currentNetWorth
+    const year10NetWorth = isPV ? summary.year10NetWorthPV : summary.year10NetWorth
+    const retirementNetWorth = isPV ? summary.retirementNetWorthPV : summary.retirementNetWorth
 
     // Calculate CAGR
     // (Ending / Beginning)^(1/n) - 1
@@ -41,20 +41,18 @@ export function InvestmentsSummary({ summary, yearsToRetirement, chartData, inve
                 <h2 className="text-xl font-bold">Cash & Investments Summary</h2>
 
                 {/* View Mode Toggle */}
-                <div className="flex bg-gray-100 p-1 rounded-lg">
+                <div className="bg-gray-100 p-1 rounded-lg flex text-xs font-medium">
                     <button
-                        onClick={() => setViewMode('nominal')}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${!isReal ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                    >
-                        Future Dollars
-                    </button>
-                    <button
-                        onClick={() => setViewMode('real')}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${isReal ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-                            }`}
+                        onClick={() => setViewMode('PV')}
+                        className={`px-3 py-1.5 rounded-md transition ${viewMode === 'PV' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                     >
                         Today's Dollars
+                    </button>
+                    <button
+                        onClick={() => setViewMode('Nominal')}
+                        className={`px-3 py-1.5 rounded-md transition ${viewMode === 'Nominal' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Future Dollars
                     </button>
                 </div>
             </div>

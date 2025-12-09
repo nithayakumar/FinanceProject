@@ -1,0 +1,1 @@
+export { propertyRoutes } from './routes'

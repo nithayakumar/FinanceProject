@@ -28,6 +28,7 @@ function Navigation() {
     { path: '/expenses', label: 'Expenses' },
     { path: '/investments', label: 'Investments' },
     { path: '/taxes', label: 'Taxes' },
+    { path: '/property', label: 'Property' },
     // DISABLED: Scenarios feature
     // { path: '/scenarios', label: 'Scenarios' },
   ]

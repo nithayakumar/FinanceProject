@@ -10,6 +10,7 @@ import { incomeRoutes } from './features/income'
 import { expensesRoutes } from './features/expenses'
 import { taxesRoutes } from './features/taxes'
 import { investmentsDebtRoutes } from './features/investments-debt'
+import { propertyRoutes } from './features/property'
 import { gapRoutes } from './features/gap'
 // DISABLED: Scenarios feature
 // import { scenariosRoutes } from './features/scenarios'
@@ -22,6 +23,7 @@ const featureRoutes = [
   ...expensesRoutes,
   ...taxesRoutes,
   ...investmentsDebtRoutes,
+  ...propertyRoutes,
   ...gapRoutes,
   // DISABLED: Scenarios feature
   // ...scenariosRoutes
