@@ -168,10 +168,9 @@ export function calculatePropertyProjections(data, profile) {
                     mortgageBalance -= principal
                 }
             }
+            homeValue = homeValue * (1 + growthRate)
             yearEquity = homeValue - mortgageBalance
             yearDebt = mortgageBalance
-
-            homeValue = homeValue * (1 + growthRate)
 
         } else if (data.mode === 'buy') {
             // Buy Logic
@@ -228,11 +227,10 @@ export function calculatePropertyProjections(data, profile) {
                         mortgageBalance -= principal
                     }
                 }
-                yearEquity = homeValue - mortgageBalance
-                yearDebt = mortgageBalance
-
                 // Growth at end of year
                 homeValue = homeValue * (1 + growthRate)
+                yearEquity = homeValue - mortgageBalance
+                yearDebt = mortgageBalance
 
             } else {
                 // Post-purchase years
@@ -245,9 +243,9 @@ export function calculatePropertyProjections(data, profile) {
                         mortgageBalance -= principal
                     }
                 }
+                homeValue = homeValue * (1 + growthRate)
                 yearEquity = homeValue - mortgageBalance
                 yearDebt = mortgageBalance
-                homeValue = homeValue * (1 + growthRate)
             }
         }
 

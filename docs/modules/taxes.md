@@ -585,3 +585,202 @@ Potential improvements for the Taxes module:
 6. **Alternative Minimum Tax (AMT)**: Parallel tax calculation
 7. **State Capital Gains**: Some states have preferential capital gains rates
 8. **Tax Credits**: Child tax credit, earned income credit, etc.
+
+---
+
+## Filing Status Override
+
+The Taxes module allows manual override of filing status for tax calculations:
+
+### Purpose
+- User's actual filing status may not match available tax brackets in their state
+- Allows choosing alternate brackets when both options are available
+- Example: Single user can calculate using Married brackets to model future marriage
+
+### Mechanism
+**filingStatusRemapping Storage:**
+```javascript
+{
+  "California": {
+    "Single": "Married"  // User is Single, but using Married brackets
+  }
+}
+```
+
+### Behavior
+- **Default**: Use filing status from Profile (Single or Married)
+- **Override**: Select different status in "Use Brackets For" dropdown
+- **Validation**: Can only override if target status brackets exist
+- **Persistence**: Stored per state and original filing status
+
+### UI Indication
+- Blue notification: "Using Override - Filing status is Single, but using Married brackets for calculations"
+- Reset option: Dropdown includes "Default (Single)" option to clear override
+
+---
+
+## Net Worth Impact
+
+Taxes reduce take-home income and directly impact the gap available for investments:
+
+### Direct Impact on Gap
+```
+Monthly Gap = Gross Income
+            - Pre-tax 401k Contributions  ← Reduces taxable income
+            - Total Taxes                 ← Reduces available cash
+            - Expenses
+            - Mortgage Payment (if applicable)
+```
+
+### Tax Calculation Formula
+```
+Taxable Income = Gross Income - Pre-tax 401k Contributions - Standard Deduction
+
+Total Tax = Federal Tax + State Tax + FICA
+          = f(Taxable Income, brackets) + g(Taxable Income, state brackets) + FICA(Gross Income)
+
+After-Tax Income = Taxable Income - Total Tax
+```
+
+### Key Components
+
+**1. Federal Tax:**
+- Progressive brackets (10%, 12%, 22%, 24%, 32%, 35%, 37% for 2025)
+- Each bracket taxes only income within that range
+- Standard deduction reduces taxable income
+
+**2. State Tax:**
+- Varies by state (0% to ~13%)
+- Some states have flat rates, others progressive
+- Fallback to "All" for flat-tax states (e.g., Arizona)
+
+**3. FICA (Payroll Taxes):**
+- Social Security: 6.2% on first $176,100 (2025)
+- Medicare: 1.45% on all income
+- Additional Medicare: 0.9% on income > $200K (Single) or $250K (Married)
+- Canada: CPP + EI instead of FICA
+
+### Tax-Advantaged Strategy Impact
+
+**Pre-Tax 401k Example:**
+```
+Gross Income: $150,000
+401k Contribution: $23,000
+
+Without 401k:
+  Taxable Income: $150,000
+  Federal Tax (25% effective): $37,500
+  Take-Home: $112,500
+
+With 401k:
+  Taxable Income: $127,000 ($150K - $23K)
+  Federal Tax (22% effective): $27,940
+  Take-Home: $99,060
+  401k Balance: +$23,000
+
+Tax Savings: $37,500 - $27,940 = $9,560
+Net Worth Impact: +$23,000 (401k) + $9,560 (reduced taxes) = +$32,560 vs. $23,000
+```
+
+### Custom Deductions/Credits Impact
+- **Standard Deductions**: Reduce taxable income (custom override available)
+- **Tax Credits**: Direct reduction of tax owed (custom override available)
+- Both are inflation-adjusted in long-term projections
+
+---
+
+## Cross-Page Dependencies
+
+### Provides Data To:
+
+1. **Gap/Net Worth Module**:
+   - **Purpose**: Calculate after-tax available income
+   - **Data**: Total tax amount (Federal + State + FICA)
+   - **Formula**: `Gap = Income - Pre-tax 401k - Taxes - Expenses`
+   - **Impact**: Taxes reduce available cash for investments
+
+### Depends On:
+
+1. **Income Module**:
+   - **Purpose**: Calculate taxes on earned income
+   - **Data**:
+     - Gross Income (`annualIncome + equity`)
+     - Individual 401k contributions (pre-tax deduction)
+   - **Taxable Income**: `Gross Income - Individual 401k`
+   - **Impact**: Higher income → higher tax bracket
+
+2. **Profile Module**:
+   - **Purpose**: Tax jurisdiction and filing status
+   - **Data**:
+     - `state`: Determines state tax brackets
+     - `country`: Determines federal tax system (USA vs Canada)
+     - `filingStatus`: Single or Married
+     - `inflationRate`: Inflates deductions/credits over time
+   - **Impact**: Location determines applicable tax rates
+
+3. **Investments Module** (indirect):
+   - **Purpose**: Pre-tax 401k contributions reduce taxable income
+   - **Data**: Individual 401k contribution amount
+   - **Formula**: `Taxable Income = Gross - 401k`
+   - **Impact**: $23K contribution saves ~$5K-$8K in taxes (depending on bracket)
+
+### Automatic Calculations
+
+**Taxable Income Calculation:**
+```
+Income (Gross) - Investments (Individual 401k) → Taxes (Taxable Income)
+```
+- 401k contributions are pre-tax
+- Automatically reduces tax base
+- Tax savings compounded over time
+
+**Bracket Selection:**
+```
+Profile (state, country, filingStatus) → Taxes (applicable brackets)
+```
+- CSV tax ladders loaded based on jurisdiction
+- Filing status determines bracket thresholds
+- 2025 brackets with inflation adjustments for future years
+
+---
+
+## Validation Rules Summary
+
+### Filing Status Validation
+
+| Field | Options | Required | Notes |
+|-------|---------|----------|-------|
+| **filingStatus** | Single, Married | Yes (from Profile) | Cannot be manually changed; set in Profile |
+| **filingStatusRemapping** | Single, Married, "" (default) | No | Optional override if brackets available |
+
+### Custom Override Validation
+
+| Field | Min | Max | Required | Type | Notes |
+|-------|-----|-----|----------|------|-------|
+| **customStandardDeductions.federal** | ≥ 0 | No limit | No | Currency | Overrides default deduction |
+| **customStandardDeductions.state** | ≥ 0 | No limit | No | Currency | Overrides default deduction |
+| **customTaxCredits.federal** | ≥ 0 | No limit | No | Currency | Overrides default credit |
+| **customTaxCredits.state** | ≥ 0 | No limit | No | Currency | Overrides default credit |
+
+### Jurisdiction Constraints
+
+- **Filing Status Override**: Can only remap if target brackets exist
+  - Example: Can't use Married brackets in state that only has "All"
+  - Arizona (only "All") → No override needed, works for all statuses
+- **Storage Key**: Stored per `jurisdiction = country_state_filingStatus`
+- **Reset**: Deletes custom value, returns to CSV default
+
+### Error Messages
+
+| Validation Failure | Error Message |
+|-------------------|---------------|
+| Filing status brackets not available | "Tax brackets for [status] are not available in [state]" (shown as warning, not error) |
+| Custom deduction < 0 | "Standard deduction must be a positive number or 0" |
+| Custom credit < 0 | "Tax credit must be a positive number or 0" |
+
+### Calculation Rules
+
+- **Progressive Brackets**: Tax calculated cumulatively across brackets
+- **Inflation Adjustment**: Deductions and credits inflated in future year projections
+- **Precision**: No rounding in tax calculations; preserve full floating-point precision
+- **FICA Caps**: Social Security has wage cap ($176,100 in 2025); Medicare does not

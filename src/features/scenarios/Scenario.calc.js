@@ -86,6 +86,7 @@ export function getCurrentPlanData() {
   const income = storage.load('income') || {}
   const expenses = storage.load('expenses') || {}
   const investmentsDebt = storage.load('investmentsDebt') || {}
+  const property = storage.load('property') || {}
 
   // Ensure required arrays exist to prevent .reduce() errors in Gap.calc.js
   return {
@@ -120,6 +121,10 @@ export function getCurrentPlanData() {
       },
       investments: investmentsDebt.investments || [],
       ...investmentsDebt
+    },
+    property: {
+      mode: 'none',
+      ...property
     },
     taxes: storage.load('taxes') || {},
     taxLadders: storage.load('taxLadders') || {},
@@ -215,6 +220,7 @@ export function calculateScenarioProjections(scenarioData) {
     incomeData,
     expensesData,
     data.investmentsDebt,
+    data.property,
     data.profile
   )
 

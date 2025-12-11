@@ -40,8 +40,8 @@ const normalizeLocation = (value) => {
  *
  * Note: All calculations preserve full precision. Rounding only occurs at display time.
  */
-export function calculateGapProjections(incomeData, expensesData, investmentsData, profile) {
-  console.group('📊 Calculating Gap Projections')
+export function calculateGapProjections(incomeData, expensesData, investmentsData, propertyData, profile) {
+  // console.group('📊 Calculating Gap Projections')
 
   initializeTaxLadders()
 
@@ -52,8 +52,8 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
   const filingStatus = profile.filingStatus || 'Single'
   const startYear = new Date().getFullYear()
 
-  console.log('Years to Retirement:', yearsToRetirement)
-  console.log('Inflation Rate:', inflationRate + '%')
+  // console.log('Years to Retirement:', yearsToRetirement)
+  // console.log('Inflation Rate:', inflationRate + '%')
 
   // Extract starting values
   let cash = Number(investmentsData.currentCash) || 0
@@ -73,21 +73,109 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     portfolioPercent: Number(inv.portfolioPercent) || 0
   }))
 
+  // --- Property Initialization ---
+  const hasProperty = propertyData && propertyData.mode && propertyData.mode !== 'none'
+  const isBuyMode = propertyData?.mode === 'buy'
+  const isOwnMode = propertyData?.mode === 'own'
+  const useSimplePropertyExpenses = expensesData?.simpleMode // Check if using simple expenses
+
+  let homeValue = 0
+  let mortgageBalance = 0
+  let monthlyMortgagePayment = 0
+  let mortgageInterestRate = 0
+  let homeGrowthRate = 0
+  // Buy Mode Specifics
+  let purchaseYear = 0 // Relative year index (1 = Year 1)
+  let homePriceAtPurchase = 0
+  let downPaymentAmount = 0
+  let downPaymentIsPercent = false
+
+  if (hasProperty) {
+    const details = propertyData.details || {}
+    homeGrowthRate = (Number(details.growthRate) || 0) / 100
+
+    if (isOwnMode) {
+      homeValue = Number(details.homeValue) || 0
+      mortgageBalance = Number(details.mortgageRemaining) || 0
+      monthlyMortgagePayment = Number(details.monthlyPayment) || 0
+      // Infer rate or default to 3.5%
+      mortgageInterestRate = 0.035
+    } else if (isBuyMode) {
+      homePriceAtPurchase = Number(details.homePrice) || 0
+      purchaseYear = Number(details.purchaseYear) || 1
+      monthlyMortgagePayment = 0 // Will calc at purchase
+      mortgageInterestRate = (Number(details.mortgageRate) || 0) / 100
+      downPaymentAmount = Number(details.downPayment) || 0
+      downPaymentIsPercent = details.downPaymentType === 'percent'
+      // Initial state is 0, will update when year == purchaseYear
+    }
+  }
+  // -------------------------------
+
   // Calculate total allocation percentage
   const totalAllocation = investments.reduce((sum, inv) => sum + inv.portfolioPercent, 0)
 
-  console.log('Starting Cash:', cash)
-  console.log('Base Target Cash (Year 1):', baseTargetCash)
-  console.log('Starting 401k:', retirement401k.value)
-  console.log('Total Allocation %:', totalAllocation)
+  // console.log('Starting Cash:', cash)
+  // console.log('Base Target Cash (Year 1):', baseTargetCash)
+  // console.log('Starting 401k:', retirement401k.value)
+  // console.log('Total Allocation %:', totalAllocation)
+  // console.log('Property Mode:', propertyData?.mode, 'Simple Expenses:', useSimplePropertyExpenses)
 
   // Generate yearly projections
   const projections = []
+
+  // Pre-loop logic for Buy mode "Historical" purchase
+  // If purchaseYear < 1, we need to initialize values as if purchased in past?
+  // Simply: If purchaseYear <= 0, we treat it as "Already Owned" but with dynamic start values?
+  // Current logic in Property.calc handles this complexity.
+  // For Gap model simplicity: IF purchaseYear <= 0, we can assume "Own" mode logic effectively?
+  // Or just initialize triggers in the loop relative to start.
+  // We'll stick to loop Index checks.
 
   for (let year = 1; year <= yearsToRetirement; year++) {
     // Inflate target cash for this year
     const inflationMultiplier = Math.pow(1 + inflationRate / 100, year - 1)
     const targetCash = baseTargetCash * inflationMultiplier
+
+    // --- Property Logic: Purchase Trigger ---
+    let purchaseOccurredThisYear = false
+    let downPaymentPaid = 0
+    let annualAppreciation = 0
+    if (isBuyMode && year === purchaseYear) {
+      purchaseOccurredThisYear = true
+      // Calculate Price with appreciation if purchase is in future
+      const yearsComparison = Math.max(0, purchaseYear - 1)
+      const purchasePrice = homePriceAtPurchase * Math.pow(1 + homeGrowthRate, yearsComparison)
+
+      const downPayment = downPaymentIsPercent
+        ? purchasePrice * (downPaymentAmount / 100)
+        : downPaymentAmount
+
+      downPaymentPaid = downPayment
+
+      homeValue = purchasePrice
+      mortgageBalance = Math.max(0, purchasePrice - downPayment)
+      const term = Number(propertyData.details.term) || 30
+
+      // Calculate monthly payment
+      const r = mortgageInterestRate / 12
+      const n = term * 12
+      if (r === 0) monthlyMortgagePayment = mortgageBalance / n
+      else monthlyMortgagePayment = mortgageBalance * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
+
+      // Deduct down payment from Cash !!!
+      // This is a major cash flow event. Gap will reflect this massive outflow.
+      // Or do we treat it as an Allocation?
+      // Gap = Income - Expenses.
+      // DownPayment is usually from SAVINGs (Cash).
+      // So 'Gap' (Annual Savings) might be negative if we subtract it?
+      // No, DownPayment is a Balance Sheet transfer (Cash -> Equity).
+      // It shouldn't reduce "Gap" (Disposable Income), but it REDUCES CASH BALANCE.
+      // We handle this by subtracting from 'cash' directly below.
+      cash -= downPayment
+    }
+    // ----------------------------------------
+
 
     // Get annual income from income projections (SUM all 12 months, not January * 12)
     // This is critical for career breaks where months may have different values
@@ -100,6 +188,14 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     incomeData.incomeStreams.forEach(stream => {
       incomeByStream[stream.id] = { name: stream.name, salary: 0, equity: 0, company401k: 0, total: 0 }
     })
+
+    // --- Monthly Loop for Income & Property Amortization ---
+    let annualMortgagePayment = 0 // P + I
+    let annualMortgageInterest = 0
+    let annualMortgagePrincipal = 0
+    let annualPropertyExpenses = 0 // Tax, Maint, PMI
+
+    let annualRentalSavings = 0
 
     for (let month = 0; month < 12; month++) {
       const monthIndex = (year - 1) * 12 + month
@@ -144,15 +240,110 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
           incomeByStream[stream.id].total += monthSalary + monthEquity + month401k
         }
       })
+
+      // --- Property Amortization (Monthly) ---
+      if (homeValue > 0) { // If owned
+        // Appreciation (Simple annual compounding applied monthly? No, usually annual update is cleaner for growth)
+        // Let's apply growth at END of year for value.
+
+        // Amortization
+        if (mortgageBalance > 0) {
+          const monthlyRate = mortgageInterestRate / 12
+          const interest = mortgageBalance * monthlyRate
+          // Payment is fixed. Principal = Payment - Interest
+          // If payment < interest (neg amort), principal is negative?
+          const principal = Math.min(Math.max(0, monthlyMortgagePayment - interest), mortgageBalance)
+
+          mortgageBalance -= principal
+          annualMortgageInterest += interest
+          annualMortgagePrincipal += principal
+          annualMortgagePayment += monthlyMortgagePayment
+        }
+
+        // --- Simple Property Expenses (Tax, Maint, PMI) ---
+        if (useSimplePropertyExpenses) {
+          const details = propertyData.details
+          // Calculate Cost basis for expenses.
+          // Fees usually % of VALUE or % of Loan.
+          // Simplified:
+          // Ownership Costs (Tax/Maint) -> % of Value OR Fixed $.
+          // Ownership Costs (Tax/Maint) -> % of Value OR Fixed $.
+          // User Requirement: "Home Ownership Costs" only displayed/used for BUY mode.
+          // Owners assumed to have this in base expenses.
+          let ownershipCost = 0
+          if (isBuyMode) {
+            if (details.ownershipExpenseType === 'percent') {
+              const annualCost = homeValue * (Number(details.ownershipExpenseAmount || 0) / 100)
+              ownershipCost = annualCost / 12
+            } else {
+              // Fixed amount, inflate?
+              const baseAmount = Number(details.ownershipExpenseAmount || 0)
+              // Should inflate expenses? Usually yes.
+              const inflatedAmount = baseAmount * inflationMultiplier
+              ownershipCost = inflatedAmount / 12
+            }
+          }
+
+          // Mortgage Fees (PMI) -> Usually fixed $ or % of LOAN.
+          // User input "Mortgage Related Fees".
+          // If mortgage is paid off, should this stop? usually yes for PMI, no for HOA.
+          // Let's assume it's PMI/HOA connected to mortgage existence?
+          // "Mortgage Related Fees" usually implies PMI or servicing fees.
+          // Should stop if balance is 0.
+          let mortgageFees = 0
+          if (mortgageBalance > 0) {
+            if (details.pmiType === 'percent') {
+              // % of Loan? or % of Value? Usually % of Loan Amount.
+              const annualFee = mortgageBalance * (Number(details.pmiAmount || 0) / 100)
+              mortgageFees = annualFee / 12
+            } else {
+              const baseFee = Number(details.pmiAmount || 0)
+              // Fixed fees often don't inflate as much, but let's inflate to be safe
+              mortgageFees = (baseFee * inflationMultiplier) / 12
+            }
+          }
+
+          // Rental Fees Avoided (Offset of expenses)
+          // Since the user's base 'Annual Expenses' likely includes rent, we need to subtract the rent they NO LONGER pay
+          let rentalOffset = 0
+          if (isBuyMode) {
+            if (details.rentalIncomeOffsetType === 'percent') {
+              // % of Home Value (Yield equivalent)
+              const annualOffset = homeValue * (Number(details.rentalIncomeOffsetAmount || 0) / 100)
+              rentalOffset = annualOffset / 12
+            } else {
+              // Fixed $ amount - User Input is MONTHLY now per request
+              const monthlyOffset = Number(details.rentalIncomeOffsetAmount || 0)
+              // Inflate it (per user request to ensure it grows with inflation)
+              const inflatedMonthlyOffset = monthlyOffset * inflationMultiplier
+              rentalOffset = inflatedMonthlyOffset
+            }
+          }
+
+          // Updated Logic: Keep Annual Property Expenses pure (Costs ONLY)
+          // Accumulate Rental Savings to subtract from General Living Expenses later
+          annualPropertyExpenses += (ownershipCost + mortgageFees)
+          annualRentalSavings += rentalOffset
+        }
+      }
+      // ---------------------------------------
+    } // End Monthly Loop
+
+    // Update Home Value (Annual Appreciation)
+    if (homeValue > 0) {
+      annualAppreciation = homeValue * homeGrowthRate
+      homeValue = homeValue + annualAppreciation
     }
 
     // Debug logging for first 5 years
     if (year <= 5) {
-      console.log(`Year ${year} annual values (summed from 12 months):`, {
+      /* console.log(`Year ${year} annual values (summed from 12 months):`, {
         annualIncome,
         annualEquity,
-        annualCompany401k
-      })
+        annualCompany401k,
+        annualMortgagePayment,
+        annualPropertyExpenses
+      }) */
     }
 
     // Calculate total individual 401k contribution across all streams
@@ -173,12 +364,15 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     // Get annual expenses from expenses projections (SUM all 12 months, not January * 12)
     // This is critical for expense patterns that vary by month
     let annualExpenses = 0
+    let annualExpensesPV = 0
     const expensesByCategory = {}
+    const expensesByCategoryPV = {}
 
     for (let month = 0; month < 12; month++) {
       const monthIndex = (year - 1) * 12 + month
       const expenseProjection = expensesData.projections[monthIndex] || {}
       annualExpenses += (expenseProjection.totalExpensesNominal || 0)
+      annualExpensesPV += (expenseProjection.totalExpensesPV || 0)
 
       // Track expenses by category for detailed view
       if (expenseProjection.categoryBreakdownNominal) {
@@ -187,6 +381,24 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
             (expenseProjection.categoryBreakdownNominal[category] || 0)
         })
       }
+      if (expenseProjection.categoryBreakdownPV) {
+        Object.keys(expenseProjection.categoryBreakdownPV).forEach(category => {
+          expensesByCategoryPV[category] = (expensesByCategoryPV[category] || 0) +
+            (expenseProjection.categoryBreakdownPV[category] || 0)
+        })
+      }
+    }
+
+    // Apply Rental Savings to General Living Expenses
+    if (annualRentalSavings > 0) {
+      annualExpenses -= annualRentalSavings
+      // Add a category entry for the savings (negative expense) - affecting Nominal Only?
+      // Should affect PV too.
+      const rentalSavingsPV = annualRentalSavings / Math.pow(1 + inflationRate / 100, year - 1)
+      annualExpensesPV -= rentalSavingsPV
+
+      expensesByCategory['Rental Savings (Avoided Cost)'] = -annualRentalSavings
+      expensesByCategoryPV['Rental Savings (Avoided Cost)'] = -rentalSavingsPV
     }
 
     // Calculate taxes on income after 401k deduction
@@ -217,20 +429,42 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
 
     // Diagnostic logging for tax % changes
     if (year <= 5) {
-      console.log(`\n📊 Year ${year} Tax Breakdown:`)
-      console.log(`  Annual Income: $${annualIncome.toLocaleString()}`)
-      console.log(`  401(k) Contributions: $${totalIndividual401k.toLocaleString()}`)
-      console.log(`  Taxable Income: $${taxableIncome.toLocaleString()}`)
-      console.log(`  Annual Taxes: $${annualTaxes.toLocaleString()}`)
-      console.log(`  Tax % of Gross Income: ${((annualTaxes / annualIncome) * 100).toFixed(2)}%`)
-      console.log(`  Tax % of Taxable Income: ${((annualTaxes / taxableIncome) * 100).toFixed(2)}%`)
-      console.log(`  Inflation Multiplier: ${Math.pow(1 + inflationRate / 100, year - 1).toFixed(5)}`)
+      /* console.log(`\n📊 Year ${year} Tax Breakdown:`)
+      // console.log(`  Annual Income: $${annualIncome.toLocaleString()}`)
+      // console.log(`  401(k) Contributions: $${totalIndividual401k.toLocaleString()}`)
+      // console.log(`  Taxable Income: $${taxableIncome.toLocaleString()}`)
+      // console.log(`  Annual Taxes: $${annualTaxes.toLocaleString()}`)
+      // console.log(`  Tax % of Gross Income: ${((annualTaxes / annualIncome) * 100).toFixed(2)}%`)
+      // console.log(`  Tax % of Taxable Income: ${((annualTaxes / taxableIncome) * 100).toFixed(2)}%`)
+      // console.log(`  Inflation Multiplier: ${Math.pow(1 + inflationRate / 100, year - 1).toFixed(5)}`) */
     }
 
     // Calculate gap = disposable income after all deductions (available for cash/investments)
     // Gap includes all income sources (salary + equity + company 401k) minus deductions
     // Equity compensation is TAXED as ordinary income, then flows through gap allocation
-    const gap = annualIncome - totalIndividual401k - annualTaxes - annualExpenses
+
+    // --- GAP UPDATE for Property ---
+    // If simple expenses: Deduct Mortgage Payment + Property Expenses
+    // If detailed: Assume annualExpenses includes Housing.
+
+    let totalOutflows = annualTaxes + annualExpenses
+
+    if (useSimplePropertyExpenses) {
+      totalOutflows += (annualMortgagePayment + annualPropertyExpenses)
+
+      // Add to detailed breakdown for viewing
+      // Just merge into a virtual 'Housing' category for display if missing?
+      expensesByCategory['Housing (Mortgage + Expenses)'] = (expensesByCategory['Housing'] || 0) + annualMortgagePayment + annualPropertyExpenses
+
+      const mortPV = annualMortgagePayment / Math.pow(1 + inflationRate / 100, year - 1) // Approx
+      const propPV = annualPropertyExpenses / Math.pow(1 + inflationRate / 100, year - 1) // Approx
+      expensesByCategoryPV['Housing (Mortgage + Expenses)'] = (expensesByCategoryPV['Housing'] || 0) + mortPV + propPV
+    }
+
+    // Explicitly add Interest and Property Expenses to total expenses for pure Expense tracking metric
+    // But for Gap Calc, we used totalOutflows.
+
+    const gap = annualIncome - totalIndividual401k - totalOutflows
 
     // Track investments and cash changes this year
     let investedThisYear = 0
@@ -282,19 +516,26 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
             inv.costBasis += additionalInvest
             investedThisYear += additionalInvest
             investmentAllocations[`investment${index + 1}`] = (investmentAllocations[`investment${index + 1}`] || 0) + additionalInvest
+            remainingGap -= additionalInvest
           })
-          remainingGap = 0  // All allocated
-        } else if (remainingGap > 0) {
-          // No investments defined OR no allocation % defined - excess goes to cash (even if above target)
+        }
+
+        // Final fallback: Cash overflow
+        if (remainingGap > 0) {
           cash += remainingGap
           cashContribution += remainingGap
-          remainingGap = 0
         }
       }
-    } else if (gap < 0) {
-      // Negative gap - draw from cash, don't invest
-      cash += gap  // gap is negative, so this reduces cash
-      cashContribution = gap  // Track the withdrawal (negative value)
+
+    } else {
+      // Negative gap - withdraw funds
+      // Priority: 1. Cash, 2. Debt (Negative Cash)
+      // We do NOT liquidate investments automatically.
+      let deficit = -gap
+
+      // 1. Withdraw from Cash (even if it goes negative)
+      cash -= deficit
+      cashContribution -= deficit
     }
 
     // Apply growth to investments (at end of year)
@@ -320,7 +561,12 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     // Calculate net worth
     const totalInvestmentValue = investments.reduce((sum, inv) => sum + inv.marketValue, 0)
     const totalCostBasis = investments.reduce((sum, inv) => sum + inv.costBasis, 0)
-    const netWorth = cash + retirement401k.value + totalInvestmentValue
+
+    // Net Worth = Cash + 401k + Investments + (Home Value - Mortgage Debt)
+    // Net Worth = Cash + 401k + Investments + (Home Value - Mortgage Debt)
+    const homeEquity = Math.max(0, homeValue - mortgageBalance)
+    const investableAssets = cash + retirement401k.value + totalInvestmentValue
+    const netWorth = investableAssets + homeEquity
 
     // Calculate present values
     const yearsFromNow = year - 1
@@ -348,19 +594,29 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       taxBreakdown: {
         federal: taxBreakdown.federal,
         state: taxBreakdown.state,
-        socialSecurity: taxBreakdown.socialSecurity,
-        medicare: taxBreakdown.medicare
+        socialSecurity: socialSecurityTax,
+        medicare: medicareTax
       },
       afterTaxIncome,
+      useSimplePropertyExpenses,
+      mortgagePrincipal: annualMortgagePrincipal,
+      mortgageInterest: annualMortgageInterest,
+      propertyExpenses: annualPropertyExpenses,
 
       // Nominal values - Expenses and Disposable Income (full precision)
-      annualExpenses,
+      // FIX: Do NOT add property expenses here if they are displayed separately downstream
+      // If Simple Table needs Total Expenses, it should sum them there.
+      // But for consistency with "Operating Expenses", let's keep it pure base expenses here.
+      // Wait, 'annualExpenses' in the loop already sums up the BASE expenses.
+      // If we remove the addition, 'netWorthTab' (which adds them again) will be correct.
+      annualExpenses: annualExpenses,
+      expensesByCategory,
+      expensesByCategoryPV, // Added detailed PV breakdown
       disposableIncome,
       gap,  // Same as disposableIncome
 
       // Nominal values - Allocations (full precision)
       investedThisYear,
-      cashContribution,
 
       // Nominal values - Balances (full precision)
       cash,
@@ -368,6 +624,9 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       retirement401kValue: retirement401k.value,
       totalCostBasis,
       totalInvestmentValue,
+      homeValue,
+      mortgageBalance,
+      homeEquity,
       netWorth,
 
       // Individual investments (full precision)
@@ -422,6 +681,7 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       afterTaxIncomePV: afterTaxIncome / discountFactor,
 
       // Present values - Expenses and Disposable Income (full precision)
+      // FIX: Same here, remove the property expenses addition
       annualExpensesPV: annualExpenses / discountFactor,
       disposableIncomePV: disposableIncome / discountFactor,
       gapPV: gap / discountFactor,
@@ -436,7 +696,26 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
       retirement401kValuePV: retirement401k.value / discountFactor,
       totalCostBasisPV: totalCostBasis / discountFactor,
       totalInvestmentValuePV: totalInvestmentValue / discountFactor,
-      netWorthPV: netWorth / discountFactor
+      homeValuePV: homeValue / discountFactor,
+      mortgageBalancePV: mortgageBalance / discountFactor,
+      homeEquityPV: homeEquity / discountFactor,
+      investableAssets,
+      investableAssetsPV: investableAssets / discountFactor,
+      netWorthPV: netWorth / discountFactor,
+
+      // Property Details (Nominal)
+      downPaymentPaid,
+      annualAppreciation,
+      annualMortgagePrincipal,
+      annualMortgageInterest,
+      annualPropertyCosts: annualPropertyExpenses, // Renamed for clarity
+
+      // Property Details (PV)
+      downPaymentPaidPV: downPaymentPaid / discountFactor,
+      annualAppreciationPV: annualAppreciation / discountFactor,
+      annualMortgagePrincipalPV: annualMortgagePrincipal / discountFactor,
+      annualMortgageInterestPV: annualMortgageInterest / discountFactor,
+      annualPropertyCostsPV: annualPropertyExpenses / discountFactor
     }
 
     // Add individual investment allocations (full precision)
@@ -451,8 +730,8 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
   // Calculate summary
   const summary = calculateSummary(projections, yearsToRetirement)
 
-  console.log('Gap projections calculated')
-  console.groupEnd()
+  // console.log('Gap projections calculated')
+  // console.groupEnd()
 
   return {
     projections,

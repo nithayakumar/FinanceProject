@@ -8,8 +8,8 @@
  * Validate income input data
  */
 export function validateIncome(data, yearsToRetirement) {
-  console.group('✅ Validating Income')
-  console.log('Input:', data)
+  // console.group('✅ Validating Income')
+  // console.log('Input:', data)
 
   const errors = {}
 
@@ -91,11 +91,11 @@ export function validateIncome(data, yearsToRetirement) {
     }
   })
 
-  console.log('Errors found:', Object.keys(errors).length)
+  // console.log('Errors found:', Object.keys(errors).length)
   if (Object.keys(errors).length > 0) {
-    console.log('Validation errors:', errors)
+    // console.log('Validation errors:', errors)
   }
-  console.groupEnd()
+  // console.groupEnd()
 
   return errors
 }
@@ -105,7 +105,7 @@ export function validateIncome(data, yearsToRetirement) {
  * Returns one unified table with nominal and present value columns
  */
 export function calculateIncomeProjections(data, profile) {
-  console.group('📊 Calculating Income Projections')
+  // console.group('📊 Calculating Income Projections')
 
   const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
   const yearsToRetirement = profile.retirementAge && profile.age
@@ -113,8 +113,8 @@ export function calculateIncomeProjections(data, profile) {
     : 30
   const currentYear = new Date().getFullYear()
 
-  console.log('Inflation Rate:', inflationRate + '%')
-  console.log('Years to Retirement:', yearsToRetirement)
+  // console.log('Inflation Rate:', inflationRate + '%')
+  // console.log('Years to Retirement:', yearsToRetirement)
 
   // Generate monthly projections (1,200 months = 100 years)
   const projections = []
@@ -246,13 +246,13 @@ export function calculateIncomeProjections(data, profile) {
     })
   }
 
-  console.log(`Generated ${projections.length} monthly projections`)
+  // console.log(`Generated ${projections.length} monthly projections`)
 
   // Calculate summary statistics
   const summary = calculateSummary(projections, yearsToRetirement, data.incomeStreams, inflationRate)
 
-  console.log('Summary calculated:', summary)
-  console.groupEnd()
+  // console.log('Summary calculated:', summary)
+  // console.groupEnd()
 
   // Prepare chart data (annual aggregation by stream)
   const chartData = prepareChartData(projections, data.incomeStreams, yearsToRetirement, inflationRate)

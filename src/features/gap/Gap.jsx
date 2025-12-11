@@ -9,11 +9,12 @@ function Gap() {
 
   // Load data and calculate on mount
   useEffect(() => {
-    console.group('📊 Loading Gap Calculations')
+    // console.group('📊 Loading Gap Calculations')
 
     const incomeData = storage.load('income')
     const expensesData = storage.load('expenses')
     const investmentsData = storage.load('investmentsDebt')
+    const propertyData = storage.load('property')
     const profile = storage.load('profile')
 
     if (!incomeData || !expensesData || !investmentsData || !profile) {
@@ -22,16 +23,17 @@ function Gap() {
       return
     }
 
-    console.log('Income Data:', incomeData)
+    /* console.log('Income Data:', incomeData)
     console.log('Expenses Data:', expensesData)
     console.log('Investments Data:', investmentsData)
-    console.log('Profile:', profile)
+    console.log('Property Data:', propertyData)
+    console.log('Profile:', profile) */
 
-    const results = calculateGapProjections(incomeData, expensesData, investmentsData, profile)
+    const results = calculateGapProjections(incomeData, expensesData, investmentsData, propertyData, profile)
     setCalculations(results)
 
-    console.log('Gap Calculations Complete:', results)
-    console.groupEnd()
+    // console.log('Gap Calculations Complete:', results)
+    // console.groupEnd()
   }, [])
 
   if (!calculations) {
@@ -77,21 +79,19 @@ function Gap() {
         <div className="flex gap-2">
           <button
             onClick={() => setViewMode('nominal')}
-            className={`px-4 py-2 text-sm rounded-md transition ${
-              viewMode === 'nominal'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+            className={`px-4 py-2 text-sm rounded-md transition ${viewMode === 'nominal'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
           >
             Nominal
           </button>
           <button
             onClick={() => setViewMode('pv')}
-            className={`px-4 py-2 text-sm rounded-md transition ${
-              viewMode === 'pv'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+            className={`px-4 py-2 text-sm rounded-md transition ${viewMode === 'pv'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
           >
             Present Value
           </button>
@@ -204,9 +204,8 @@ function Gap() {
                   <td className="text-right py-3 px-2">
                     {fmt(isPV ? p.annualExpensesPV : p.annualExpenses)}
                   </td>
-                  <td className={`text-right py-3 px-2 font-medium ${
-                    p.gap >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <td className={`text-right py-3 px-2 font-medium ${p.gap >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
                     {fmtSigned(isPV ? p.gapPV : p.gap)}
                   </td>
                   <td className="text-right py-3 px-2">
@@ -221,9 +220,8 @@ function Gap() {
                   <td className="text-right py-3 px-2">
                     {fmt(isPV ? p.retirement401kValuePV : p.retirement401kValue)}
                   </td>
-                  <td className={`text-right py-3 px-2 ${
-                    (isPV ? p.cashPV : p.cash) < 0 ? 'text-red-600 font-medium' : ''
-                  }`}>
+                  <td className={`text-right py-3 px-2 ${(isPV ? p.cashPV : p.cash) < 0 ? 'text-red-600 font-medium' : ''
+                    }`}>
                     {fmtSigned(isPV ? p.cashPV : p.cash)}
                   </td>
                   <td className="text-right py-3 px-2 font-semibold">
@@ -255,11 +253,10 @@ function SummaryCard({ title, value, subtitle, isPositive }) {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
       <h3 className="text-sm font-medium text-gray-600 mb-1">{title}</h3>
-      <p className={`text-2xl font-bold ${
-        isPositive !== undefined
-          ? (isPositive ? 'text-green-600' : 'text-red-600')
-          : 'text-gray-900'
-      }`}>
+      <p className={`text-2xl font-bold ${isPositive !== undefined
+        ? (isPositive ? 'text-green-600' : 'text-red-600')
+        : 'text-gray-900'
+        }`}>
         {value}
       </p>
       {subtitle && (

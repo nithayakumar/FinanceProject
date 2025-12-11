@@ -3,8 +3,8 @@
  */
 
 export function validatePersonalDetails(data) {
-  console.group('✅ Validating Personal Details')
-  console.log('Input:', data)
+  // console.group('✅ Validating Personal Details')
+  // console.log('Input:', data)
 
   const errors = {}
 
@@ -46,11 +46,11 @@ export function validatePersonalDetails(data) {
     errors.inflationRate = 'Inflation rate seems too high'
   }
 
-  console.log('Errors found:', Object.keys(errors).length)
+  // console.log('Errors found:', Object.keys(errors).length)
   if (Object.keys(errors).length > 0) {
-    console.log('Validation errors:', errors)
+    // console.log('Validation errors:', errors)
   }
-  console.groupEnd()
+  // console.groupEnd()
 
   return errors
 }

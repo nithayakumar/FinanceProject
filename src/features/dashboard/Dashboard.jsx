@@ -19,7 +19,7 @@ function Dashboard() {
     const dashboardLastViewed = localStorage.getItem('dashboardLastViewed')
 
     if (dashboardLastViewed && lastModified && parseInt(lastModified) > parseInt(dashboardLastViewed)) {
-      console.log('📡 Data was modified while Dashboard was unmounted, refreshing...')
+      // console.log('📡 Data was modified while Dashboard was unmounted, refreshing...')
       setRefreshTrigger(prev => prev + 1)
     }
 
@@ -36,11 +36,13 @@ function Dashboard() {
     const incomeData = storage.load('income')
     const expensesData = storage.load('expenses')
     const investmentsData = storage.load('investmentsDebt')
+    const propertyData = storage.load('property')
 
-    console.log('Profile:', profile)
+    /* console.log('Profile:', profile)
     console.log('Income Data:', incomeData)
     console.log('Expenses Data:', expensesData)
     console.log('Investments Data:', investmentsData)
+    console.log('Property Data:', propertyData) */
 
     // Validate required data with detailed checks
     const hasProfile = !!(profile && profile.age && profile.retirementAge)
@@ -50,19 +52,20 @@ function Dashboard() {
       investmentsData.currentCash !== undefined &&
       investmentsData.targetCash !== undefined)
 
-    console.log('Validation results:', {
-      hasProfile,
-      profileFields: profile ? { age: profile.age, retirementAge: profile.retirementAge } : null,
-      hasIncome,
-      incomeStreamsCount: incomeData?.incomeStreams?.length || 0,
-      hasExpenses,
-      expenseCategoriesCount: expensesData?.expenseCategories?.length || 0,
-      hasInvestments,
-      investmentFields: investmentsData ? {
-        currentCash: investmentsData.currentCash,
-        targetCash: investmentsData.targetCash
-      } : null
-    })
+    // console.log('Validation results:', {
+    //   hasProfile,
+    //   profileFields: profile ? { age: profile.age, retirementAge: profile.retirementAge } : null,
+    //   hasIncome,
+    //   incomeStreamsCount: incomeData?.incomeStreams?.length || 0,
+    //   hasExpenses,
+    //   expenseCategoriesCount: expensesData?.expenseCategories?.length || 0,
+    //   hasInvestments,
+    //   investmentFields: investmentsData ? {
+    //     currentCash: investmentsData.currentCash,
+    //     targetCash: investmentsData.targetCash
+    //   } : null,
+    //   hasProperty: !!propertyData
+    // })
 
     if (!hasProfile || !hasIncome || !hasExpenses || !hasInvestments) {
       console.error('Missing required data for dashboard')
@@ -76,7 +79,8 @@ function Dashboard() {
           profile,
           incomeData,
           expensesData,
-          investmentsData
+          investmentsData,
+          propertyData
         }
       })
       setLoading(false)
@@ -92,13 +96,13 @@ function Dashboard() {
       }
 
       // Calculate projections
-      console.log('Calculating income projections...')
+      // console.log('Calculating income projections...')
       const incomeProjections = calculateIncomeProjections(incomeData, enrichedProfile)
 
-      console.log('Calculating expense projections...')
+      // console.log('Calculating expense projections...')
       const expenseProjections = calculateExpenseProjections(expensesData, enrichedProfile, incomeProjections.projections)
 
-      console.log('Calculating gap projections...')
+      // console.log('Calculating gap projections...')
       // Gap needs both raw data (for incomeStreams) and projections (for monthly data)
       const incomeWithProjections = {
         ...incomeData,
@@ -108,23 +112,24 @@ function Dashboard() {
         ...expensesData,
         projections: expenseProjections.projections
       }
-      const gapProjections = calculateGapProjections(incomeWithProjections, expensesWithProjections, investmentsData, enrichedProfile)
+      const gapProjections = calculateGapProjections(incomeWithProjections, expensesWithProjections, investmentsData, propertyData, enrichedProfile)
 
       setData({
         profile: enrichedProfile,
         incomeData,
         expensesData,
         investmentsData,
+        propertyData,
         incomeProjections,
         expenseProjections,
         gapProjections
       })
 
-      console.log('Dashboard data loaded:', {
-        incomeProjections,
-        expenseProjections,
-        gapProjections
-      })
+      // console.log('Dashboard data loaded:', {
+      //   incomeProjections,
+      //   expenseProjections,
+      //   gapProjections
+      // })
       console.groupEnd()
       setLoading(false)
     } catch (error) {
@@ -153,14 +158,14 @@ function Dashboard() {
     const handleStorageChange = (e) => {
       // Storage event fires for changes in other tabs
       if (e.key === 'profile' || e.key === 'income' || e.key === 'expenses' || e.key === 'investmentsDebt') {
-        console.log('📡 Storage changed (other tab):', e.key)
+        // console.log('📡 Storage changed (other tab):', e.key)
         setRefreshTrigger(prev => prev + 1)
       }
     }
 
     const handleCustomStorageChange = (e) => {
       // Custom event fires for changes in same tab
-      console.log('📡 Storage changed (same tab):', e.detail.key)
+      // console.log('📡 Storage changed (same tab):', e.detail.key)
       setRefreshTrigger(prev => prev + 1)
     }
 
@@ -318,7 +323,7 @@ function Dashboard() {
 
   const tabs = [
     { id: 'networth', label: 'Net Worth' },
-    { id: 'forecast', label: 'Forecast' },
+    { id: 'forecast', label: 'FIRE' },
     { id: 'whatif', label: 'Simulation (Beta)' }
   ]
 

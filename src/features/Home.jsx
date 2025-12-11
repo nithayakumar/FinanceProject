@@ -10,6 +10,7 @@ function Home() {
   const income = storage.load('income')
   const expenses = storage.load('expenses')
   const investmentsDebt = storage.load('investmentsDebt')
+  const property = storage.load('property')
 
   // Calculate basic insights if data is available
   const hasData = profile && income && expenses && investmentsDebt
@@ -67,7 +68,7 @@ function Home() {
         ...expenses,
         projections: expenseProjections.projections
       }
-      const gapProjections = calculateGapProjections(incomeWithProjections, expensesWithProjections, investmentsDebt, enrichedProfile)
+      const gapProjections = calculateGapProjections(incomeWithProjections, expensesWithProjections, investmentsDebt, property, enrichedProfile)
 
       // Get Year 1 actual expenses from GAP projections (where monthly expense data is aggregated to annual)
       // Note: Expense projections are monthly with totalExpensesNominal, while Gap aggregates to annualExpenses

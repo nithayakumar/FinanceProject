@@ -16,7 +16,7 @@ import { transformNetWorthData } from './transformers/NetWorthTransformer'
  * @returns {string} - CSV string ready for download
  */
 export function generateCSVExport(appData) {
-  console.group('📊 CSV Export Generation')
+  // console.group('📊 CSV Export Generation')
 
   const {
     incomeData,
@@ -55,7 +55,7 @@ export function generateCSVExport(appData) {
   const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
   const yearsToRetirement = profile.yearsToRetirement || 30
 
-  console.log('Export Parameters:', {
+  /* console.log('Export Parameters:', {
     inflationRate: `${inflationRate}%`,
     yearsToRetirement,
     incomeStreams: incomeWithProjections.incomeStreams?.length || 0,
@@ -63,7 +63,7 @@ export function generateCSVExport(appData) {
     expenseCategories: expensesWithProjections.expenseCategories?.length || 0,
     expenseProjections: expensesWithProjections.projections?.length || 0,
     investments: investmentsData.investments?.length || 0
-  })
+  }) */
 
   const startTime = performance.now()
 
@@ -75,14 +75,14 @@ export function generateCSVExport(appData) {
     const investmentsRows = transformInvestmentsData(gapProjections, investmentsData, inflationRate, incomeWithProjections)
     const netWorthRows = transformNetWorthData(gapProjections, inflationRate)
 
-    console.log('Row Counts:', {
+    /* console.log('Row Counts:', {
       Income: incomeRows.length,
       Expenses: expensesRows.length,
       Taxes: taxesRows.length,
       Investments: investmentsRows.length,
       NetWorth: netWorthRows.length,
       Total: incomeRows.length + expensesRows.length + taxesRows.length + investmentsRows.length + netWorthRows.length
-    })
+    }) */
 
     // Combine all rows
     const allRows = [
@@ -110,10 +110,10 @@ export function generateCSVExport(appData) {
     const endTime = performance.now()
     const duration = ((endTime - startTime) / 1000).toFixed(2)
 
-    console.log(`✅ CSV generation completed in ${duration}s`)
-    console.log(`Total rows: ${allRows.length}`)
-    console.log(`CSV size: ${(csv.length / 1024).toFixed(2)} KB`)
-    console.groupEnd()
+    // console.log(`✅ CSV generation completed in ${duration}s`)
+    // console.log(`Total rows: ${allRows.length}`)
+    // console.log(`CSV size: ${(csv.length / 1024).toFixed(2)} KB`)
+    // console.groupEnd()
 
     return csv
   } catch (error) {
@@ -129,7 +129,7 @@ export function generateCSVExport(appData) {
  * @param {string} filename - Desired filename
  */
 export function downloadCSV(csv, filename) {
-  console.log(`📥 Downloading CSV as: ${filename}`)
+  // console.log(`📥 Downloading CSV as: ${filename}`)
 
   try {
     // Create blob
@@ -153,7 +153,7 @@ export function downloadCSV(csv, filename) {
       // Cleanup
       setTimeout(() => URL.revokeObjectURL(url), 100)
 
-      console.log('✅ Download initiated successfully')
+      // console.log('✅ Download initiated successfully')
     } else {
       // Fallback for browsers without download attribute support
       console.warn('Download attribute not supported, using fallback')
@@ -186,7 +186,7 @@ export function generateFilename(profile) {
  * @param {boolean} isPV - Whether to use present value or nominal
  */
 export function exportNetWorthTable(gapProjections, investmentsData, profile, isPV = true) {
-  console.log('📊 Exporting Detailed Net Worth Table...')
+  // console.log('📊 Exporting Detailed Net Worth Table...')
 
   const projections = gapProjections.projections || []
   if (projections.length === 0) {
@@ -443,5 +443,5 @@ export function exportNetWorthTable(gapProjections, investmentsData, profile, is
   // Download
   downloadCSV(csv, filename)
 
-  console.log(`✅ Detailed Net Worth Table exported: ${filename}`)
+  // console.log(`✅ Detailed Net Worth Table exported: ${filename}`)
 }

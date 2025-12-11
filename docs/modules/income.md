@@ -506,3 +506,209 @@ Chart data is aggregated annually with per-stream breakdown:
 - Set endWorkYear to less than yearsToRetirement
 - Income stops, but projections continue
 - Allows modeling gap period before retirement age
+
+---
+
+## Net Worth Impact
+
+The Income module is the **primary driver** of net worth growth through the Gap calculation:
+
+### Direct Impact on Gap
+```
+Monthly Gap = Gross Income
+            - Pre-tax 401k Contributions (Individual)
+            - Taxes (calculated on Income - Individual 401k)
+            - Expenses
+            - Mortgage Payment (if applicable)
+```
+
+**Key Points:**
+- **Gross Income** = `annualIncome + equity + company401k` (all streams combined)
+- **Individual 401k** contributions reduce taxable income AND reduce available gap
+- **Company 401k** does NOT reduce gap (it's added directly to 401k balance)
+- Higher income → Higher gap → More funds for investments and cash accumulation
+
+### Components Breakdown
+Each income component flows to net worth differently:
+
+1. **Salary (annualIncome)**:
+   - Fully taxable
+   - Provides primary cash flow for Gap
+   - Grows with growthRate and jumps
+
+2. **Equity/RSUs**:
+   - Fully taxable as ordinary income
+   - Adds to Gap for investments or cash
+   - Often has higher volatility than salary
+
+3. **Individual 401k Contributions**:
+   - **Reduces** taxable income (pre-tax)
+   - **Reduces** available Gap (money locked in 401k)
+   - **Increases** 401k balance (retirement asset in net worth)
+   - Formula: `After-tax Income = (Gross - Individual 401k) - Taxes`
+
+4. **Company 401k Match**:
+   - NOT taxable (direct to 401k)
+   - Does NOT reduce Gap
+   - **Increases** 401k balance (retirement asset)
+   - "Free money" that compounds in 401k
+
+### Example Net Worth Impact
+
+**Scenario**:
+- Gross Income: $200,000/year (Salary: $150K, Equity: $50K)
+- Individual 401k: $23,000/year
+- Company 401k: $10,000/year
+- Taxes (effective 25%): $44,250 on ($200K - $23K = $177K taxable)
+- Expenses: $80,000/year
+
+**Gap Calculation**:
+```
+Annual Gap = $200,000 (Gross)
+           - $23,000 (Individual 401k - reduces taxable income)
+           - $44,250 (Taxes on $177K)
+           - $80,000 (Expenses)
+           = $52,750 available for investments/cash
+```
+
+**Net Worth Contribution (Year 1)**:
+- Cash/Investments: +$52,750 (from Gap)
+- 401k Balance: +$33,000 ($23K individual + $10K company match)
+- **Total**: +$85,750 to net worth
+
+### Income Jumps Impact
+Salary jumps create **step changes** in net worth growth:
+- 10% jump on $200K income → +$20K/year gross → ~+$10K/year after-tax Gap (assuming 50% total tax+expense rate)
+- Jump impact is **permanent** and **compounds** with future growth
+- Critical for reaching financial independence faster
+
+### Career Breaks Impact
+Career breaks create **temporary reductions** in net worth accumulation:
+- 100% reduction (sabbatical) → Zero Gap → Must draw from cash reserves
+- 50% reduction (part-time) → Half Gap → Slower net worth growth
+- Break duration in months precisely models the income gap
+- Net worth may decrease if expenses exceed reduced income
+
+---
+
+## Cross-Page Dependencies
+
+The Income module is highly interconnected with other modules:
+
+### Provides Data To:
+
+1. **Expenses Module**:
+   - **Purpose**: % of Income expense calculations
+   - **Data**: Monthly gross income projections
+   - **Example**: Housing = 25% of Income requires `monthlyIncomeNominal`
+   - **Impact**: Expense changes dynamically with income jumps/growth
+
+2. **Investments Module**:
+   - **Purpose**: 401k company contribution tracking
+   - **Data**: `company401k` totals per year
+   - **Auto-sync**: Company 401k from all streams flows to retirement 401k balance
+   - **Impact**: Free employer match increases retirement savings
+
+3. **Taxes Module**:
+   - **Purpose**: Calculate taxes on earned income
+   - **Data**: `(annualIncome + equity) - individual401k` = Taxable Income
+   - **Formula**: Taxes calculated on gross minus pre-tax 401k
+   - **Impact**: Higher income → higher tax bracket
+
+4. **Gap/Net Worth Module**:
+   - **Purpose**: Primary income source for gap calculation
+   - **Data**: All projection fields (gross, 401k, equity, PV values)
+   - **Formula**: `Gap = Income - Individual401k - Taxes - Expenses`
+   - **Impact**: All net worth growth originates from income
+
+### Depends On:
+
+1. **Personal Details (Profile)**:
+   - **Fields Used**:
+     - `age`: Starting point for projections
+     - `retirementAge`: Default for `endWorkYear`
+     - `yearsToRetirement`: Maximum allowed `endWorkYear`
+     - `inflationRate`: Used for PV discounting
+   - **Linking**: `endWorkYear` can auto-link to retirement age (`isEndYearLinked` flag)
+   - **Validation**: Cannot set `endWorkYear > yearsToRetirement`
+
+### Automatic Syncing
+
+**401k Contributions**:
+```
+Income (company401k) → Investments (retirement401k.companyContribution)
+```
+- Company 401k from all active streams summed
+- Auto-populated in Investments module (read-only)
+- No user intervention needed
+
+**Retirement Year Linking**:
+```
+Profile (retirementAge) → Income (endWorkYear) [if isEndYearLinked = true]
+```
+- When retirement age changes, endWorkYear updates automatically
+- Prevents inconsistencies between modules
+- User can "unlink" to set custom end year
+
+**Income to Expense % Mode**:
+```
+Income (monthlyGrossNominal) → Expenses (category.percentOfIncome calculation)
+```
+- Expenses recalculate when income projections change
+- Creates dynamic relationship: Income jump → Expense jump
+- Only applies to categories with `amountType: "percent"`
+
+---
+
+## Validation Rules Summary
+
+Quick reference for all validation constraints:
+
+### Income Stream Constraints
+
+| Field | Min | Max | Required | Type | Notes |
+|-------|-----|-----|----------|------|-------|
+| **annualIncome** | ≥ 0 | No limit | Yes | Currency | Base salary before growth/jumps |
+| **company401k** | ≥ 0 | No limit | Yes | Currency | Employer match/contribution |
+| **individual401k** | ≥ 0 | No limit | Yes | Currency | Pre-tax contribution (reduces taxable income) |
+| **equity** | ≥ 0 | No limit | Yes | Currency | RSUs, stock grants (fully taxable) |
+| **growthRate** | ≥ 0 | ≤ 50% | Yes | Percentage | Annual compound growth; warning if > 50% |
+| **startYear** | ≥ 1 | No limit | Yes (default: 1) | Integer | Year 1 = first projection year |
+| **endWorkYear** | > 0 | ≤ yearsToRetirement | Yes | Integer | When this income stream stops |
+| **isEndYearLinked** | N/A | N/A | No (default: false) | Boolean | Auto-sync endWorkYear to retirement age |
+
+### Income Jump Constraints
+
+| Field | Min | Max | Required | Type | Notes |
+|-------|-----|-----|----------|------|-------|
+| **description** | N/A | N/A | No | String | Free text, shown in milestones |
+| **year** | ≥ 1 | ≤ endWorkYear | Yes | Integer | Must be within stream's working years |
+| **jumpPercent** | No limit | No limit | Yes | Percentage | Can be negative (pay cut); cumulative |
+
+### Stream-Level Constraints
+
+- **Total Streams**: 1 to 3 (MIN_STREAMS: 1, MAX_STREAMS: 3)
+- **Stream Naming**: Free text, defaults to "Income Stream N"
+- **Stream Overlap**: Streams can overlap or be sequential
+- **Jump Order**: Jumps automatically sorted by year (not enforced at input)
+
+### Error Messages
+
+| Validation Failure | Error Message |
+|-------------------|---------------|
+| Annual Income missing or < 0 | "Annual income must be a positive number" |
+| Company 401k missing or < 0 | "Company 401k must be a positive number or 0" |
+| Individual 401k missing or < 0 | "Individual 401k contribution must be a positive number or 0" |
+| Equity missing or < 0 | "Equity must be a positive number or 0" |
+| Growth rate missing or < 0 | "Growth rate must be a positive number" |
+| Growth rate > 50% | "Growth rate seems unrealistic (> 50%)" |
+| End work year ≤ 0 | "End work year must be greater than 0" |
+| End work year > retirement | "Cannot exceed retirement year (X)" |
+
+### Calculation Rules
+
+- **Jumps**: Empty/incomplete jumps are ignored (not validated strictly)
+- **Multiple Jumps**: Cumulative and multiplicative: `total = base × (1+j1%) × (1+j2%) × ...`
+- **Growth**: Compounding annual growth: `value_year_N = base × (1 + rate)^(N-1)`
+- **Stream End**: All income stops immediately at `endWorkYear` (no partial-year logic)
+- **Precision**: No rounding in calculations; preserve full floating-point precision

@@ -80,8 +80,8 @@ function ExpensesTab({ data }) {
               label={{ value: 'Annual Expenses', angle: -90, position: 'insideLeft' }}
             />
             <Tooltip
-              formatter={(val) => `$${Math.round(val).toLocaleString()}`}
-              labelFormatter={(year) => `Year ${year}`}
+              cursor={{ fill: '#F3F4F6' }}
+              content={<CustomTooltip />}
             />
             <Legend />
             {categoryNames.map((name, index) => {
@@ -150,6 +150,37 @@ function ExpensesTab({ data }) {
       </div>
     </div>
   )
+}
+
+// Custom Tooltip for Expenses (Sums stacked bars)
+function CustomTooltip({ active, payload, label }) {
+  if (active && payload && payload.length) {
+    const total = payload.reduce((sum, entry) => sum + entry.value, 0)
+    // Reverse payload to match stacked visual order (top to bottom) is usually better for stacks
+    const sortedPayload = [...payload].reverse()
+
+    return (
+      <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg min-w-[150px]">
+        <p className="text-gray-900 font-bold mb-2 border-b border-gray-100 pb-1">Year: {label}</p>
+        <div className="space-y-1">
+          {sortedPayload.map((entry, index) => (
+            <div key={index} className="flex items-center justify-between gap-3 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="text-gray-500">{entry.name}</span>
+              </div>
+              <span className="font-medium text-gray-900">${Math.round(entry.value).toLocaleString()}</span>
+            </div>
+          ))}
+          <div className="pt-2 mt-2 border-t border-gray-100 flex items-center justify-between gap-3 text-sm font-bold">
+            <span className="text-gray-900">Total Expenses</span>
+            <span className="text-gray-900">${Math.round(total).toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  return null
 }
 
 // Summary Card Component

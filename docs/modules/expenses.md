@@ -597,4 +597,412 @@ This is a sensible default since most expenses grow with inflation, but users ca
 - Healthcare: 4.5% (above inflation)
 - Transportation: 1.5% (below inflation, driving less)
 - Entertainment: 3.0% (slightly above inflation, more travel)
+
+---
+
+## Mode Comparison: Simple vs Detailed
+
+The Expenses module offers two modes with different complexity levels:
+
+### Simple Mode
+
+**When to Use:**
+- Quick financial modeling
+- Consistent, predictable spending patterns
+- Don't need category-level detail
+- Want faster setup
+
+**Features:**
+- **Inputs**:
+  - Single monthly expense amount
+  - One growth rate (applies to all expenses)
+  - One-time expenses (shared with Detailed mode)
+- **Output**: One total expense line in projections
+- **Calculation**: Simple compound growth
+  ```
+  Monthly Expense (Year N) = Base Amount × (1 + growthRate)^(N-1)
+  ```
+
+**Example:**
+```
+Total Monthly Expense: $5,000
+Growth Rate: 3%
+One-Time: Car purchase $50,000 in Year 5
+
+Year 1: $5,000/month = $60,000/year
+Year 5: $5,000 × (1.03)^4 = $5,628/month = $67,536/year + $50,000 one-time
+```
+
+**Default Behavior:**
+- Auto-calculates to 50% of monthly gross income if empty
+- Provides reasonable starting point based on income data
+
+**Pros:**
+- Fast input
+- Simple to understand
+- Good for high-level planning
+
+**Cons:**
+- No category breakdown
+- Single growth rate may not match reality (e.g., healthcare grows faster than food)
+- Less accurate for complex lifestyles
+
+---
+
+### Detailed Mode (Spend Categories)
+
+**When to Use:**
+- Want category-level visibility
+- Different categories grow at different rates
+- Planning life events (house moves, kids, retirement)
+- Need granular control
+
+**Features:**
+- **Inputs**: 9 fixed categories
+  - Housing, Utilities, Transportation, Medical, Food, Entertainment, Childcare, Education, Other
+  - Per-category amount type: **% of Income** OR **Fixed Amount**
+  - Per-category growth rate
+  - Per-category jumps (4 types: New Amount, Add/Subtract, Change %, New % of Income)
+  - One-time expenses (shared with Simple mode)
+- **Output**: Category-level projections + total
+- **Calculation**: Complex with growth, jumps, and % of income support
+
+**Amount Type Options:**
+
+**1. Percent of Income:**
+```
+Monthly Expense = (Monthly Income × Percent) / 100
+```
+- **Use when**: Expense naturally scales with income (rent, savings)
+- **Requires**: Income projections from Income module
+- **Example**: Housing = 25% of income
+- **Dynamic**: Expense changes when income jumps or grows
+
+**2. Fixed Amount:**
+```
+Monthly Expense = (Annual Amount / 12) × Growth × Jumps
+```
+- **Use when**: Fixed costs (car payment, insurance)
+- **Independent**: Doesn't change with income
+- **Example**: Car payment = $500/month fixed
+
+**Jump Types:**
+1. **New Amount**: Replace with new base amount
+   - Use for: Complete category reset
+   - Example: Move to new city, rent changes from $2,000 to $3,500
+2. **Add/Subtract Amount**: Add/remove $ to base
+   - Use for: Additional costs
+   - Example: +$500/month for second car
+3. **Change Amount by %**: Multiply base by percentage
+   - Use for: Percentage reductions/increases
+   - Example: -20% when downsizing home
+4. **New % of Income**: Change to new income percentage
+   - Use for: Switching to % mode or changing %
+   - Example: Rent goes from $2,500 to 30% of income
+
+**Example (Detailed Mode):**
+```
+Housing:
+  Type: % of Income
+  Percent: 25%
+  Growth: 0% (tied to income, no additional growth)
+  Jump (Year 5): Change to 20% (downsize)
+
+Utilities:
+  Type: Fixed Amount
+  Annual: $3,600 ($300/month)
+  Growth: 2.7%
+  No jumps
+
+Transportation:
+  Type: Fixed Amount
+  Annual: $6,000 ($500/month - car payment + gas)
+  Growth: 1.5%
+  Jump (Year 3): +$3,000 (second car)
+
+One-Time: $50,000 car purchase in Year 5
+```
+
+**Pros:**
+- Category visibility for tracking and optimization
+- Different growth rates match reality
+- % of Income mode creates dynamic expenses
+- Jumps model life events accurately
+
+**Cons:**
+- More inputs required
+- Takes longer to set up
+- More complex to understand
+
+---
+
+### One-Time Expenses (Available in BOTH Modes)
+
+**Key Feature:** OneTimeExpenses work identically in both Simple and Detailed modes.
+
+**Structure:**
+```javascript
+{
+  id: 'onetime-123',
+  year: 5,
+  description: 'Car Purchase',
+  amount: 50000  // In today's dollars
+}
+```
+
+**Inflation Handling:**
+- **Input**: User enters amount in today's dollars (no inflation calculation needed)
+- **Nominal**: Inflated to future year using compound inflation
+  ```
+  Nominal Amount (Year N) = Today's Amount × (1 + inflation)^(N-1)
+  ```
+- **PV**: No discounting (already in today's dollars)
+
+**Common Uses:**
+- Car purchases
+- Home down payments (if not using Property module)
+- Wedding expenses
+- College tuition (if not using dedicated category)
+- Medical procedures
+- Home renovations
+- Sabbatical/travel expenses
+
+**Example:**
+```
+Input: $50,000 car purchase in Year 5 (today's dollars)
+Inflation: 2.7%
+
+Year 5 Nominal = $50,000 × (1.027)^4 = $55,623
+Year 5 PV = $50,000 (no discount - already today's dollars)
+```
+
+---
+
+## Net Worth Impact
+
+Expenses are the **primary outflow** in the Gap calculation, directly reducing available cash for investments:
+
+### Direct Impact on Gap
+```
+Monthly Gap = Income
+            - Pre-tax 401k
+            - Taxes
+            - Expenses  ← Reduces available cash
+            - Mortgage Payment (if applicable)
+```
+
+**Key Points:**
+- Higher expenses → Lower gap → Less money for investments and savings
+- Expense optimization (reductions) directly increases net worth accumulation
+- One-time expenses can temporarily create negative gaps (draw from cash reserves)
+
+### Mode-Specific Impact
+
+**Simple Mode:**
+- One total expense line reduces gap
+- Grows uniformly with `simpleGrowthRate`
+- Straightforward impact: `Gap = Income - Taxes - Total Expenses`
+
+**Detailed Mode:**
+- Each category reduces gap independently
+- % of Income categories create **dynamic coupling** with income:
+  - Income jump → Expense jump (if % mode)
+  - Reduces effective impact of income increases
+  - Example: 10% income raise with 30% expenses → only 7% effective raise
+
+**% of Income Dynamic Example:**
+```
+Year 1:
+  Income: $10,000/month
+  Housing (25% of income): $2,500/month
+  Gap Impact: -$2,500
+
+Year 5 (after 10% income jump):
+  Income: $11,000/month
+  Housing (25% of income): $2,750/month ← Automatically increased
+  Gap Impact: -$2,750
+
+Net Gain from Jump: +$1,000 income - $250 expense increase = +$750 to gap
+```
+
+### One-Time Expense Impact
+
+**Creates Temporary Gap Reduction:**
+```
+Year 5 (car purchase):
+  Regular Gap: +$3,000/month
+  One-Time Expense: -$50,000 (in that year)
+  Annual Gap: (+$3,000 × 12) - $50,000 = -$14,000
+
+Result: Must draw $14,000 from cash reserves
+```
+
+**Net Worth Impact:**
+- **Short-term**: Net worth decreases (cash outflow)
+- **Asset purchases** (car, property): May add non-financial assets (not tracked in this module)
+- **Planning**: Ensure sufficient cash reserves for large one-time expenses
+
+### Expense Optimization Impact on Net Worth
+
+**Scenario 1: Reduce Expenses by 10%**
+```
+Before: $60,000/year expenses → Gap = $40,000/year
+After:  $54,000/year expenses → Gap = $46,000/year
+
+Additional Net Worth Accumulation: +$6,000/year
+Over 30 years (with 7% investment growth): +$566,000
+```
+
+**Scenario 2: Lifestyle Inflation Prevention**
+```
+Option A: Grow expenses with income (% mode)
+  Year 1 Gap: $40,000
+  Year 10 Gap (after 30% income growth): $40,000 (unchanged - expenses grew too)
+
+Option B: Keep expenses fixed
+  Year 1 Gap: $40,000
+  Year 10 Gap: $40,000 + (30% × $100,000 income) = $70,000
+
+Additional accumulation: +$30,000/year by Year 10
+```
+
+---
+
+## Cross-Page Dependencies
+
+The Expenses module interacts with multiple other modules:
+
+### Provides Data To:
+
+1. **Gap/Net Worth Module**:
+   - **Purpose**: Primary expense source for gap calculation
+   - **Data**: Monthly total expenses (Nominal + PV)
+   - **Formula**: `Gap = Income - 401k - Taxes - Expenses`
+   - **Impact**: All expenses reduce available gap for investments
+
+### Depends On:
+
+1. **Income Module** (for % of Income mode):
+   - **Purpose**: Calculate expense as percentage of income
+   - **Data**: Monthly gross income projections (Nominal + PV)
+   - **Formula**: `Expense = (Income × Percent) / 100`
+   - **Dynamic Coupling**: Income changes → Expense changes
+   - **Example**: Housing = 25% of $10,000 income = $2,500/month
+   - **Recalculation**: Expenses must recalculate when income projections change
+
+2. **Profile Module**:
+   - **Purpose**: Inflation rate for growth and one-time expense inflation
+   - **Data**: `inflationRate` (default: 2.7%)
+   - **Usage**:
+     - Default growth rate for categories
+     - Inflate one-time expenses to future year dollars
+     - PV discounting for present value calculations
+
+3. **Property Module** (detailed mode only):
+   - **Purpose**: Sync housing expense with mortgage payment
+   - **Data**: Monthly mortgage payment
+   - **Auto-sync**: Housing category updated when property mode = "Own" or "Buy"
+   - **Two-way**: Property calculates mortgage → Housing category updates
+   - **Override**: User can manually adjust housing if needed
+
+### Automatic Syncing
+
+**Property to Housing (Detailed Mode):**
+```
+Property (monthlyPayment) → Expenses Housing (annualAmount)
+```
+- When property mode is "Own" or "Buy", housing category auto-updates
+- Converts monthly payment to annual: `annualAmount = monthlyPayment × 12`
+- Prevents double-counting mortgage in expenses
+- User can override if housing includes more than mortgage (HOA, utilities, etc.)
+
+**Default Simple Expense Calculation:**
+```
+Income (monthlyGrossIncome) → Expenses (totalMonthlyExpense default)
+```
+- If totalMonthlyExpense is empty, defaults to 50% of monthly gross
+- Provides reasonable starting point
+- Formula: `defaultExpense = (totalAnnualIncome / 12) × 0.50`
+
+**Income to % Mode Recalculation:**
+```
+Income Projection Changes → Expense % Categories Recalculate
+```
+- Any income jump or growth change triggers expense recalculation
+- Only affects categories with `amountType: "percent"`
+- Fixed amount categories unaffected
+
+---
+
+## Validation Rules Summary
+
+Quick reference for all validation constraints:
+
+### Simple Mode Validation
+
+| Field | Min | Max | Required | Type | Notes |
+|-------|-----|-----|----------|------|-------|
+| **totalMonthlyExpense** | ≥ 0 | No limit | Yes (or defaults) | Currency | Defaults to 50% of monthly gross income |
+| **simpleGrowthRate** | -50% | 50% | Yes | Percentage | Can be negative (reducing expenses over time) |
+
+### Detailed Mode Validation
+
+| Field | Min | Max | Required | Type | Notes |
+|-------|-----|-----|----------|------|-------|
+| **amountType** | N/A | N/A | Yes (default: "fixed") | Enum | "fixed" or "percent" |
+| **annualAmount** | ≥ 0 | No limit | If fixed type | Currency | Annual amount for fixed expenses |
+| **percentOfIncome** | 0% | 100% | If percent type | Percentage | Percent of gross monthly income |
+| **growthRate** | -50% | 50% | Yes | Percentage | Annual compound growth rate |
+
+### Jump Validation (Per Category)
+
+| Field | Min | Max | Required | Type | Notes |
+|-------|-----|-----|----------|------|-------|
+| **year** | ≥ 1 | ≤ yearsToRetirement | Yes | Integer | When jump occurs |
+| **type** | N/A | N/A | Yes | Enum | "new_amount", "add_subtract", "change_percent", "new_percent_income" |
+| **value** | Varies by type | Varies by type | Yes | Number | Type-specific validation |
+| **description** | N/A | N/A | No | String | Free text label |
+
+**Jump Type-Specific Validation:**
+- **new_amount**: value ≥ 0
+- **add_subtract**: No limits (can be negative)
+- **change_percent**: -100% to 1000%
+- **new_percent_income**: 0% to 100%
+
+### One-Time Expense Validation
+
+| Field | Min | Max | Required | Type | Notes |
+|-------|-----|-----|----------|------|-------|
+| **year** | ≥ 1 | ≤ yearsToRetirement | Yes | Integer | When expense occurs |
+| **amount** | > 0 | No limit | Yes | Currency | In today's dollars |
+| **description** | N/A | N/A | No | String | Free text label |
+
+### Category Constraints
+
+- **Fixed Categories**: 9 categories (cannot add/remove)
+  - Housing, Utilities, Transportation, Medical, Food, Entertainment, Childcare, Education, Other
+- **Category Order**: Fixed (displayed in preset order)
+- **Jumps per Category**: No limit
+- **One-Time Expenses**: No limit (applies to both Simple and Detailed modes)
+
+### Error Messages
+
+| Validation Failure | Error Message |
+|-------------------|---------------|
+| Annual Amount missing (fixed type) | "Annual amount is required for fixed expenses" |
+| Annual Amount < 0 | "Annual amount must be a positive number" |
+| Percent of Income missing (percent type) | "Percent of income is required" |
+| Percent of Income < 0 or > 100 | "Percent of income must be between 0 and 100" |
+| Growth Rate missing | "Growth rate is required" |
+| Growth Rate < -50% or > 50% | "Growth rate must be between -50% and 50%" |
+| One-Time Amount ≤ 0 | "One-time expense amount must be greater than 0" |
+| Jump Year > yearsToRetirement | "Jump year cannot exceed retirement year (X)" |
+
+### Calculation Rules
+
+- **Precision**: No rounding in monthly calculations; preserve full floating-point precision
+- **Growth**: Compounding annual growth: `value_year_N = base × (1 + rate)^(N-1)`
+- **Jumps**: Applied in chronological order (cumulative)
+- **% of Income**: Recalculates every month based on that month's income projection
+- **One-Time**: Added only in the specified year, inflated to that year's dollars
 - Childcare/Education: 0% (children grown)

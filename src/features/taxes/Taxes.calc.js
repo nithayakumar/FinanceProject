@@ -237,14 +237,14 @@ function calculateFICATax(salary, filingType, inflationMultiplier = 1) {
  * @param {number} inflationRate - Annual inflation rate as percentage (e.g., 2.7 for 2.7%)
  */
 export function calculateTaxes(income, incomeType, filingType, state = 'california', country = 'usa', year = 1, inflationRate = 0) {
-  console.group('💰 Calculating Taxes')
-  console.log('Income:', income)
+  /* console.group('💰 Calculating Taxes') */
+  /* console.log('Income:', income)
   console.log('Income Type:', incomeType)
   console.log('Filing Type:', filingType)
   console.log('State:', state)
   console.log('Country:', country)
   console.log('Year:', year)
-  console.log('Inflation Rate:', inflationRate + '%')
+  console.log('Inflation Rate:', inflationRate + '%') */
 
   // Calculate inflation multiplier for this year
   const yearsOfInflation = year - 1
@@ -340,8 +340,8 @@ export function calculateTaxes(income, incomeType, filingType, state = 'californ
   // Apply inflation to federal brackets
   federalBrackets = inflateBrackets(federalBrackets, inflationMultiplier)
 
-  console.log('Actual State Filing Type Used:', actualStateFilingType)
-  console.log('Actual Federal Filing Type Used:', actualFederalFilingType)
+  // console.log('Actual State Filing Type Used:', actualStateFilingType)
+  // console.log('Actual Federal Filing Type Used:', actualFederalFilingType)
 
   // Calculate state tax
   const stateTaxResult = calculateBracketTax(income, stateBrackets)
@@ -371,8 +371,8 @@ export function calculateTaxes(income, incomeType, filingType, state = 'californ
     effectiveRate: income > 0 ? ((stateTaxResult.total + federalTaxResult.total + fica.total) / income) : 0
   }
 
-  console.log('Result:', result)
-  console.groupEnd()
+  // console.log('Result:', result)
+  /* console.groupEnd() */
 
   return result
 }

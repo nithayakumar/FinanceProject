@@ -204,11 +204,13 @@ function ForecastTab({ data }) {
     // Years to FIRE - use actual Gap projections instead of simplified simulation
     const yearsToRetirement = retirementAge - currentAge
 
-    // Find first year where actual Net Worth >= inflation-adjusted FIRE Number
+    // Find first year where Investable Assets >= inflation-adjusted FIRE Number
     let yearsToFire = null
     for (let i = 0; i < projections.length; i++) {
       const inflatedFireNumber = fireNumber * Math.pow(1 + adjInflationRate, i)
-      if (projections[i].netWorth >= inflatedFireNumber) {
+      // FIX: Use investableAssets (Liquidity) for FIRE, not Net Worth (which includes Home Equity)
+      const liquidAssets = projections[i].investableAssets || projections[i].netWorth // Fallback if old data
+      if (liquidAssets >= inflatedFireNumber) {
         yearsToFire = i + 1
         break
       }
@@ -217,12 +219,14 @@ function ForecastTab({ data }) {
     // Coast FIRE Age - find when current investments can grow to cover retirement
     let coastFireAge = null
     for (let i = 0; i < Math.min(projections.length, yearsToRetirement); i++) {
-      const yearNetWorth = projections[i].netWorth
+      // Coasting relies on INVESTED assets growing, not Home Equity (unless downsizing)
+      // So we project investableAssets
+      const currentInvestable = projections[i].investableAssets || projections[i].netWorth
       const yearsRemaining = yearsToRetirement - i
       if (yearsRemaining <= 0) break
 
-      // Project current net worth forward at growth rate (no new contributions)
-      const futureValue = yearNetWorth * Math.pow(1 + growthRate, yearsRemaining)
+      // Project current investable assets forward at growth rate (no new contributions)
+      const futureValue = currentInvestable * Math.pow(1 + growthRate, yearsRemaining)
       const targetFireNumber = fireNumber * Math.pow(1 + adjInflationRate, yearsToRetirement)
 
       if (futureValue >= targetFireNumber) {
@@ -234,8 +238,103 @@ function ForecastTab({ data }) {
     // Net worth at retirement - use actual projection data instead of simplified simulation
     const retirementYearIndex = Math.min(yearsToRetirement - 1, projections.length - 1)
     const retirementProjection = projections[retirementYearIndex]
+
+    // Total Net Worth (for Percentile check)
     const netWorthAtRetirement = retirementProjection?.netWorth || year1NetWorth
     const netWorthAtRetirementPV = retirementProjection?.netWorthPV || year1NetWorth
+
+    // Investable Assets (for Withdrawal Safety check)
+    const investableAtRetirement = retirementProjection?.investableAssets || netWorthAtRetirement
+    const investableAtRetirementPV = retirementProjection?.investableAssetsPV || netWorthAtRetirementPV
+
+    // Asset Mix for Breakdown
+    const year1Composition = {
+      cash: currentYear.cash,
+      investments: currentYear.totalInvestmentValue,
+      retirement401k: currentYear.retirement401kValue || currentYear.totalIndividual401k,
+      homeEquity: currentYear.homeEquity
+    }
+
+    const retirementComposition = retirementProjection ? {
+      cash: retirementProjection.cash,
+      investments: retirementProjection.totalInvestmentValue,
+      retirement401k: retirementProjection.retirement401kValue,
+      homeEquity: retirementProjection.homeEquity
+    } : year1Composition
+
+    const retirementCompositionPV = retirementProjection ? {
+      cash: retirementProjection.cashPV,
+      investments: retirementProjection.totalInvestmentValuePV,
+      retirement401k: retirementProjection.retirement401kValuePV,
+      homeEquity: retirementProjection.homeEquityPV
+    } : year1Composition
+
+    // Calculate 'Liquidated FIRE' (Timeline if selling everything/using Total Net Worth)
+    let liquidatedYearsToFire = null
+    for (let i = 0; i < projections.length; i++) {
+      const inflatedFireNumber = fireNumber * Math.pow(1 + adjInflationRate, i)
+      if (projections[i].netWorth >= inflatedFireNumber) {
+        liquidatedYearsToFire = i + 1
+        break
+      }
+    }
+
+    // Helper to calculate CAGR
+    const calcCAGR = (start, end, years) => {
+      if (years <= 0 || start <= 0 || end <= 0) return null
+      return (Math.pow(end / start, 1 / years) - 1) * 100
+    }
+
+    const yearsToGrowth = retirementAge - currentAge
+    const retirementYearsIndex = projections.length - 1
+    const yearsInRetirement = projections.length - (yearsToRetirement)
+
+    // CAGR to Retirement (Accumulation Phase)
+    const cagrToRetirement = {
+      nominal: {
+        total: calcCAGR(year1NetWorth, netWorthAtRetirement, yearsToGrowth) || 0,
+        homeEquity: calcCAGR(year1Composition.homeEquity, retirementComposition.homeEquity, yearsToGrowth),
+        investments: calcCAGR(year1Composition.investments, retirementComposition.investments, yearsToGrowth),
+        retirement401k: calcCAGR(year1Composition.retirement401k, retirementComposition.retirement401k, yearsToGrowth),
+        cash: calcCAGR(year1Composition.cash, retirementComposition.cash, yearsToGrowth)
+      },
+      pv: {
+        total: calcCAGR(year1NetWorth, netWorthAtRetirementPV, yearsToGrowth) || 0,
+        homeEquity: calcCAGR(year1Composition.homeEquity, retirementCompositionPV.homeEquity, yearsToGrowth),
+        investments: calcCAGR(year1Composition.investments, retirementCompositionPV.investments, yearsToGrowth),
+        retirement401k: calcCAGR(year1Composition.retirement401k, retirementCompositionPV.retirement401k, yearsToGrowth),
+        cash: calcCAGR(year1Composition.cash, retirementCompositionPV.cash, yearsToGrowth)
+      }
+    }
+
+    // CAGR in Retirement (Hypothetical Weighted Average Phase)
+    // Implicit Home Appreciation from projection:
+    const implicitHomeGrowthNominal = calcCAGR(retirementComposition.homeEquity, projections[projections.length - 1]?.homeEquity, yearsInRetirement) || 0
+    const implicitHomeGrowthPV = calcCAGR(retirementCompositionPV.homeEquity, projections[projections.length - 1]?.homeEquityPV, yearsInRetirement) || 0
+
+    // Explicit Investment Growth
+    const investmentGrowthNominal = sensitivityGrowthRate
+    const investmentGrowthPV = sensitivityGrowthRate - sensitivityInflation // Approximation of Real Return
+
+    // Weighted Average Nominal
+    const wHomeNominal = netWorthAtRetirement > 0 ? retirementComposition.homeEquity / netWorthAtRetirement : 0
+    const wInvestNominal = netWorthAtRetirement > 0 ? (retirementComposition.investments + retirementComposition.retirement401k) / netWorthAtRetirement : 0
+
+    // Weighted Average PV
+    const wHomePV = netWorthAtRetirementPV > 0 ? retirementCompositionPV.homeEquity / netWorthAtRetirementPV : 0
+    const wInvestPV = netWorthAtRetirementPV > 0 ? (retirementCompositionPV.investments + retirementCompositionPV.retirement401k) / netWorthAtRetirementPV : 0
+
+    const weightedCAGRNominal = (wHomeNominal * implicitHomeGrowthNominal) + (wInvestNominal * investmentGrowthNominal)
+    const weightedCAGRPV = (wHomePV * implicitHomeGrowthPV) + (wInvestPV * investmentGrowthPV)
+
+    const cagrInRetirement = {
+      nominal: { total: weightedCAGRNominal },
+      pv: { total: weightedCAGRPV }
+    }
+
+    // Total Gain
+    const totalGain = netWorthAtRetirement - year1NetWorth
+    const totalGainPV = netWorthAtRetirementPV - year1NetWorth
 
     return {
       savingsRate,
@@ -243,13 +342,25 @@ function ForecastTab({ data }) {
       annualRetirementSpend,
       yearsToFire,
       fireAge: yearsToFire ? currentAge + yearsToFire : null,
+      liquidatedYearsToFire,
+      liquidatedFireAge: liquidatedYearsToFire ? currentAge + liquidatedYearsToFire : null,
       coastFireAge,
       year1GrossIncome,
       year1Expenses,
       year1Gap,
       year1NetWorth,
+      year1Composition,
       netWorthAtRetirement,
-      netWorthAtRetirementPV
+      netWorthAtRetirementPV,
+      investableAtRetirement,
+      investableAtRetirementPV,
+      retirementComposition,
+      retirementCompositionPV,
+      cagrToRetirement,
+      cagrInRetirement,
+      totalGain,
+      totalGainPV,
+      netWorthCAGR: cagrToRetirement.nominal.total // Keep for backward compat if needed, but UI uses object now
     }
   }, [projections, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, currentAge, retirementAge, monthlyRetirementSpend])
 
@@ -504,7 +615,8 @@ function ForecastTab({ data }) {
     const retirementGrowthRate = sensitivityGrowthRate / 100
     const adjInflationRate = sensitivityInflation / 100
 
-    const netWorthAtRetirement = fireMetrics.netWorthAtRetirement
+    // Use Investable Assets for safe withdrawal calculation (4% rule applies to liquid assets)
+    const netWorthAtRetirement = fireMetrics.investableAtRetirement || fireMetrics.netWorthAtRetirement
 
     // Return null for invalid net worth scenarios
     if (!netWorthAtRetirement || netWorthAtRetirement <= 0) return null
@@ -583,7 +695,7 @@ function ForecastTab({ data }) {
   const fmtCompact = (val) => {
     const absVal = Math.abs(val)
     const sign = val < 0 ? '-' : ''
-    if (absVal >= 1000000) return `${sign}$${(absVal / 1000000).toFixed(1)}M`
+    if (absVal >= 1000000) return `${sign}${(absVal / 1000000).toFixed(1)}M`
     if (absVal >= 1000) return `${sign}$${Math.round(absVal / 1000)}k`
     return `${sign}$${Math.round(absVal)}`
   }
@@ -592,11 +704,11 @@ function ForecastTab({ data }) {
     <div className="space-y-8">
       {/* Early Retirement Metrics Summary */}
       {fireMetrics && (
-        <div>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div className="space-y-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">🎯 Early Retirement Targets</h1>
-              <p className="text-gray-500 text-sm mt-1">Plan your path to financial independence</p>
+              <h1 className="text-2xl font-bold text-gray-900">Financial Independence Forecast</h1>
+              <p className="text-gray-500 text-sm mt-1">Projecting your wealth and retirement timeline</p>
             </div>
             <div className="flex bg-gray-100 p-1 rounded-lg">
               <button
@@ -619,160 +731,143 @@ function ForecastTab({ data }) {
               </button>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Monthly Retired Spend (Today's Dollars) */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm font-medium text-gray-600">Monthly Retired Spend (Today's Dollars)</span>
-                <span className="text-2xl">🧮</span>
-              </div>
-              <div className="relative mb-1.5">
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <input
-                  type="number"
-                  value={monthlyRetirementSpend}
-                  onChange={(e) => setMonthlyRetirementSpend(e.target.value)}
-                  placeholder="Monthly spend"
-                  className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              {monthlySpendMetrics ? (
-                <>
-                  <p className={`text-2xl font-bold ${monthlySpendMetrics.isSustainable ? 'text-green-600' : 'text-red-600'}`}>
-                    {fmtCompact(monthlySpendMetrics.annualWithdrawal)} <span className="text-base">({monthlySpendMetrics.withdrawalRate.toFixed(1)}% annual)</span>
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {monthlySpendMetrics.withdrawalTerm}
-                  </p>
-                </>
-              ) : monthlyRetirementSpend && parseFloat(monthlyRetirementSpend) > 0 ? (
-                <p className="text-xs text-gray-400 mt-1">
-                  N/A — Net worth at retirement unavailable
-                </p>
-              ) : (
-                <p className="text-xs text-gray-400 mt-1">
-                  Enter your monthly retirement budget
-                </p>
-              )}
-            </div>
 
-            {/* Net Worth for Early Retirement */}
-            {(() => {
-              // Calculate FIRE number in both present and future dollars
-              const yearsToRetirement = retirementAge - currentAge
-              const fireNumberPV = fireMetrics.fireNumber // Already in today's dollars
-              const fireNumberNominal = fireMetrics.fireNumber * Math.pow(1 + inflationRate, yearsToRetirement)
-              const displayValue = viewMode === 'pv' ? fireNumberPV : fireNumberNominal
-              const alternateValue = viewMode === 'pv' ? fireNumberNominal : fireNumberPV
-              const alternateLabel = viewMode === 'pv' ? 'Future Dollars' : "Today's Dollars"
-
-              return (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-600">Net Worth for Early Retirement</span>
-                    <span className="text-2xl">🎯</span>
-                  </div>
-                  <p className="text-3xl font-bold text-purple-600">
-                    {fmtCompact(displayValue)}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    25× annual expenses • {fmtCompact(alternateValue)} in {alternateLabel}
-                  </p>
+          {/* SECTION 2: FIRE TARGETS */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-100 pb-2">
+              Financial Independence (Liquid Assets Only)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Retired Monthly Budget */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-sm font-medium text-gray-600">Retired Monthly Budget</span>
+                  <span className="text-2xl">🧮</span>
                 </div>
-              )
-            })()}
-
-            {/* Early Retirement Age */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Early Retirement Age</span>
-                <span className="text-2xl">📅</span>
-              </div>
-              {fireMetrics.fireAge ? (
-                <>
-                  <p className="text-3xl font-bold text-green-600">
-                    Age {fireMetrics.fireAge}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    {fireMetrics.yearsToFire} years away
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-3xl font-bold text-gray-400">
-                    {projections.length}+ years
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Beyond projection range
-                  </p>
-                </>
-              )}
-            </div>
-
-            {/* Investments Cover Expenses */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Investments Cover Expenses</span>
-                <span className="text-2xl">🏖️</span>
-              </div>
-              {fireMetrics.coastFireAge ? (
-                <>
-                  <p className="text-3xl font-bold text-teal-600">
-                    Age {fireMetrics.coastFireAge}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    {fireMetrics.coastFireAge - currentAge} years away
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-3xl font-bold text-gray-400">
-                    Not reached
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    Keep saving to hit coast FIRE
-                  </p>
-                </>
-              )}
-            </div>
-
-            {/* Household Net Worth Percentile */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-600">Household Net Worth Percentile</span>
-                <span className="text-2xl">📊</span>
-              </div>
-              {(() => {
-                const netWorthPV = fireMetrics.netWorthAtRetirementPV
-                let percentile = 'Below Top 50%'
-                let color = 'text-gray-600'
-                if (netWorthPV >= 11600000) {
-                  percentile = 'Top 1%'
-                  color = 'text-purple-600'
-                } else if (netWorthPV >= 2700000) {
-                  percentile = 'Top 2%'
-                  color = 'text-indigo-600'
-                } else if (netWorthPV >= 1170000) {
-                  percentile = 'Top 5%'
-                  color = 'text-blue-600'
-                } else if (netWorthPV >= 970900) {
-                  percentile = 'Top 10%'
-                  color = 'text-teal-600'
-                } else if (netWorthPV >= 585000) {
-                  percentile = 'Top 50%'
-                  color = 'text-green-600'
-                }
-                return (
+                <div className="relative mb-1.5">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <input
+                    type="number"
+                    value={monthlyRetirementSpend}
+                    onChange={(e) => setMonthlyRetirementSpend(e.target.value)}
+                    placeholder="Monthly spend"
+                    className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                {monthlySpendMetrics ? (
                   <>
-                    <p className={`text-3xl font-bold ${color}`}>
-                      {percentile}
+                    <p className={`text-2xl font-bold ${monthlySpendMetrics.isSustainable ? 'text-green-600' : 'text-red-600'}`}>
+                      {fmtCompact(monthlySpendMetrics.annualWithdrawal)} <span className="text-base">({monthlySpendMetrics.withdrawalRate.toFixed(1)}% rate)</span>
                     </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      {fmtCompact(netWorthPV)} at retirement
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {monthlySpendMetrics.withdrawalTerm}
                     </p>
                   </>
-                )
-              })()}
+                ) : monthlyRetirementSpend && parseFloat(monthlyRetirementSpend) > 0 ? (
+                  <p className="text-xs text-gray-400 mt-1">
+                    N/A
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Enter budget
+                  </p>
+                )}
+              </div>
+
+              {/* FIRE Target (Renamed from Freedom Number) */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">FIRE Target</span>
+                  <span className="text-2xl">🎯</span>
+                </div>
+                <p className="text-3xl font-bold text-blue-600">
+                  {fmtCompact(fireMetrics.fireNumber)}
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  25x annual spending (Liquid Assets)
+                </p>
+              </div>
+
+              {/* FIRE Age (Renamed from Financial Freedom) */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">FIRE Age</span>
+                  <span className="text-2xl">📅</span>
+                </div>
+                {fireMetrics.fireAge ? (
+                  <>
+                    <p className="text-3xl font-bold text-green-600">
+                      Age {fireMetrics.fireAge}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Age you can retire comfortably
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-gray-400">
+                      --
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Not reached
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* FIRE Age (Liquidated) - Renamed from If Liquidated */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 bg-orange-50/50 border-orange-100">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">If Liquidated</span>
+                  <span className="text-2xl">🏚️</span>
+                </div>
+                {fireMetrics.liquidatedFireAge ? (
+                  <>
+                    <p className="text-3xl font-bold text-orange-600">
+                      Age {fireMetrics.liquidatedFireAge}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      FIRE age if you sell your home
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-gray-400">
+                      N/A
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      {fireMetrics.year1Composition.homeEquity > 0 ? "Not reachable even if sold" : "You don't own a home"}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* Coast FIRE Age (Renamed from Coast Savings) */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-600">Coast FIRE Age</span>
+                  <span className="text-2xl">🏖️</span>
+                </div>
+                {fireMetrics.coastFireAge ? (
+                  <>
+                    <p className="text-3xl font-bold text-teal-600">
+                      Age {fireMetrics.coastFireAge}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Age you can stop saving
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-3xl font-bold text-gray-400">
+                      --
+                    </p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      Keep saving
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1111,3 +1206,14 @@ function ForecastTab({ data }) {
 }
 
 export default ForecastTab
+
+// Helper to estimate wealth percentile (based on 2024 Federal Reserve SCF data approx)
+// Note: These thresholds are in ~2024 dollars, so we should compare against PV
+function getWealthPercentile(netWorthPV) {
+  if (netWorthPV >= 11600000) return 'Top 1'
+  if (netWorthPV >= 2700000) return 'Top 2'
+  if (netWorthPV >= 1170000) return 'Top 5'
+  if (netWorthPV >= 970900) return 'Top 10'
+  if (netWorthPV >= 585000) return 'Top 50'
+  return 'Bottom 50'
+}

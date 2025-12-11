@@ -2,6 +2,17 @@
 
 This directory contains detailed reference documentation for each module in the Finance Project application.
 
+## Quick Reference
+
+**For a comprehensive overview of how all modules interact**, see [DATA-FLOW-MASTER.md](../DATA-FLOW-MASTER.md).
+
+This master reference document provides:
+- Complete inputs/outputs table for all modules and their modes
+- Net worth impact summary for each module
+- Cross-page dependency diagram
+- Key formulas and calculations
+- Data flow visualization
+
 ## Module Overview
 
 The Finance Project is organized into feature modules plus cross-cutting orchestration layers:
@@ -11,10 +22,11 @@ The Finance Project is organized into feature modules plus cross-cutting orchest
 3. **Expenses** - Recurring expense categories and one-time expenses with inflation adjustments
 4. **Taxes** - Federal, state, and FICA tax calculations with automatic bracket inflation
 5. **Investments & Debt** - 401k, investment accounts with growth rates and portfolio allocation
-6. **Gap/Net Worth** - Integrated cash flow analysis and net worth projections over time
-7. **Dashboard** - Runs all calculators and renders summary tabs for projections
-8. **Scenarios** - Clones/edits full plans and compares projection outcomes
-9. **Export** - Generates CSV output from the same projection data the dashboard uses
+6. **Property** - Home ownership (Own/Buy modes), mortgage amortization, and equity tracking
+7. **Gap/Net Worth** - Integrated cash flow analysis and net worth projections over time
+8. **Dashboard** - Runs all calculators and renders summary tabs for projections
+9. **Scenarios** - Clones/edits full plans and compares projection outcomes
+10. **Export** - Generates CSV output from the same projection data the dashboard uses
 
 ## Documentation Structure
 
@@ -26,11 +38,12 @@ Each module has documentation in two locations:
 ## Module Documents
 
 - [Personal Details](./personal-details.md) - Age, retirement, filing status, inflation settings
-- [Income](./income.md) - Income streams, growth rates, equity compensation, projections
-- [Expenses](./expenses.md) - Expense categories, one-time expenses, inflation, jumps
-- [Taxes](./taxes.md) - Federal, state, FICA calculations with bracket inflation
-- [Investments & Debt](./investments-debt.md) - 401k, investment accounts, portfolio allocation
-- [Gap/Net Worth](./gap-networth.md) - Cash flow analysis, net worth projections, allocation logic
+- [Income](./income.md) - Income streams, growth rates, equity compensation, projections (includes: net worth impact, cross-page dependencies, validation rules)
+- [Expenses](./expenses.md) - Mode comparison (Simple vs Detailed), expense categories, one-time expenses, inflation, jumps (includes: net worth impact, cross-page dependencies, validation rules)
+- [Taxes](./taxes.md) - Federal, state, FICA calculations with bracket inflation, filing status override (includes: net worth impact, cross-page dependencies, validation rules)
+- [Investments & Debt](./investments-debt.md) - Component breakdown (Cash, 401k, Investments), portfolio allocation (includes: net worth impact, cross-page dependencies, validation rules)
+- [Property](./property.md) - Mode comparison (None/Own/Buy), home equity, mortgage amortization (includes: net worth impact, cross-page dependencies, validation rules)
+- [Gap/Net Worth](./gap-networth.md) - Cash flow analysis, net worth projections, allocation logic, integration of all modules
 - [Dashboard](./dashboard.md) - Projection orchestration and tab visualizations
 - [Scenarios](./scenarios.md) - Plan cloning, editing, and comparison flow
 - [Export](./export.md) - CSV generation pipeline and transformers
@@ -55,10 +68,12 @@ All projections include both:
 ```
 Personal Details → [Profile Settings]
                       ↓
-Income → [Projections] ────→ Gap Calculation
-                      ↓              ↓
-Expenses → [Projections] ──→ Tax Calculation → Net Worth
-                      ↓              ↓
+Income → [Projections] ────────────→ Gap Calculation
+                      ↓                      ↓
+Expenses → [Projections] ──────────→ Tax Calculation → Net Worth
+                      ↓                      ↓              ↓
+Property → [Home Value, Mortgage] ─→────────┼──────────────┘
+                      ↓                      ↓
 Investments → [Current Values] ────→ Portfolio Growth
 ```
 

@@ -70,6 +70,7 @@ function Property() {
                             <SimplePropertyExpensesCard
                                 details={data.details}
                                 onUpdate={actions.updateDetails}
+                                mode={data.mode}
                             />
                         )}
                     </>
@@ -91,16 +92,16 @@ function Property() {
                         <div className="flex justify-end">
                             <div className="bg-gray-100 p-1 rounded-lg inline-flex">
                                 <button
-                                    onClick={() => setViewMode('nominal')}
-                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'nominal' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
-                                >
-                                    Future Dollars
-                                </button>
-                                <button
                                     onClick={() => setViewMode('PV')}
                                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'PV' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
                                 >
                                     Today's Dollars
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('nominal')}
+                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${viewMode === 'nominal' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                                >
+                                    Future Dollars
                                 </button>
                             </div>
                         </div>

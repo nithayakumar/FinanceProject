@@ -6,8 +6,10 @@ The Gap/Net Worth module is the integration point for all other modules. It calc
 
 **Gap Formula:**
 ```
-Gap = Income - Individual 401(k) Contributions - Taxes - Expenses
+Gap = Income - Individual 401(k) Contributions - Taxes - Expenses - Mortgage Payment
 ```
+
+*Note: Mortgage Payment is included when Property mode is "Own" or "Buy" (post-purchase years). When Property mode is "None", this term is zero.*
 
 ## Module Architecture
 
@@ -15,6 +17,10 @@ This module has:
 1. **Gap.calc.js**: Core calculation logic (no UI)
 2. **NetWorthTab.jsx**: Dashboard visualization component
 3. No dedicated input page - uses data from all other modules
+
+**Projection Timeline**: Generates **1,200 monthly projections** (100 years), with all values calculated in both:
+- **Nominal**: Future dollars (inflated)
+- **Present Value (PV)**: Today's dollars (inflation-adjusted)
 
 ## Core Concepts
 
@@ -29,22 +35,25 @@ The Gap represents your annual cash flow after all obligations:
 
 When Gap > 0, funds are allocated in priority order:
 
-1. **Fill Cash to Target**: Replenish emergency fund first
-2. **Invest Per Allocation %**: Distribute to investments based on portfolio %
-3. **Excess to Cash**: Any remainder (if allocation < 100%) goes to cash
-
-When Gap < 0, you draw from cash (which can go negative, representing debt).
+1. **Fill Cash to Target**: Replenish emergency fund to inflated target first
+2. **Allocate to 401(k)**: Up to individual contribution limit (grows with income)
+3. **Allocate to Investments**: Distribute by portfolioPercent to each investment account
+4. **Excess to Cash**: Any remainder (if portfolio allocation < 100%) stays in cash
+5. **When Gap < 0**: Draw from cash (can go negative, representing debt/shortfall)
 
 ### Net Worth Calculation
 
 ```
-Net Worth = Cash + Investment Market Value + 401(k) Value
+Net Worth = Cash + Investment Market Value + 401(k) Value + Home Equity - Mortgage Remaining
 ```
 
-All three components grow/shrink based on:
+*Where Home Equity = Home Value - Mortgage Remaining (when Property mode is "Own" or "Buy" post-purchase)*
+
+All components grow/shrink based on:
 - Gap allocation (new contributions)
 - Market returns (growth on existing balances)
 - 401(k) contributions and company match
+- Home appreciation and mortgage amortization (if applicable)
 
 ## Calculation Flow
 
@@ -203,6 +212,15 @@ Net Worth = $46,177 (cash)
 
 **Taxes:**
 - Calculated dynamically via calculateTaxes() call
+
+**Property:**
+- homeValue (current or purchase price)
+- growthRate (home appreciation rate)
+- mortgageRemaining (current balance)
+- monthlyPayment (P&I payment)
+- mode (None/Own/Buy)
+- purchaseYear (for Buy mode)
+- downPayment (withdrawn from cash in purchase year)
 
 ### Storage
 
@@ -513,7 +531,8 @@ Users can adjust inputs in other modules to see impact:
 2. Income: Calculates monthly income projections
 3. Expenses: Calculates monthly expense projections
 4. Investments: Provides starting balances and allocation rules
-5. **Gap/Net Worth**: Integrates all above + calls Taxes for each year
+5. Property: Provides home value, mortgage, and payment data
+6. **Gap/Net Worth**: Integrates all above + calls Taxes for each year
 
 **Data Flow:**
 ```
@@ -521,7 +540,9 @@ Personal Details → [Profile] → All Modules
 Income → [Projections] → Gap
 Expenses → [Projections] → Gap
 Investments → [Balances + Rules] → Gap
+Property → [Home Value, Mortgage, Payment] → Gap & Net Worth
 Gap → [Taxable Income] → Taxes → [Total Tax] → Gap
+Gap → [Down Payment Withdrawal] → Investments (Cash)
 Gap → [Projections + Summary] → Dashboard
 ```
 

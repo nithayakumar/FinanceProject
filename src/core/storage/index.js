@@ -78,7 +78,8 @@ export const storage = {
       filingStatusRemapping: this.load('filingStatusRemapping'),
       customTaxLadder: this.load('customTaxLadder'),
       customStandardDeductions: this.load('customStandardDeductions'),
-      customTaxCredits: this.load('customTaxCredits')
+      customTaxCredits: this.load('customTaxCredits'),
+      property: this.load('property')
     }
   },
 
@@ -92,7 +93,7 @@ export const storage = {
         this.save(key, value)
       }
     })
-    console.log('✅ Data imported successfully')
+    // console.log('✅ Data imported successfully')
   },
 
   /**
@@ -101,6 +102,6 @@ export const storage = {
   clearAll() {
     // Clear all keys from localStorage (including scenario-specific ones)
     localStorage.clear()
-    console.log('✅ All data cleared')
+    // console.log('✅ All data cleared')
   }
 }

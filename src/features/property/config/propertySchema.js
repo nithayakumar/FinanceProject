@@ -55,6 +55,14 @@ export const DEFAULT_PROPERTY_STATE = {
         propertyTaxRate: 1.2,
         insuranceRate: 0.5,
         maintenanceRate: 1.0,
-        additionalExpense: ''
+        additionalExpense: '',
+
+        // Simple Expense Card Fields
+        ownershipExpenseAmount: '',
+        ownershipExpenseType: 'percent',
+        pmiAmount: '',
+        pmiType: 'dollar',
+        rentalIncomeOffsetAmount: '',
+        rentalIncomeOffsetType: 'dollar'
     }
 }

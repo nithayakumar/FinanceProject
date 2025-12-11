@@ -61,44 +61,51 @@ export function useInvestmentsData() {
 
     const [errors, setErrors] = useState({})
     const [projections, setProjections] = useState(() => {
-        // Calculate initial projections synchronously to avoid loading delay
-        const profile = storage.load('profile') || {}
-        const incomeData = storage.load('income')
-        const expensesData = storage.load('expenses')
+        try {
+            // Calculate initial projections synchronously to avoid loading delay
+            const profile = storage.load('profile') || {}
+            const incomeData = storage.load('income')
+            const expensesData = storage.load('expenses')
+            const propertyData = storage.load('property') || {}
 
-        const hasIncome = incomeData?.incomeStreams?.length > 0
-        const hasExpenses = expensesData?.expenseCategories?.length > 0
+            const hasIncome = incomeData?.incomeStreams?.length > 0
+            const hasExpenses = expensesData?.expenseCategories?.length > 0
 
-        if (!hasIncome || !hasExpenses) {
+            if (!hasIncome || !hasExpenses) {
+                return null
+            }
+
+            const yearsToRetirement = (profile.retirementAge && profile.age)
+                ? profile.retirementAge - profile.age
+                : 30
+
+            const enrichedProfile = { ...profile, yearsToRetirement }
+
+            // Get current data value from the useState initializer above
+            const currentData = storage.load('investmentsDebt')
+            if (!currentData) return null
+
+            const incomeProjections = calculateIncomeProjections(incomeData, enrichedProfile)
+            const expenseProjections = calculateExpenseProjections(
+                expensesData,
+                enrichedProfile,
+                incomeProjections.projections
+            )
+
+            const incomeWithProjections = { ...incomeData, projections: incomeProjections.projections }
+            const expensesWithProjections = { ...expensesData, projections: expenseProjections.projections }
+
+            return calculateGapProjections(
+                incomeWithProjections,
+                expensesWithProjections,
+                currentData,
+                propertyData,
+                enrichedProfile
+            )
+        } catch (err) {
+            console.error("Initial investments calculation error:", err)
             return null
         }
-
-        const yearsToRetirement = (profile.retirementAge && profile.age)
-            ? profile.retirementAge - profile.age
-            : 30
-
-        const enrichedProfile = { ...profile, yearsToRetirement }
-
-        // Get current data value from the useState initializer above
-        const currentData = storage.load('investmentsDebt')
-        if (!currentData) return null
-
-        const incomeProjections = calculateIncomeProjections(incomeData, enrichedProfile)
-        const expenseProjections = calculateExpenseProjections(
-            expensesData,
-            enrichedProfile,
-            incomeProjections.projections
-        )
-
-        const incomeWithProjections = { ...incomeData, projections: incomeProjections.projections }
-        const expensesWithProjections = { ...expensesData, projections: expenseProjections.projections }
-
-        return calculateGapProjections(
-            incomeWithProjections,
-            expensesWithProjections,
-            currentData,
-            enrichedProfile
-        )
     })
     const [isCalculating, setIsCalculating] = useState(false)
     const isInitialCalculation = useRef(true)
@@ -135,6 +142,7 @@ export function useInvestmentsData() {
             const profile = storage.load('profile') || {}
             const incomeData = storage.load('income')
             const expensesData = storage.load('expenses')
+            const propertyData = storage.load('property') || {}
 
             // Check if we have actual data (not just empty objects)
             const hasIncome = incomeData?.incomeStreams?.length > 0
@@ -153,30 +161,37 @@ export function useInvestmentsData() {
 
             const enrichedProfile = { ...profile, yearsToRetirement }
 
-            // 1. Income
-            const incomeProjections = calculateIncomeProjections(incomeData, enrichedProfile)
+            try {
+                // 1. Income
+                const incomeProjections = calculateIncomeProjections(incomeData, enrichedProfile)
 
-            // 2. Expenses
-            const expenseProjections = calculateExpenseProjections(
-                expensesData,
-                enrichedProfile,
-                incomeProjections.projections
-            )
+                // 2. Expenses
+                const expenseProjections = calculateExpenseProjections(
+                    expensesData,
+                    enrichedProfile,
+                    incomeProjections.projections
+                )
 
-            // 3. Gap (Investments)
-            const incomeWithProjections = { ...incomeData, projections: incomeProjections.projections }
-            const expensesWithProjections = { ...expensesData, projections: expenseProjections.projections }
+                // 3. Gap (Investments)
+                const incomeWithProjections = { ...incomeData, projections: incomeProjections.projections }
+                const expensesWithProjections = { ...expensesData, projections: expenseProjections.projections }
 
-            const gapProjections = calculateGapProjections(
-                incomeWithProjections,
-                expensesWithProjections,
-                data,
-                enrichedProfile
-            )
+                const gapProjections = calculateGapProjections(
+                    incomeWithProjections,
+                    expensesWithProjections,
+                    data,
+                    propertyData,
+                    enrichedProfile
+                )
 
-            setProjections(gapProjections)
-            setIsCalculating(false)
-            isInitialCalculation.current = false
+                setProjections(gapProjections)
+            } catch (err) {
+                console.error("Investments calculation error:", err)
+                // Optionally set error state or fallback
+            } finally {
+                setIsCalculating(false)
+                isInitialCalculation.current = false
+            }
         }
 
         // Use shorter delay for initial calculation (100ms), longer for subsequent edits (300ms)

@@ -99,10 +99,10 @@ function Taxes() {
 
           <div className="mt-8 pt-4 pb-8">
             <button
-              onClick={handleNextFeature}
+              onClick={() => navigate('/property')}
               className="w-full bg-blue-600 text-white py-3 rounded-md font-medium hover:bg-blue-700 transition shadow-sm"
             >
-              Check out results →
+              Add Property →
             </button>
           </div>
         </>

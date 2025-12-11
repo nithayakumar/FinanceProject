@@ -8,8 +8,8 @@
  * Validate expense input data
  */
 export function validateExpenses(data, yearsToRetirement) {
-  console.group('✅ Validating Expenses')
-  console.log('Input:', data)
+  // console.group('✅ Validating Expenses')
+  // console.log('Input:', data)
 
   const errors = {}
 
@@ -62,11 +62,11 @@ export function validateExpenses(data, yearsToRetirement) {
     }
   })
 
-  console.log('Errors found:', Object.keys(errors).length)
+  // console.log('Errors found:', Object.keys(errors).length)
   if (Object.keys(errors).length > 0) {
-    console.log('Validation errors:', errors)
+    // console.log('Validation errors:', errors)
   }
-  console.groupEnd()
+  // console.groupEnd()
 
   return errors
 }
@@ -78,7 +78,7 @@ export function validateExpenses(data, yearsToRetirement) {
  */
 export function calculateExpenseProjections(data, profile, incomeProjectionData) {
   // console.log('🔴 EXPENSE CALC STARTING')
-  console.group('📊 Calculating Expense Projections')
+  // console.group('📊 Calculating Expense Projections')
 
   const inflationRate = profile.inflationRate !== undefined ? profile.inflationRate : 2.7
   const yearsToRetirement = profile.retirementAge && profile.age
@@ -87,8 +87,8 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
   const currentYear = new Date().getFullYear()
   const incomeProjections = incomeProjectionData?.projections || incomeProjectionData || null
 
-  console.log('Inflation Rate:', inflationRate + '%')
-  console.log('Years to Retirement:', yearsToRetirement)
+  // console.log('Inflation Rate:', inflationRate + '%')
+  // console.log('Years to Retirement:', yearsToRetirement)
   // console.log('🔴 Income projections provided:', incomeProjections ? `Yes (${incomeProjections.length} months)` : 'NO - THIS IS THE PROBLEM')
   // console.log('🔴 One-time expenses:', data.oneTimeExpenses)
 
@@ -96,7 +96,7 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
   const percentCategories = data.expenseCategories.filter(c => c.amountType === 'percentOfIncome')
   // console.log('🔴 Percent categories found:', percentCategories.length)
   if (percentCategories.length > 0) {
-    console.log('Percent of income categories:', percentCategories.map(c => `${c.category}: ${c.percentOfIncome}%`))
+    // console.log('Percent of income categories:', percentCategories.map(c => `${c.category}: ${c.percentOfIncome}%`))
   }
 
   // Handle Simple Mode
@@ -173,8 +173,21 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
               // Override percent of income for this category from this year onward
               categoryPercentOverrides[category.id] = delta
             } else if (type === 'set_amount') {
-              // Override base amount (entered in today's dollars; inflate to nominal for this year onward)
-              categoryAmountOverrides[category.id] = delta * inflationMultiplier
+              // Override base amount (entered in today's dollars)
+              // We want the new amount to essentially "reset" the curve and grow by the category's growth rate from here.
+              // So we back-calculate what the Year 1 Base would be to hit this new Target Amount at this Year.
+
+              const growthRate = category.growthRate !== '' && category.growthRate !== undefined
+                ? category.growthRate
+                : inflationRate
+
+              const nominalTarget = delta * inflationMultiplier
+              const yearsFromStart = year - 1
+              const growthFactor = Math.pow(1 + growthRate / 100, yearsFromStart)
+
+              // Effective Base = Target / GrowthFactor
+              categoryAmountOverrides[category.id] = nominalTarget / growthFactor
+
               // Reset prior adjustments when setting a new absolute amount
               categoryMultipliers[category.id] = 1.0
               categoryDollarAdditions[category.id] = 0
@@ -196,6 +209,7 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
 
     categoriesToProcess.forEach(category => {
       const amountType = category.amountType || 'percent' // Default to percent now
+      const hasAmountOverride = categoryAmountOverrides[category.id] !== null
 
       // Calculate annual values with growth and changes
       const yearsOfGrowth = year - 1
@@ -203,10 +217,11 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
         ? category.growthRate
         : inflationRate
 
-      // If amountType is percent, base growth is driven by income growth, so no explicit inflation unless specified?
-      // Actually, if it's % of income, it grows with income.
-      // If it's fixed amount, it grows by inflation/growthRate.
-      const growthMultiplier = amountType === 'percent'
+      // If it's a fixed amount OR has an override, we apply growth. 
+      // (% of income categories grow with income by default, unless overridden to a fixed $ amount)
+      const useFixedGrowth = amountType !== 'percent' || hasAmountOverride
+
+      const growthMultiplier = !useFixedGrowth
         ? 1 // Growth derives from income
         : Math.pow(1 + growthRate / 100, yearsOfGrowth)
 
@@ -233,8 +248,9 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
         : (category.percentOfIncome || 0)
 
       let baseAnnual
-      if (categoryAmountOverrides[category.id] !== null) {
-        baseAnnual = categoryAmountOverrides[category.id]
+      if (hasAmountOverride) {
+        // Apply growth to the overridden base (which is effectively the Year 1 equivalent)
+        baseAnnual = categoryAmountOverrides[category.id] * growthMultiplier
       } else if (amountType === 'percent') {
         baseAnnual = grossMonthlyIncome * 12 * ((Number(effectivePercentOfIncome) || 0) / 100)
       } else {
@@ -250,7 +266,7 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
 
       // Debug: Log first month calculations for percent of income categories
       if (monthIndex === 0 && amountType === 'percentOfIncome' && monthlyExpense > 0) {
-        console.log(`${category.category}: ${effectivePercentOfIncome}% of $${grossMonthlyIncome.toFixed(2)} = $${monthlyExpense.toFixed(2)}/month`)
+        // console.log(`${category.category}: ${effectivePercentOfIncome}% of $${grossMonthlyIncome.toFixed(2)} = $${monthlyExpense.toFixed(2)}/month`)
       }
 
       categoryBreakdown[category.category] = monthlyExpense
@@ -317,7 +333,7 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
     })
   }
 
-  console.log(`Generated ${projections.length} monthly projections`)
+  // console.log(`Generated ${projections.length} monthly projections`)
 
   // Log first month for debugging
   if (projections.length > 0) {
@@ -336,9 +352,9 @@ export function calculateExpenseProjections(data, profile, incomeProjectionData)
   // Prepare chart data
   const chartData = prepareChartData(projections, categoriesToProcess, yearsToRetirement, inflationRate, data.oneTimeExpenses)
 
-  console.log('Summary calculated:', summary)
+  // console.log('Summary calculated:', summary)
   // console.log('🔴 EXPENSE CALC COMPLETE')
-  console.groupEnd()
+  // console.groupEnd()
 
   return {
     projections,
