@@ -1,708 +1,288 @@
 import { useState, useMemo, useEffect } from 'react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
 
 function ForecastTab({ data }) {
-  const { gapProjections, profile } = data
+  const { gapProjections, profile, investmentsData, propertyData, incomeProjections, expenseProjections } = data
   const projections = gapProjections?.projections || []
 
-  // State for year slider
-  const [selectedYear, setSelectedYear] = useState(1)
-  const [viewMode, setViewMode] = useState('pv') // 'pv' (Today's Dollars) or 'nominal' (Future Dollars)
+  // Calculate Starting Net Worth (Year 0) for Year 1 Change Calc
+  const startingNetWorth = useMemo(() => {
+    if (!investmentsData) return 0
+    const cash = Number(investmentsData.currentCash) || 0
+    const k401 = Number(investmentsData.retirement401k?.currentValue) || 0
+    const investments = (investmentsData.investments || []).reduce((sum, inv) => sum + (Number(inv.currentValue) || 0), 0)
 
-  // State for impact analysis
-  const [incomeAdjustment, setIncomeAdjustment] = useState(0) // -50% to +50%
-  const [expenseAdjustment, setExpenseAdjustment] = useState(0) // -50% to +50%
+    let homeEquity = 0
+    if (propertyData?.mode === 'own') {
+      const val = Number(propertyData.details?.homeValue) || 0
+      const mort = Number(propertyData.details?.mortgageRemaining) || 0
+      homeEquity = Math.max(0, val - mort)
+    }
+    return cash + k401 + investments + homeEquity
+  }, [investmentsData, propertyData])
 
-  // State for sensitivity analysis
-  const [sensitivityGrowthRate, setSensitivityGrowthRate] = useState(7) // 0% to 15%
-  const [sensitivityInflation, setSensitivityInflation] = useState(profile?.inflationRate || 2.7) // 0% to 8%
-
-  // State for life planner
-  const [lifeEvents, setLifeEvents] = useState([])
-
-  // State for monthly retirement spend
+  // State
+  // Default to retirement year (relative to current age) or Year 1 if not available
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const age = profile?.age || 30
+    const retAge = profile?.retirementAge || 65
+    const len = projections.length || 30
+    const targetYear = Math.max(1, retAge - age)
+    return Math.min(targetYear, len)
+  })
+  const [viewMode, setViewMode] = useState('pv') // 'pv' or 'nominal'
+  const isPV = viewMode === 'pv'
   const [monthlyRetirementSpend, setMonthlyRetirementSpend] = useState('')
 
-  // Life event templates
-  const lifeEventTemplates = {
-    child: { name: 'Have a Child', expenseImpact: 15000, incomeImpact: 0, duration: 18, icon: '👶' },
-    partner: { name: 'Add Partner', expenseImpact: 10000, incomeImpact: 50000, duration: 0, icon: '💑' },
-    losePartner: { name: 'Lose Partner Income', expenseImpact: -5000, incomeImpact: -50000, duration: 0, icon: '💔' },
-    tuition: { name: 'College Tuition', expenseImpact: 40000, incomeImpact: 0, duration: 4, icon: '🎓' },
-    wedding: { name: 'Wedding', expenseImpact: 30000, incomeImpact: 0, duration: 1, icon: '💒' },
-    relocation: { name: 'Relocate (Higher COL)', expenseImpact: 12000, incomeImpact: 20000, duration: 0, icon: '🏠' },
-    relocationLow: { name: 'Relocate (Lower COL)', expenseImpact: -15000, incomeImpact: -10000, duration: 0, icon: '🏡' },
-    careerBreak: { name: 'Career Break', expenseImpact: 0, incomeImpact: -80000, duration: 1, icon: '🏖️' },
-  }
-
-  const addLifeEvent = (templateKey) => {
-    const template = lifeEventTemplates[templateKey]
-    const newEvent = {
-      id: Date.now(),
-      ...template,
-      startYear: 5, // Default to year 5
-    }
-    setLifeEvents([...lifeEvents, newEvent])
-  }
-
-  const updateLifeEvent = (id, field, value) => {
-    setLifeEvents(lifeEvents.map(e => e.id === id ? { ...e, [field]: value } : e))
-  }
-
-  const removeLifeEvent = (id) => {
-    setLifeEvents(lifeEvents.filter(e => e.id !== id))
-  }
   const currentAge = profile?.age || 30
   const retirementAge = profile?.retirementAge || 65
-  const inflationRate = (profile?.inflationRate || 2.7) / 100
   const maxYear = projections.length || 30
 
-  // Calculate default monthly spend from last year before retirement (in today's dollars)
+  // Format Helper
+  const fmtCompact = (val) => {
+    const absVal = Math.abs(val)
+    const sign = val < 0 ? '-' : ''
+    if (absVal >= 1000000) return `${sign}$${(absVal / 1000000).toFixed(1)}M`
+    if (absVal >= 1000) return `${sign}$${Math.round(absVal / 1000)}k`
+    return `${sign}$${Math.round(absVal)}`
+  }
+  const formatSmart = fmtCompact // Alias for copied table code if needed, but table uses formatSmart
+
+  // Default Monthly Spend Logic
   const defaultMonthlySpend = useMemo(() => {
     const yearsToRetirement = retirementAge - currentAge
     const retirementYearIndex = Math.min(yearsToRetirement - 1, projections.length - 1)
     if (retirementYearIndex >= 0 && projections[retirementYearIndex]) {
-      // Use annualExpensesPV (present value / today's dollars)
+      const inflationRate = (profile?.inflationRate || 2.7) / 100
       const expensesPV = projections[retirementYearIndex].annualExpensesPV ||
         (projections[retirementYearIndex].annualExpenses / Math.pow(1 + inflationRate, retirementYearIndex + 1))
-      return Math.round(expensesPV / 12)
+      return Math.round(Math.abs(expensesPV) / 12)
     }
-    return 5000 // Fallback default
-  }, [projections, retirementAge, currentAge, inflationRate])
+    return 5000
+  }, [projections, retirementAge, currentAge, profile])
 
-  // Set default monthly spend on mount or when it changes
   useEffect(() => {
     if (!monthlyRetirementSpend && defaultMonthlySpend) {
       setMonthlyRetirementSpend(defaultMonthlySpend.toString())
     }
   }, [defaultMonthlySpend, monthlyRetirementSpend])
 
-  // Calculate metrics for selected year (with adjustments applied)
-  const yearMetrics = useMemo(() => {
-    if (!projections.length || selectedYear < 1 || selectedYear > projections.length) return null
+  // --- Metrics Calculations (No Simulated Adjustments) ---
 
-    const yearIndex = selectedYear - 1
-    const p = projections[yearIndex]
-    const prevP = yearIndex > 0 ? projections[yearIndex - 1] : null
-
-    // Apply income and expense adjustments
-    const incomeMultiplier = 1 + (incomeAdjustment / 100)
-    const expenseMultiplier = 1 + (expenseAdjustment / 100)
-
-    // Use global sensitivity sliders
-    const growthRate = sensitivityGrowthRate / 100
-    const adjInflationRate = sensitivityInflation / 100
-
-    // Check if any adjustments are active
-    const noAdjustments = incomeAdjustment === 0 && expenseAdjustment === 0 &&
-      sensitivityGrowthRate === 7 && sensitivityInflation === (profile?.inflationRate || 2.7)
-
-    // Adjusted values
-    const adjustedIncome = p.grossIncome * incomeMultiplier
-    const adjustedIncomePV = p.grossIncomePV * incomeMultiplier
-    const adjustedExpenses = p.annualExpenses * expenseMultiplier
-    const adjustedTaxes = p.annualTaxes * incomeMultiplier // Taxes scale with income
-    const adjustedGap = adjustedIncome - adjustedTaxes - adjustedExpenses - (p.totalIndividual401k * incomeMultiplier)
-
-    // Savings Rate = Gap / Gross Income
-    const savingsRate = adjustedIncome > 0 ? (adjustedGap / adjustedIncome) * 100 : 0
-
-    // Tax %
-    const taxRate = adjustedIncome > 0 ? (adjustedTaxes / adjustedIncome) * 100 : 0
-
-    // Simulate adjusted net worth for this year
-    // Start from year 1 and compound with adjusted gap
-    let adjustedNetWorth = projections[0].netWorth
-    for (let i = 1; i <= yearIndex; i++) {
-      const yearP = projections[i]
-      const yearAdjustedGap = (yearP.grossIncome * incomeMultiplier) -
-        (yearP.annualTaxes * incomeMultiplier) -
-        (yearP.annualExpenses * expenseMultiplier) -
-        (yearP.totalIndividual401k * incomeMultiplier)
-      adjustedNetWorth = adjustedNetWorth * (1 + growthRate) + yearAdjustedGap
-    }
-
-    // Calculate adjusted net worth PV using sensitivity inflation
-    const discountFactor = Math.pow(1 + adjInflationRate, yearIndex)
-    const adjustedNetWorthPV = adjustedNetWorth / discountFactor
-
-    // % of Net Worth Growth from Investment Growth (vs contributions)
-    let netWorthChange = 0
-    let netWorthChangePV = 0
-    let investmentGrowth = 0
-    let contributions = 0
-    let growthPercent = 0
-
-    if (prevP) {
-      netWorthChange = p.netWorth - prevP.netWorth
-      netWorthChangePV = p.netWorthPV - prevP.netWorthPV
-      const investmentMarketGrowth = (p.totalInvestmentValue - prevP.totalInvestmentValue) - p.investedThisYear
-      const ret401kGrowth = (p.retirement401kValue - prevP.retirement401kValue) - p.totalIndividual401k - p.annualCompany401k
-      investmentGrowth = investmentMarketGrowth + ret401kGrowth
-      contributions = p.cashContribution + p.investedThisYear + p.totalIndividual401k + p.annualCompany401k
-      if (netWorthChange > 0) {
-        growthPercent = (investmentGrowth / netWorthChange) * 100
-      }
-    } else {
-      netWorthChange = p.netWorth
-      netWorthChangePV = p.netWorthPV
-      contributions = p.cashContribution + p.investedThisYear + p.totalIndividual401k + p.annualCompany401k
-      investmentGrowth = netWorthChange - contributions
-      if (netWorthChange > 0) {
-        growthPercent = (investmentGrowth / netWorthChange) * 100
-      }
-    }
-
-    return {
-      savingsRate,
-      incomeNominal: adjustedIncome,
-      incomePV: adjustedIncomePV,
-      taxRate,
-      netWorthChange,
-      netWorthChangePV,
-      investmentGrowth,
-      contributions,
-      growthPercent,
-      gap: adjustedGap,
-      expenses: adjustedExpenses,
-      taxes: adjustedTaxes,
-      netWorth: noAdjustments ? p.netWorth : adjustedNetWorth,
-      netWorthPV: noAdjustments ? p.netWorthPV : adjustedNetWorthPV
-    }
-  }, [projections, selectedYear, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, profile])
-
-  // Calculate FIRE metrics (uses global sensitivity sliders)
+  // 1. FIRE Metrics
   const fireMetrics = useMemo(() => {
     if (!projections.length) return null
-
-    // Use global sensitivity sliders
-    const growthRate = sensitivityGrowthRate / 100
-    const adjInflationRate = sensitivityInflation / 100
-    const incomeMultiplier = 1 + (incomeAdjustment / 100)
-    const expenseMultiplier = 1 + (expenseAdjustment / 100)
-
     const currentYear = projections[0]
-
-    // Year 1 values (adjusted)
-    const year1GrossIncome = currentYear.grossIncome * incomeMultiplier
-    const year1Expenses = currentYear.annualExpenses * expenseMultiplier
-    const year1Taxes = currentYear.annualTaxes * incomeMultiplier
-    const year1_401k = currentYear.totalIndividual401k * incomeMultiplier
-    const year1Gap = year1GrossIncome - year1Taxes - year1Expenses - year1_401k
+    const year1GrossIncome = currentYear.grossIncome
+    const year1Expenses = currentYear.annualExpenses
+    const year1Gap = currentYear.gap
     const year1NetWorth = currentYear.netWorth
-
-    // Savings Rate = Gap / Gross Income (what % of income you're saving)
     const savingsRate = year1GrossIncome > 0 ? (year1Gap / year1GrossIncome) * 100 : 0
 
-    // Annual Retirement Spend - use user input if available, otherwise Year 1 expenses
-    const annualRetirementSpend = monthlyRetirementSpend
-      ? parseFloat(monthlyRetirementSpend) * 12
-      : year1Expenses
-
-    // FIRE Number = Annual Retirement Spend × 25 (4% safe withdrawal rate)
+    // Budget
+    const annualRetirementSpend = monthlyRetirementSpend ? parseFloat(monthlyRetirementSpend) * 12 : year1Expenses
     const fireNumber = annualRetirementSpend * 25
 
-    // Years to FIRE - use actual Gap projections instead of simplified simulation
-    const yearsToRetirement = retirementAge - currentAge
-
-    // Find first year where Investable Assets >= inflation-adjusted FIRE Number
+    // FIRE Age (Liquid Assets Check)
+    const inflationRate = (profile?.inflationRate || 2.7) / 100
     let yearsToFire = null
     for (let i = 0; i < projections.length; i++) {
-      const inflatedFireNumber = fireNumber * Math.pow(1 + adjInflationRate, i)
-      // FIX: Use investableAssets (Liquidity) for FIRE, not Net Worth (which includes Home Equity)
-      const liquidAssets = projections[i].investableAssets || projections[i].netWorth // Fallback if old data
+      const inflatedFireNumber = fireNumber * Math.pow(1 + inflationRate, i)
+      const liquidAssets = projections[i].investableAssets || projections[i].netWorth
       if (liquidAssets >= inflatedFireNumber) {
         yearsToFire = i + 1
         break
       }
     }
 
-    // Coast FIRE Age - find when current investments can grow to cover retirement
-    let coastFireAge = null
-    for (let i = 0; i < Math.min(projections.length, yearsToRetirement); i++) {
-      // Coasting relies on INVESTED assets growing, not Home Equity (unless downsizing)
-      // So we project investableAssets
-      const currentInvestable = projections[i].investableAssets || projections[i].netWorth
-      const yearsRemaining = yearsToRetirement - i
-      if (yearsRemaining <= 0) break
-
-      // Project current investable assets forward at growth rate (no new contributions)
-      const futureValue = currentInvestable * Math.pow(1 + growthRate, yearsRemaining)
-      const targetFireNumber = fireNumber * Math.pow(1 + adjInflationRate, yearsToRetirement)
-
-      if (futureValue >= targetFireNumber) {
-        coastFireAge = currentAge + i
-        break
-      }
-    }
-
-    // Net worth at retirement - use actual projection data instead of simplified simulation
-    const retirementYearIndex = Math.min(yearsToRetirement - 1, projections.length - 1)
-    const retirementProjection = projections[retirementYearIndex]
-
-    // Total Net Worth (for Percentile check)
-    const netWorthAtRetirement = retirementProjection?.netWorth || year1NetWorth
-    const netWorthAtRetirementPV = retirementProjection?.netWorthPV || year1NetWorth
-
-    // Investable Assets (for Withdrawal Safety check)
-    const investableAtRetirement = retirementProjection?.investableAssets || netWorthAtRetirement
-    const investableAtRetirementPV = retirementProjection?.investableAssetsPV || netWorthAtRetirementPV
-
-    // Asset Mix for Breakdown
-    const year1Composition = {
-      cash: currentYear.cash,
-      investments: currentYear.totalInvestmentValue,
-      retirement401k: currentYear.retirement401kValue || currentYear.totalIndividual401k,
-      homeEquity: currentYear.homeEquity
-    }
-
-    const retirementComposition = retirementProjection ? {
-      cash: retirementProjection.cash,
-      investments: retirementProjection.totalInvestmentValue,
-      retirement401k: retirementProjection.retirement401kValue,
-      homeEquity: retirementProjection.homeEquity
-    } : year1Composition
-
-    const retirementCompositionPV = retirementProjection ? {
-      cash: retirementProjection.cashPV,
-      investments: retirementProjection.totalInvestmentValuePV,
-      retirement401k: retirementProjection.retirement401kValuePV,
-      homeEquity: retirementProjection.homeEquityPV
-    } : year1Composition
-
-    // Calculate 'Liquidated FIRE' (Timeline if selling everything/using Total Net Worth)
+    // Liquidated FIRE Age
     let liquidatedYearsToFire = null
     for (let i = 0; i < projections.length; i++) {
-      const inflatedFireNumber = fireNumber * Math.pow(1 + adjInflationRate, i)
+      const inflatedFireNumber = fireNumber * Math.pow(1 + inflationRate, i)
       if (projections[i].netWorth >= inflatedFireNumber) {
         liquidatedYearsToFire = i + 1
         break
       }
     }
 
-    // Helper to calculate CAGR
-    const calcCAGR = (start, end, years) => {
-      if (years <= 0 || start <= 0 || end <= 0) return null
-      return (Math.pow(end / start, 1 / years) - 1) * 100
-    }
-
-    const yearsToGrowth = retirementAge - currentAge
-    const retirementYearsIndex = projections.length - 1
-    const yearsInRetirement = projections.length - (yearsToRetirement)
-
-    // CAGR to Retirement (Accumulation Phase)
-    const cagrToRetirement = {
-      nominal: {
-        total: calcCAGR(year1NetWorth, netWorthAtRetirement, yearsToGrowth) || 0,
-        homeEquity: calcCAGR(year1Composition.homeEquity, retirementComposition.homeEquity, yearsToGrowth),
-        investments: calcCAGR(year1Composition.investments, retirementComposition.investments, yearsToGrowth),
-        retirement401k: calcCAGR(year1Composition.retirement401k, retirementComposition.retirement401k, yearsToGrowth),
-        cash: calcCAGR(year1Composition.cash, retirementComposition.cash, yearsToGrowth)
-      },
-      pv: {
-        total: calcCAGR(year1NetWorth, netWorthAtRetirementPV, yearsToGrowth) || 0,
-        homeEquity: calcCAGR(year1Composition.homeEquity, retirementCompositionPV.homeEquity, yearsToGrowth),
-        investments: calcCAGR(year1Composition.investments, retirementCompositionPV.investments, yearsToGrowth),
-        retirement401k: calcCAGR(year1Composition.retirement401k, retirementCompositionPV.retirement401k, yearsToGrowth),
-        cash: calcCAGR(year1Composition.cash, retirementCompositionPV.cash, yearsToGrowth)
-      }
-    }
-
-    // CAGR in Retirement (Hypothetical Weighted Average Phase)
-    // Implicit Home Appreciation from projection:
-    const implicitHomeGrowthNominal = calcCAGR(retirementComposition.homeEquity, projections[projections.length - 1]?.homeEquity, yearsInRetirement) || 0
-    const implicitHomeGrowthPV = calcCAGR(retirementCompositionPV.homeEquity, projections[projections.length - 1]?.homeEquityPV, yearsInRetirement) || 0
-
-    // Explicit Investment Growth
-    const investmentGrowthNominal = sensitivityGrowthRate
-    const investmentGrowthPV = sensitivityGrowthRate - sensitivityInflation // Approximation of Real Return
-
-    // Weighted Average Nominal
-    const wHomeNominal = netWorthAtRetirement > 0 ? retirementComposition.homeEquity / netWorthAtRetirement : 0
-    const wInvestNominal = netWorthAtRetirement > 0 ? (retirementComposition.investments + retirementComposition.retirement401k) / netWorthAtRetirement : 0
-
-    // Weighted Average PV
-    const wHomePV = netWorthAtRetirementPV > 0 ? retirementCompositionPV.homeEquity / netWorthAtRetirementPV : 0
-    const wInvestPV = netWorthAtRetirementPV > 0 ? (retirementCompositionPV.investments + retirementCompositionPV.retirement401k) / netWorthAtRetirementPV : 0
-
-    const weightedCAGRNominal = (wHomeNominal * implicitHomeGrowthNominal) + (wInvestNominal * investmentGrowthNominal)
-    const weightedCAGRPV = (wHomePV * implicitHomeGrowthPV) + (wInvestPV * investmentGrowthPV)
-
-    const cagrInRetirement = {
-      nominal: { total: weightedCAGRNominal },
-      pv: { total: weightedCAGRPV }
-    }
-
-    // Total Gain
-    const totalGain = netWorthAtRetirement - year1NetWorth
-    const totalGainPV = netWorthAtRetirementPV - year1NetWorth
-
-    return {
-      savingsRate,
-      fireNumber,
-      annualRetirementSpend,
-      yearsToFire,
-      fireAge: yearsToFire ? currentAge + yearsToFire : null,
-      liquidatedYearsToFire,
-      liquidatedFireAge: liquidatedYearsToFire ? currentAge + liquidatedYearsToFire : null,
-      coastFireAge,
-      year1GrossIncome,
-      year1Expenses,
-      year1Gap,
-      year1NetWorth,
-      year1Composition,
-      netWorthAtRetirement,
-      netWorthAtRetirementPV,
-      investableAtRetirement,
-      investableAtRetirementPV,
-      retirementComposition,
-      retirementCompositionPV,
-      cagrToRetirement,
-      cagrInRetirement,
-      totalGain,
-      totalGainPV,
-      netWorthCAGR: cagrToRetirement.nominal.total // Keep for backward compat if needed, but UI uses object now
-    }
-  }, [projections, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, currentAge, retirementAge, monthlyRetirementSpend])
-
-  // Calculate impact analysis metrics
-  const impactAnalysis = useMemo(() => {
-    if (!projections.length || !fireMetrics) return null
-
-    const incomeMultiplier = 1 + (incomeAdjustment / 100)
-    const expenseMultiplier = 1 + (expenseAdjustment / 100)
-
-    // Use sensitivity sliders for growth and inflation
-    const adjGrowthRate = sensitivityGrowthRate / 100
-    const adjInflationRate = sensitivityInflation / 100
-
-    // Adjusted Year 1 values
-    const adjustedIncome = fireMetrics.year1GrossIncome * incomeMultiplier
-    const adjustedExpenses = fireMetrics.year1Expenses * expenseMultiplier
-
-    // Estimate adjusted gap (simplified - assumes taxes scale proportionally)
-    const taxRate = fireMetrics.year1GrossIncome > 0
-      ? (projections[0].annualTaxes / fireMetrics.year1GrossIncome)
-      : 0.3
-    const adjustedTaxes = adjustedIncome * taxRate
-    const adjusted401k = projections[0].totalIndividual401k * incomeMultiplier
-    const adjustedGap = adjustedIncome - adjusted401k - adjustedTaxes - adjustedExpenses
-
-    // Adjusted savings rate
-    const adjustedSavingsRate = adjustedIncome > 0 ? (adjustedGap / adjustedIncome) * 100 : 0
-
-    // Annual Retirement Spend - use user input if available, otherwise adjusted expenses
-    const annualRetirementSpend = monthlyRetirementSpend
-      ? parseFloat(monthlyRetirementSpend) * 12
-      : adjustedExpenses
-
-    // Adjusted FIRE number (based on retirement spending goal)
-    const adjustedFireNumber = annualRetirementSpend * 25
-
-    // If no adjustments, use actual values from fireMetrics
-    const noAdjustments = incomeAdjustment === 0 && expenseAdjustment === 0 &&
-      sensitivityGrowthRate === 7 && sensitivityInflation === (profile?.inflationRate || 2.7)
-
-    let adjustedYearsToFire = null
-    let adjustedCoastFireAge = null
-
-    // Calculate net worth at retirement
+    // Coast FIRE Age
+    let coastFireAge = null
     const yearsToRetirement = retirementAge - currentAge
-    let netWorthAtRetirement = fireMetrics.year1NetWorth
-    for (let i = 0; i < yearsToRetirement; i++) {
-      netWorthAtRetirement = netWorthAtRetirement * (1 + adjGrowthRate) + adjustedGap
-    }
-    // Calculate present value (today's dollars)
-    const netWorthAtRetirementPV = netWorthAtRetirement / Math.pow(1 + adjInflationRate, yearsToRetirement)
-
-    // Baseline net worth at retirement (7% growth, profile inflation)
-    let baselineNetWorthAtRetirement = fireMetrics.year1NetWorth
-    for (let i = 0; i < yearsToRetirement; i++) {
-      baselineNetWorthAtRetirement = baselineNetWorthAtRetirement * 1.07 + fireMetrics.year1Gap
-    }
-    const baselineNetWorthAtRetirementPV = baselineNetWorthAtRetirement / Math.pow(1 + inflationRate, yearsToRetirement)
-
-    if (noAdjustments) {
-      // Use actual values from fireMetrics when no adjustments
-      adjustedYearsToFire = fireMetrics.yearsToFire
-      adjustedCoastFireAge = fireMetrics.coastFireAge
-    } else {
-      // Simulate years to FIRE with adjusted values
-      let simulatedNetWorth = fireMetrics.year1NetWorth
-      const annualSavings = adjustedGap
-
-      for (let year = 1; year <= 100; year++) {
-        const inflatedFireNumber = adjustedFireNumber * Math.pow(1 + adjInflationRate, year - 1)
-
-        if (simulatedNetWorth >= inflatedFireNumber) {
-          adjustedYearsToFire = year
-          break
-        }
-
-        simulatedNetWorth = simulatedNetWorth * (1 + adjGrowthRate) + annualSavings
-      }
-
-      // Calculate Coast FIRE age with adjusted values
-      for (let i = 0; i < Math.min(projections.length, yearsToRetirement); i++) {
-        let simNetWorth = fireMetrics.year1NetWorth
-        for (let j = 0; j < i; j++) {
-          simNetWorth = simNetWorth * (1 + adjGrowthRate) + annualSavings
-        }
-
-        const yearsRemaining = yearsToRetirement - i
-        if (yearsRemaining <= 0) break
-
-        const futureValue = simNetWorth * Math.pow(1 + adjGrowthRate, yearsRemaining)
-        const targetFireNumber = adjustedFireNumber * Math.pow(1 + adjInflationRate, yearsToRetirement)
-
-        if (futureValue >= targetFireNumber) {
-          adjustedCoastFireAge = currentAge + i
-          break
-        }
-      }
-    }
-
-    // Calculate changes
-    const savingsRateChange = adjustedSavingsRate - fireMetrics.savingsRate
-    const fireNumberChange = adjustedFireNumber - fireMetrics.fireNumber
-    const yearsToFireChange = adjustedYearsToFire && fireMetrics.yearsToFire
-      ? adjustedYearsToFire - fireMetrics.yearsToFire
-      : null
-    const coastFireAgeChange = adjustedCoastFireAge && fireMetrics.coastFireAge
-      ? adjustedCoastFireAge - fireMetrics.coastFireAge
-      : null
-    const netWorthAtRetirementChange = netWorthAtRetirement - baselineNetWorthAtRetirement
-    const netWorthAtRetirementPVChange = netWorthAtRetirementPV - baselineNetWorthAtRetirementPV
-
-    return {
-      // Baseline
-      baselineIncome: fireMetrics.year1GrossIncome,
-      baselineExpenses: fireMetrics.year1Expenses,
-      baselineSavingsRate: fireMetrics.savingsRate,
-      baselineFireNumber: fireMetrics.fireNumber,
-      baselineYearsToFire: fireMetrics.yearsToFire,
-      baselineCoastFireAge: fireMetrics.coastFireAge,
-      baselineNetWorthAtRetirement,
-      baselineNetWorthAtRetirementPV,
-
-      // Adjusted
-      adjustedIncome,
-      adjustedExpenses,
-      adjustedSavingsRate,
-      adjustedFireNumber,
-      adjustedYearsToFire,
-      adjustedCoastFireAge,
-      netWorthAtRetirement,
-      netWorthAtRetirementPV,
-
-      // Changes
-      savingsRateChange,
-      fireNumberChange,
-      yearsToFireChange,
-      coastFireAgeChange,
-      netWorthAtRetirementChange,
-      netWorthAtRetirementPVChange,
-
-      // Real return for display
-      realReturn: adjGrowthRate - adjInflationRate
-    }
-  }, [projections, fireMetrics, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, inflationRate, currentAge, retirementAge, profile, monthlyRetirementSpend])
-
-  // Calculate life planner impact
-  const lifePlannerImpact = useMemo(() => {
-    if (!projections.length || !fireMetrics || lifeEvents.length === 0) return null
-
-    // Use global sensitivity sliders
-    const growthRate = sensitivityGrowthRate / 100
-    const adjInflationRate = sensitivityInflation / 100
-
-    const yearsToRetirement = retirementAge - currentAge
-    const retirementYearIndex = Math.min(yearsToRetirement - 1, projections.length - 1)
-
-    // Use actual Gap projections for baseline (not simplified simulation)
-    const baselineNetWorth = projections[retirementYearIndex]?.netWorth || projections[0].netWorth
-
-    // Simulate with life events - apply deltas to actual yearly gap values
-    let adjustedNetWorth = projections[0].netWorth
-    let totalExtraExpenses = 0
-    let totalExtraIncome = 0
-
-    for (let year = 1; year <= yearsToRetirement; year++) {
-      const yearIndex = year - 1
-      const yearProjection = projections[yearIndex] || projections[projections.length - 1]
-
-      // Calculate impact for this year from all events
-      let yearlyExpenseImpact = 0
-      let yearlyIncomeImpact = 0
-
-      lifeEvents.forEach(event => {
-        const eventEndYear = event.duration > 0 ? event.startYear + event.duration - 1 : yearsToRetirement
-
-        if (year >= event.startYear && year <= eventEndYear) {
-          yearlyExpenseImpact += event.expenseImpact
-          yearlyIncomeImpact += event.incomeImpact
-        }
-      })
-
-      totalExtraExpenses += yearlyExpenseImpact
-      totalExtraIncome += yearlyIncomeImpact
-
-      // Use actual gap from projections, adjusted for life events
-      const baseGap = yearProjection.gap
-      const adjustedGap = baseGap + yearlyIncomeImpact - yearlyExpenseImpact
-      adjustedNetWorth = adjustedNetWorth * (1 + growthRate) + adjustedGap
-    }
-
-    // Calculate years to FIRE with life events - use actual projections as base
-    let adjustedYearsToFire = null
-    let simNetWorth = projections[0].netWorth
-    for (let year = 1; year <= Math.min(100, projections.length); year++) {
-      const yearIndex = year - 1
-      const yearProjection = projections[yearIndex] || projections[projections.length - 1]
-
-      // Calculate impact for this year
-      let yearlyExpenseImpact = 0
-      let yearlyIncomeImpact = 0
-
-      lifeEvents.forEach(event => {
-        const eventEndYear = event.duration > 0 ? event.startYear + event.duration - 1 : 100
-
-        if (year >= event.startYear && year <= eventEndYear) {
-          yearlyExpenseImpact += event.expenseImpact
-          yearlyIncomeImpact += event.incomeImpact
-        }
-      })
-
-      const baseGap = yearProjection.gap
-      const adjustedGap = baseGap + yearlyIncomeImpact - yearlyExpenseImpact
-      const inflatedFireNumber = fireMetrics.fireNumber * Math.pow(1 + adjInflationRate, year - 1)
-
-      if (simNetWorth >= inflatedFireNumber) {
-        adjustedYearsToFire = year
+    const growthRate = 0.07 // 7% assumption for Coast
+    for (let i = 0; i < Math.min(projections.length, yearsToRetirement); i++) {
+      const currentInvestable = projections[i].investableAssets || projections[i].netWorth
+      const yearsRemaining = yearsToRetirement - i
+      if (yearsRemaining <= 0) break
+      const futureValue = currentInvestable * Math.pow(1 + growthRate, yearsRemaining)
+      const targetFireNumber = fireNumber * Math.pow(1 + inflationRate, yearsToRetirement)
+      if (futureValue >= targetFireNumber) {
+        coastFireAge = currentAge + i
         break
       }
-
-      simNetWorth = simNetWorth * (1 + growthRate) + adjustedGap
     }
-
-    const netWorthChange = adjustedNetWorth - baselineNetWorth
-    const yearsToFireChange = adjustedYearsToFire && fireMetrics.yearsToFire
-      ? adjustedYearsToFire - fireMetrics.yearsToFire
-      : null
 
     return {
-      baselineNetWorth,
-      adjustedNetWorth,
-      netWorthChange,
-      baselineYearsToFire: fireMetrics.yearsToFire,
-      adjustedYearsToFire,
-      yearsToFireChange,
-      totalExtraExpenses,
-      totalExtraIncome,
-      eventCount: lifeEvents.length
+      savingsRate, fireNumber, yearsToFire, fireAge: yearsToFire ? currentAge + yearsToFire : null,
+      liquidatedYearsToFire, liquidatedFireAge: liquidatedYearsToFire ? currentAge + liquidatedYearsToFire : null,
+      coastFireAge, year1Composition: { homeEquity: currentYear.homeEquity }
     }
-  }, [projections, fireMetrics, lifeEvents, sensitivityGrowthRate, sensitivityInflation, currentAge, retirementAge, monthlyRetirementSpend])
+  }, [projections, monthlyRetirementSpend, profile, currentAge, retirementAge])
 
-  // Calculate monthly spend metrics (withdrawal duration and rate)
+  // 2. Year Metrics (Slider)
+  const yearMetrics = useMemo(() => {
+    if (!projections.length || selectedYear < 1 || selectedYear > projections.length) return null
+    const idx = selectedYear - 1
+    const p = projections[idx]
+    const pPrev = idx > 0 ? projections[idx - 1] : null
+
+    // 1. Net Worth Change (The Flow)
+    // Year 1 change is (End - Start). Year N change is (End - PrevEnd).
+    const netWorthChange = selectedYear === 1 ? (p.netWorth - startingNetWorth) : (p.netWorth - (pPrev?.netWorth || 0))
+    const netWorthChangePV = selectedYear === 1 ? (p.netWorthPV - startingNetWorth) : (p.netWorthPV - (pPrev?.netWorthPV || 0))
+    // YoY % for the Change Flow itself isn't usually helpful.
+    // But we might want YoY of the Total Net Worth (Stock).
+
+    // 2. Income YoY
+    const prevIncome = pPrev ? pPrev.grossIncome : 0
+    const prevIncomePV = pPrev ? pPrev.grossIncomePV : 0
+    const incomeChange = pPrev ? (p.grossIncome - prevIncome) : 0
+    const incomeChangePV = pPrev ? (p.grossIncomePV - prevIncomePV) : 0
+    const incomeChangePct = prevIncome > 0 ? (incomeChange / prevIncome) * 100 : 0
+
+    // 3. Net Worth Stock YoY
+    const prevNW = pPrev ? pPrev.netWorth : startingNetWorth
+    const prevNWPV = pPrev ? pPrev.netWorthPV : startingNetWorth
+    const nwStockChange = p.netWorth - prevNW // This is theoretically same as 'netWorthChange' above
+    const nwStockChangePV = p.netWorthPV - prevNWPV
+    const nwChangePct = prevNW > 0 ? (nwStockChange / prevNW) * 100 : 0
+
+    // 4. Liquid Assets
+    const liquid = (p.totalInvestmentValue || 0) + (p.cash || 0) + (p.retirement401kValue || 0)
+    const liquidPV = (p.totalInvestmentValuePV || 0) + (p.cashPV || 0) + (p.retirement401kValuePV || 0)
+    const liquidPct = p.netWorth > 0 ? (liquid / p.netWorth) * 100 : 0
+
+    return {
+      incomeNominal: p.grossIncome, incomePV: p.grossIncomePV,
+      incomeChange, incomeChangePV, incomeChangePct,
+
+      netWorth: p.netWorth, netWorthPV: p.netWorthPV,
+      netWorthChange, netWorthChangePV, nwChangePct,
+
+      liquid, liquidPV, liquidPct,
+
+      expenses: p.annualExpenses, expensesPV: p.annualExpensesPV,
+      taxRate: p.grossIncome > 0 ? (p.annualTaxes / p.grossIncome) * 100 : 0,
+      taxes: p.annualTaxes, taxesPV: p.annualTaxesPV,
+
+      savingsRate: p.grossIncome > 0 ? (p.gap / p.grossIncome) * 100 : 0,
+      gap: p.gap,
+      hasPrev: !!pPrev
+    }
+  }, [projections, selectedYear, startingNetWorth])
+
+  // 3. Monthly Spend Metrics
   const monthlySpendMetrics = useMemo(() => {
     if (!fireMetrics || !monthlyRetirementSpend) return null
-
     const monthlySpend = parseFloat(monthlyRetirementSpend)
     if (isNaN(monthlySpend) || monthlySpend <= 0) return null
-
     const annualWithdrawal = monthlySpend * 12
+    // Using last projection net worth (usually retirement age or max age)
+    const retirementIndex = Math.min((retirementAge - currentAge) - 1, projections.length - 1)
+    const pRetire = projections[retirementIndex < 0 ? 0 : retirementIndex]
+    const netWorthAtRetirement = pRetire?.investableAssets || pRetire?.netWorth || 0
 
-    // Use global sensitivity sliders for retirement growth (typically lower than accumulation)
-    const retirementGrowthRate = sensitivityGrowthRate / 100
-    const adjInflationRate = sensitivityInflation / 100
+    const withdrawalRate = netWorthAtRetirement > 0 ? (annualWithdrawal / netWorthAtRetirement) * 100 : 0
+    const isSustainable = withdrawalRate <= 4
 
-    // Use Investable Assets for safe withdrawal calculation (4% rule applies to liquid assets)
-    const netWorthAtRetirement = fireMetrics.investableAtRetirement || fireMetrics.netWorthAtRetirement
-
-    // Return null for invalid net worth scenarios
-    if (!netWorthAtRetirement || netWorthAtRetirement <= 0) return null
-
-    // Simple calculation: years = net worth / withdrawal (no growth)
-    const simpleYears = netWorthAtRetirement / annualWithdrawal
-
-    // With growth calculation: simulate year by year
-    let currentNetWorth = netWorthAtRetirement
-    let yearsWithGrowth = 0
-    const maxYears = 100
-
-    while (currentNetWorth > 0 && yearsWithGrowth < maxYears) {
-      // Apply growth first, then withdraw
-      currentNetWorth = currentNetWorth * (1 + retirementGrowthRate) - annualWithdrawal
-      yearsWithGrowth++
-    }
-
-    if (currentNetWorth > 0) {
-      yearsWithGrowth = Infinity // Money never runs out
-    }
-
-    // Calculate safe withdrawal rate (what % is the withdrawal of net worth)
-    const withdrawalRate = (annualWithdrawal / netWorthAtRetirement) * 100
-
-    // Calculate max sustainable withdrawal (4% rule)
-    const sustainableWithdrawal = netWorthAtRetirement * 0.04
-
-    // Format withdrawal term
-    const withdrawalTerm = yearsWithGrowth === Infinity ? 'Funds last forever' : `Funds last ${Math.round(yearsWithGrowth)} years`
+    // Simple duration check
+    const simpleYears = netWorthAtRetirement > 0 ? netWorthAtRetirement / annualWithdrawal : 0
 
     return {
-      monthlySpend,
-      annualWithdrawal,
-      netWorthAtRetirement,
-      simpleYears: Math.round(simpleYears),
-      yearsWithGrowth: yearsWithGrowth === Infinity ? 'Forever' : Math.round(yearsWithGrowth),
-      withdrawalRate,
-      sustainableWithdrawal,
-      isSustainable: withdrawalRate <= 4,
-      withdrawalTerm
+      annualWithdrawal, withdrawalRate, isSustainable, simpleYears,
+      term: isSustainable ? 'Forever (Sustainable)' : `${Math.round(simpleYears)} years`
     }
-  }, [fireMetrics, monthlyRetirementSpend, sensitivityGrowthRate, sensitivityInflation])
+  }, [fireMetrics, monthlyRetirementSpend, projections, retirementAge, currentAge])
 
-  // Calculate milestones
-  const milestones = useMemo(() => {
-    if (!projections.length) return []
 
-    const currentAge = profile?.age || 30
-    const targets = [100000, 250000, 500000, 750000, 1000000, 2000000, 5000000]
-    const results = []
+  // --- Chart Data Preparation (MOVED FROM NET WORTH TAB) ---
+  const chartData = useMemo(() => {
+    return projections.map((p, i) => {
+      const prev = i > 0 ? projections[i - 1] : null
+      const inflationRate = (profile?.inflationRate || 2.7) / 100
+      const discountFactor = Math.pow(1 + inflationRate, p.year - 1)
+      const df = isPV ? discountFactor : 1
 
-    for (const target of targets) {
-      const yearIndex = projections.findIndex(p => p.netWorth >= target)
-      if (yearIndex !== -1) {
-        results.push({
-          target,
-          year: yearIndex + 1,
-          age: currentAge + yearIndex,
-          actualValue: projections[yearIndex].netWorth
-        })
+      const getVal = (nom, pvKey) => isPV ? (p[pvKey] !== undefined ? p[pvKey] : nom / df) : nom
+
+      // 1. Growth
+      const invVal = getVal(p.totalInvestmentValue, 'totalInvestmentValuePV')
+      const prevInv = i === 0 ? (investmentsData?.investments?.reduce((sum, inv) => sum + Number(inv.currentValue), 0) || 0) / df : (isPV ? prev.totalInvestmentValuePV : prev.totalInvestmentValue)
+      const invContrib = getVal(p.investedThisYear, 'investedThisYearPV')
+      const invGrowth = (invVal - prevInv) - invContrib
+
+      const k401Val = getVal(p.retirement401kValue, 'retirement401kValuePV')
+      const prevK401 = i === 0 ? (Number(investmentsData?.retirement401k?.currentValue) || 0) / df : (isPV ? prev.retirement401kValuePV : prev.retirement401kValue)
+      const k401ContribSafe = isPV ? (p.totalIndividual401kPV + p.annualCompany401kPV) : (p.totalIndividual401k + p.annualCompany401k)
+      const k401Growth = (k401Val - prevK401) - k401ContribSafe
+
+      // Home
+      const principalNom = (p.annualMortgagePrincipal || 0) + (p.downPaymentPaid || 0)
+      const principal = isPV ? (principalNom / df) : principalNom
+      const homeValCurr = isPV ? p.homeValuePV : p.homeValue
+      const homeValPrev = i === 0 ? (homeValCurr / (1 + (p.homeGrowthRate || 0))) : (isPV ? prev.homeValuePV : prev.homeValue)
+      let appreciation = 0
+      if (p.downPaymentPaid > 0) appreciation = 0
+      else appreciation = homeValCurr - homeValPrev
+
+      // Cash
+      const rawCashContrib = isPV ? p.cashContributionPV : p.cashContribution
+      const downPmt = isPV ? (p.downPaymentPaidPV || 0) : (p.downPaymentPaid || 0)
+      const cashContrib = (rawCashContrib || 0) - downPmt
+
+      // Outflows
+      const baseExpenses = isPV ? p.annualExpensesPV : p.annualExpenses
+      const interest = isPV ? (p.annualMortgageInterestPV || 0) : (p.annualMortgageInterest || 0)
+      const propCosts = isPV ? (p.annualPropertyCostsPV || 0) : (p.annualPropertyCosts || 0)
+      const principalPaid = isPV ? ((p.annualMortgagePrincipalPV || 0)) : (p.annualMortgagePrincipal || 0)
+
+      // Simple vs Detailed Mode logic
+      let finalExpenses = 0
+      if (p.useSimplePropertyExpenses) {
+        finalExpenses = baseExpenses + interest + propCosts
       } else {
-        results.push({
-          target,
-          year: null,
-          age: null,
-          actualValue: null
-        })
+        finalExpenses = baseExpenses - principalPaid
       }
-    }
+      const expenses = finalExpenses * -1
+      const taxes = (isPV ? p.annualTaxesPV : p.annualTaxes) * -1
 
-    return results
-  }, [projections, profile])
+      // True Delta
+      let trueDelta = 0
+      if (i === 0) {
+        trueDelta = invGrowth + k401Growth + appreciation + invContrib + k401ContribSafe + principal + cashContrib - finalExpenses - (isPV ? p.annualTaxesPV : p.annualTaxes)
+      } else {
+        trueDelta = (isPV ? p.netWorthPV : p.netWorth) - (isPV ? prev.netWorthPV : prev.netWorth)
+      }
 
-  const fmt = (val) => `$${Math.round(val).toLocaleString()}`
-  const fmtCompact = (val) => {
-    const absVal = Math.abs(val)
-    const sign = val < 0 ? '-' : ''
-    if (absVal >= 1000000) return `${sign}${(absVal / 1000000).toFixed(1)}M`
-    if (absVal >= 1000) return `${sign}$${Math.round(absVal / 1000)}k`
-    return `${sign}$${Math.round(absVal)}`
-  }
+      return {
+        year: p.year,
+        'Investment Growth': invGrowth,
+        '401k Growth': k401Growth,
+        'Home Appreciation': appreciation,
+        'Investment Contribution': invContrib,
+        '401k Contribution': k401ContribSafe,
+        'Home Principal': principal,
+        'Cash Added': Math.max(0, cashContrib),
+        'Cash Drawn': Math.min(0, cashContrib),
+        Taxes: taxes, // Ensure Taxes are here if needed for tooltip order, though chart uses stackId
+        Expenses: expenses,
+        trueNetWorthChange: trueDelta
+      }
+    })
+  }, [projections, isPV, investmentsData, profile])
 
   return (
     <div className="space-y-8">
-      {/* Early Retirement Metrics Summary */}
+      {/* HEADER & VIEW CONTROLS */}
       {fireMetrics && (
         <div className="space-y-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -711,84 +291,82 @@ function ForecastTab({ data }) {
               <p className="text-gray-500 text-sm mt-1">Projecting your wealth and retirement timeline</p>
             </div>
             <div className="flex bg-gray-100 p-1 rounded-lg">
-              <button
-                onClick={() => setViewMode('pv')}
-                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'pv'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-900'
-                  }`}
-              >
-                Today's Dollars
-              </button>
-              <button
-                onClick={() => setViewMode('nominal')}
-                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'nominal'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-900'
-                  }`}
-              >
-                Future Dollars
-              </button>
+              <button onClick={() => setViewMode('pv')} className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'pv' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Today's Dollars</button>
+              <button onClick={() => setViewMode('nominal')} className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'nominal' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>Future Dollars</button>
             </div>
           </div>
 
-          {/* SECTION 2: FIRE TARGETS */}
+          {/* FIRE CORE METRICS */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-100 pb-2">
-              Financial Independence (Liquid Assets Only)
-            </h3>
+            {/* ... (Keep existing FIRE metrics grid) ... */}
+            <h3 className="text-lg font-semibold text-gray-800 border-b border-gray-100 pb-2">Financial Independence (Liquid Assets Only)</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {/* Retired Monthly Budget */}
+              {/* 1. Monthly Budget */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-medium text-gray-600">Retired Monthly Budget</span>
+                  <span className="text-sm font-medium text-gray-600">Monthly Budget (Today's $)</span>
                   <span className="text-2xl">🧮</span>
                 </div>
                 <div className="relative mb-1.5">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                  <input
-                    type="number"
-                    value={monthlyRetirementSpend}
-                    onChange={(e) => setMonthlyRetirementSpend(e.target.value)}
-                    placeholder="Monthly spend"
-                    className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                  />
+                  <input type="number" value={monthlyRetirementSpend} onChange={(e) => setMonthlyRetirementSpend(e.target.value)} className="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500" />
                 </div>
                 {monthlySpendMetrics ? (
-                  <>
+                  <div>
                     <p className={`text-2xl font-bold ${monthlySpendMetrics.isSustainable ? 'text-green-600' : 'text-red-600'}`}>
-                      {fmtCompact(monthlySpendMetrics.annualWithdrawal)} <span className="text-base">({monthlySpendMetrics.withdrawalRate.toFixed(1)}% rate)</span>
+                      {(() => {
+                        // User requested to always show Future Dollars at Retirement Age
+                        const yearsToRetirement = Math.max(0, retirementAge - currentAge)
+                        // Use yearsToRetirement for inflation, not yearsToFire
+                        const years = yearsToRetirement
+
+                        const inflation = (profile?.inflationRate || 2.7) / 100
+                        const val = isPV ? monthlySpendMetrics.annualWithdrawal : monthlySpendMetrics.annualWithdrawal * Math.pow(1 + inflation, years)
+                        return fmtCompact(val)
+                      })()} <span className="text-base text-gray-400 font-normal">/yr</span>
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {monthlySpendMetrics.withdrawalTerm}
+                    <p className="text-xs text-gray-500 mt-1">
+                      {isPV ? "In today's dollars" : `In future dollars (Age ${retirementAge})`}
                     </p>
-                  </>
-                ) : monthlyRetirementSpend && parseFloat(monthlyRetirementSpend) > 0 ? (
-                  <p className="text-xs text-gray-400 mt-1">
-                    N/A
-                  </p>
-                ) : (
-                  <p className="text-xs text-gray-400 mt-1">
-                    Enter budget
-                  </p>
-                )}
+                  </div>
+                ) : <p className="text-xs text-gray-400">Enter budget</p>}
               </div>
 
-              {/* FIRE Target (Renamed from Freedom Number) */}
+              {/* 2. FIRE Target */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-600">FIRE Target</span>
                   <span className="text-2xl">🎯</span>
                 </div>
                 <p className="text-3xl font-bold text-blue-600">
-                  {fmtCompact(fireMetrics.fireNumber)}
+                  {(() => {
+                    const yearsToRetirement = Math.max(0, retirementAge - currentAge)
+                    const inflation = (profile?.inflationRate || 2.7) / 100
+
+                    const valPV = fireMetrics.fireNumber
+                    const valFuture = fireMetrics.fireNumber * Math.pow(1 + inflation, yearsToRetirement)
+
+                    return fmtCompact(isPV ? valPV : valFuture)
+                  })()}
                 </p>
                 <p className="text-xs text-gray-500 mt-2">
-                  25x annual spending (Liquid Assets)
+                  {(() => {
+                    const yearsToRetirement = Math.max(0, retirementAge - currentAge)
+                    const inflation = (profile?.inflationRate || 2.7) / 100
+
+                    const valPV = fireMetrics.fireNumber
+                    const valFuture = fireMetrics.fireNumber * Math.pow(1 + inflation, yearsToRetirement)
+
+                    if (isPV) {
+                      return <>{fmtCompact(valFuture)} in future dollars (Age {retirementAge})</>
+                    } else {
+                      return <>{fmtCompact(valPV)} in today's dollars</>
+                    }
+                  })()}
                 </p>
               </div>
 
-              {/* FIRE Age (Renamed from Financial Freedom) */}
+              {/* 3. FIRE Age */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-600">FIRE Age</span>
@@ -796,53 +374,27 @@ function ForecastTab({ data }) {
                 </div>
                 {fireMetrics.fireAge ? (
                   <>
-                    <p className="text-3xl font-bold text-green-600">
-                      Age {fireMetrics.fireAge}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Age you can retire comfortably
-                    </p>
+                    <p className="text-3xl font-bold text-green-600">Age {fireMetrics.fireAge}</p>
+                    <p className="text-xs text-gray-500 mt-2">in {Math.max(0, fireMetrics.fireAge - currentAge)} years</p>
                   </>
-                ) : (
-                  <>
-                    <p className="text-3xl font-bold text-gray-400">
-                      --
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Not reached
-                    </p>
-                  </>
-                )}
+                ) : <p className="text-3xl font-bold text-gray-400">--</p>}
               </div>
 
-              {/* FIRE Age (Liquidated) - Renamed from If Liquidated */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5 bg-orange-50/50 border-orange-100">
+              {/* 4. If Liquidated */}
+              <div className="bg-white rounded-lg shadow-sm border border-orange-100 p-5 bg-orange-50/50">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-600">If Liquidated</span>
                   <span className="text-2xl">🏚️</span>
                 </div>
                 {fireMetrics.liquidatedFireAge ? (
                   <>
-                    <p className="text-3xl font-bold text-orange-600">
-                      Age {fireMetrics.liquidatedFireAge}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      FIRE age if you sell your home
-                    </p>
+                    <p className="text-3xl font-bold text-orange-600">Age {fireMetrics.liquidatedFireAge}</p>
+                    <p className="text-xs text-gray-500 mt-2">if you sell home</p>
                   </>
-                ) : (
-                  <>
-                    <p className="text-3xl font-bold text-gray-400">
-                      N/A
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      {fireMetrics.year1Composition.homeEquity > 0 ? "Not reachable even if sold" : "You don't own a home"}
-                    </p>
-                  </>
-                )}
+                ) : <p className="text-3xl font-bold text-gray-400">--</p>}
               </div>
 
-              {/* Coast FIRE Age (Renamed from Coast Savings) */}
+              {/* 5. Coast FIRE */}
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-600">Coast FIRE Age</span>
@@ -850,31 +402,18 @@ function ForecastTab({ data }) {
                 </div>
                 {fireMetrics.coastFireAge ? (
                   <>
-                    <p className="text-3xl font-bold text-teal-600">
-                      Age {fireMetrics.coastFireAge}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Age you can stop saving
-                    </p>
+                    <p className="text-3xl font-bold text-teal-600">Age {fireMetrics.coastFireAge}</p>
+                    <p className="text-xs text-gray-500 mt-2">Stop saving now</p>
                   </>
-                ) : (
-                  <>
-                    <p className="text-3xl font-bold text-gray-400">
-                      --
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Keep saving
-                    </p>
-                  </>
-                )}
+                ) : <p className="text-3xl font-bold text-gray-400">--</p>}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Key Metrics with Year Slider */}
-      {yearMetrics && (
+      {/* FORECAST TRAJECTORY (SLIDER) - HIDDEN */}
+      {/* {yearMetrics && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800">📊 Your Current Trajectory by Year</h3>
@@ -884,336 +423,217 @@ function ForecastTab({ data }) {
             </div>
           </div>
 
-          {/* Year Slider */}
-          <div className="mb-4">
-            <div className="flex items-center gap-4">
-              <span className="text-xs text-gray-500 w-12">Year 1</span>
-              <input
-                type="range"
-                min="1"
-                max={maxYear}
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-              />
-              <span className="text-xs text-gray-500 w-16 text-right">Year {maxYear}</span>
-            </div>
-            <div className="flex justify-between mt-1 px-12">
-              <span className="text-xs text-gray-400">Age {currentAge}</span>
-              <span className="text-xs text-gray-400">Age {currentAge + maxYear - 1}</span>
-            </div>
+          <div className="mb-4 flex items-center gap-4">
+            <span className="text-xs text-gray-500 w-12">Year 1</span>
+            <input type="range" min="1" max={maxYear} value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))} className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+            <span className="text-xs text-gray-500 w-16 text-right">Age {currentAge + maxYear - 1}</span>
           </div>
 
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Savings Rate */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Savings Rate</span>
-                <span className="text-lg">💰</span>
-              </div>
-              <p className={`text-2xl font-bold ${yearMetrics.savingsRate >= 50 ? 'text-green-600' : yearMetrics.savingsRate >= 25 ? 'text-blue-600' : yearMetrics.savingsRate >= 0 ? 'text-orange-600' : 'text-red-600'}`}>
-                {yearMetrics.savingsRate.toFixed(1)}%
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {fmtCompact(yearMetrics.gap)} saved
-              </p>
-              <div className="mt-2 h-1.5 bg-gray-200 rounded-full">
-                <div
-                  className={`h-1.5 rounded-full ${yearMetrics.savingsRate >= 50 ? 'bg-green-500' : yearMetrics.savingsRate >= 25 ? 'bg-blue-500' : yearMetrics.savingsRate >= 0 ? 'bg-orange-500' : 'bg-red-500'}`}
-                  style={{ width: `${Math.min(Math.max(yearMetrics.savingsRate, 0), 100)}%` }}
-                />
-              </div>
+              <span className="text-xs font-medium text-gray-500 uppercase">Year Start Net Worth</span>
+              <p className="text-2xl font-bold text-gray-700 mt-1">{fmtCompact(isPV ? (yearMetrics.netWorthPV - yearMetrics.netWorthChangePV) : (yearMetrics.netWorth - yearMetrics.netWorthChange))}</p>
+              <p className="text-xs text-gray-500 mt-1">Starting Balance</p>
             </div>
 
-            {/* Income */}
             <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Income ({viewMode === 'pv' ? "Today's $" : "Future $"})
-                </span>
-                <span className="text-lg">💵</span>
-              </div>
-              <p className="text-2xl font-bold text-blue-700">
-                {fmtCompact(viewMode === 'pv' ? yearMetrics.incomePV : yearMetrics.incomeNominal)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {viewMode === 'pv' ? 'Inflation-adjusted' : 'Nominal value'}
-              </p>
-            </div>
-
-            {/* Net Worth */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Net Worth ({viewMode === 'pv' ? "Today's $" : "Future $"})
-                </span>
-                <span className="text-lg">💎</span>
-              </div>
-              <p className="text-2xl font-bold text-purple-700">
-                {fmtCompact(viewMode === 'pv' ? yearMetrics.netWorthPV : yearMetrics.netWorth)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {viewMode === 'pv' ? 'Inflation-adjusted' : 'Nominal value'}
-              </p>
-            </div>
-
-            {/* Tax Rate */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Tax Rate</span>
-                <span className="text-lg">🏛️</span>
-              </div>
-              <p className={`text-2xl font-bold ${yearMetrics.taxRate < 25 ? 'text-green-600' : yearMetrics.taxRate < 35 ? 'text-orange-600' : 'text-red-600'}`}>
-                {yearMetrics.taxRate.toFixed(1)}%
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {fmtCompact(yearMetrics.taxes)} in taxes
-              </p>
-            </div>
-
-            {/* % Growth from Investments */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Growth from Investing</span>
-                <span className="text-lg">📈</span>
-              </div>
-              <p className={`text-2xl font-bold ${yearMetrics.growthPercent >= 50 ? 'text-purple-600' : yearMetrics.growthPercent >= 25 ? 'text-blue-600' : 'text-gray-600'}`}>
-                {yearMetrics.growthPercent.toFixed(0)}%
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                {fmtCompact(yearMetrics.investmentGrowth)} from returns
-              </p>
-              <p className="text-xs text-gray-400">
-                vs {fmtCompact(yearMetrics.contributions)} contributed
-              </p>
-            </div>
-
-            {/* Early Retirement Progress */}
-            {fireMetrics && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Early Retirement Progress</span>
-                  <span className="text-lg">🚀</span>
-                </div>
-                <p className="text-2xl font-bold text-green-600">
-                  {((yearMetrics.netWorth / fireMetrics.fireNumber) * 100).toFixed(0)}%
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {fmtCompact(yearMetrics.netWorth)} of {fmtCompact(fireMetrics.fireNumber)}
-                </p>
-                <div className="mt-2 h-1.5 bg-gray-200 rounded-full">
-                  <div
-                    className="h-1.5 rounded-full bg-green-500"
-                    style={{ width: `${Math.min((yearMetrics.netWorth / fireMetrics.fireNumber) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Summary Row */}
-          <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center text-sm">
-            <div className="text-gray-600">
-              <span className="font-medium">Net Worth ({viewMode === 'pv' ? "Today's $" : "Future $"}):</span> {fmtCompact(viewMode === 'pv' ? yearMetrics.netWorthPV : yearMetrics.netWorth)}
-            </div>
-            <div className="text-gray-600">
-              <span className="font-medium">YoY Change:</span>{' '}
-              <span className={(viewMode === 'pv' ? yearMetrics.netWorthChangePV : yearMetrics.netWorthChange) >= 0 ? 'text-green-600' : 'text-red-600'}>
-                {(viewMode === 'pv' ? yearMetrics.netWorthChangePV : yearMetrics.netWorthChange) >= 0 ? '+' : ''}{fmtCompact(viewMode === 'pv' ? yearMetrics.netWorthChangePV : yearMetrics.netWorthChange)}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Life Events / What If */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">👨‍👩‍👧 Life Events / What If</h3>
-          {lifeEvents.length > 0 && (
-            <button
-              onClick={() => setLifeEvents([])}
-              className="text-xs text-red-600 hover:text-red-800"
-            >
-              Clear all events
-            </button>
-          )}
-        </div>
-        <p className="text-sm text-gray-600 mb-6">
-          Add life events to see how they impact your retirement timeline
-        </p>
-
-        {/* Event Templates */}
-        <div className="mb-6">
-          <p className="text-xs text-gray-500 mb-3">Click to add a life event:</p>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(lifeEventTemplates).map(([key, template]) => (
-              <button
-                key={key}
-                onClick={() => addLifeEvent(key)}
-                className={`px-3 py-2 text-xs rounded-lg border transition flex items-center gap-2 ${template.incomeImpact > 0 || template.expenseImpact < 0
-                  ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
-                  : template.incomeImpact < 0 || template.expenseImpact > 0
-                    ? 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
-                    : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                  }`}
-              >
-                <span>{template.icon}</span>
-                <span>{template.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Active Events */}
-        {lifeEvents.length > 0 && (
-          <div className="mb-6">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Your Life Events</h4>
-            <div className="space-y-3">
-              {lifeEvents.map((event) => (
-                <div key={event.id} className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{event.icon}</span>
-                      <span className="font-medium text-gray-800">{event.name}</span>
-                    </div>
-                    <button
-                      onClick={() => removeLifeEvent(event.id)}
-                      className="text-gray-400 hover:text-red-600"
-                    >
-                      ✕
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                    {/* Start Year */}
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Start Year</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max={maxYear}
-                        value={event.startYear}
-                        onChange={(e) => updateLifeEvent(event.id, 'startYear', Number(e.target.value))}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                      />
-                    </div>
-
-                    {/* Duration */}
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Duration (years)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        max="50"
-                        value={event.duration}
-                        onChange={(e) => updateLifeEvent(event.id, 'duration', Number(e.target.value))}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                      />
-                      <p className="text-xs text-gray-400 mt-1">{event.duration === 0 ? 'Permanent' : `${event.duration} years`}</p>
-                    </div>
-
-                    {/* Expense Impact */}
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Annual Expense</label>
-                      <input
-                        type="number"
-                        value={event.expenseImpact}
-                        onChange={(e) => updateLifeEvent(event.id, 'expenseImpact', Number(e.target.value))}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                      />
-                      <p className={`text-xs mt-1 ${event.expenseImpact > 0 ? 'text-red-600' : event.expenseImpact < 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                        {event.expenseImpact > 0 ? '+' : ''}{fmtCompact(event.expenseImpact)}/yr
-                      </p>
-                    </div>
-
-                    {/* Income Impact */}
-                    <div>
-                      <label className="text-xs text-gray-500 block mb-1">Annual Income</label>
-                      <input
-                        type="number"
-                        value={event.incomeImpact}
-                        onChange={(e) => updateLifeEvent(event.id, 'incomeImpact', Number(e.target.value))}
-                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                      />
-                      <p className={`text-xs mt-1 ${event.incomeImpact > 0 ? 'text-green-600' : event.incomeImpact < 0 ? 'text-red-600' : 'text-gray-400'}`}>
-                        {event.incomeImpact > 0 ? '+' : ''}{fmtCompact(event.incomeImpact)}/yr
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Impact Summary */}
-        {lifePlannerImpact && (
-          <div className="border-t border-gray-200 pt-6">
-            <h4 className="text-sm font-semibold text-gray-700 mb-4">Impact Summary</h4>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Net Worth at Retirement</p>
-                <p className="text-xl font-bold text-gray-800">{fmtCompact(lifePlannerImpact.adjustedNetWorth)}</p>
-                <p className={`text-sm font-medium ${lifePlannerImpact.netWorthChange > 0 ? 'text-green-600' : lifePlannerImpact.netWorthChange < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                  {lifePlannerImpact.netWorthChange > 0 ? '+' : ''}{fmtCompact(lifePlannerImpact.netWorthChange)}
+              <span className="text-xs font-medium text-gray-500 uppercase">Income</span>
+              <p className="text-2xl font-bold text-blue-700 mt-1">{fmtCompact(isPV ? yearMetrics.incomePV : yearMetrics.incomeNominal)}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-xs text-gray-500">
+                  Taxes: <span className="font-medium text-gray-700">{fmtCompact(isPV ? yearMetrics.taxesPV : yearMetrics.taxes)}</span> ({yearMetrics.taxRate.toFixed(1)}%)
                 </p>
               </div>
+            </div>
 
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Years to FIRE</p>
-                <p className="text-xl font-bold text-gray-800">
-                  {lifePlannerImpact.adjustedYearsToFire ? `${lifePlannerImpact.adjustedYearsToFire} yrs` : '—'}
-                </p>
-                {lifePlannerImpact.yearsToFireChange !== null && (
-                  <p className={`text-sm font-medium ${lifePlannerImpact.yearsToFireChange < 0 ? 'text-green-600' : lifePlannerImpact.yearsToFireChange > 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                    {lifePlannerImpact.yearsToFireChange > 0 ? '+' : ''}{lifePlannerImpact.yearsToFireChange} yrs
-                  </p>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="flex justify-between items-start">
+                <span className="text-xs font-medium text-gray-500 uppercase">Increase</span>
+                {yearMetrics.hasPrev && (
+                  <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${yearMetrics.nwChangePct >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {yearMetrics.nwChangePct >= 0 ? '+' : ''}{yearMetrics.nwChangePct.toFixed(1)}%
+                  </span>
                 )}
               </div>
-
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total Extra Expenses</p>
-                <p className={`text-xl font-bold ${lifePlannerImpact.totalExtraExpenses > 0 ? 'text-red-600' : lifePlannerImpact.totalExtraExpenses < 0 ? 'text-green-600' : 'text-gray-800'}`}>
-                  {fmtCompact(Math.abs(lifePlannerImpact.totalExtraExpenses))}
+              <p className="text-2xl font-bold text-blue-600 mt-1">{fmtCompact(isPV ? yearMetrics.netWorthChangePV : yearMetrics.netWorthChange)}</p>
+              <div className="flex items-center justify-between mt-1">
+                <p className="text-xs text-gray-500">
+                  Expenses: <span className="font-medium text-gray-700">{fmtCompact(isPV ? yearMetrics.expensesPV : yearMetrics.expenses)}</span>
                 </p>
-                <p className="text-xs text-gray-500">over career</p>
               </div>
+            </div>
 
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Total Extra Income</p>
-                <p className={`text-xl font-bold ${lifePlannerImpact.totalExtraIncome > 0 ? 'text-green-600' : lifePlannerImpact.totalExtraIncome < 0 ? 'text-red-600' : 'text-gray-800'}`}>
-                  {fmtCompact(Math.abs(lifePlannerImpact.totalExtraIncome))}
+            <div className="bg-gray-50 rounded-lg p-4">
+              <span className="text-xs font-medium text-gray-500 uppercase">Year End Net Worth</span>
+              <p className="text-2xl font-bold text-purple-700 mt-1">{fmtCompact(isPV ? yearMetrics.netWorthPV : yearMetrics.netWorth)}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-xs text-gray-500">
+                  Liquid: <span className="font-medium text-gray-700">{fmtCompact(isPV ? yearMetrics.liquidPV : yearMetrics.liquid)}</span> ({yearMetrics.liquidPct.toFixed(0)}%)
                 </p>
-                <p className="text-xs text-gray-500">over career</p>
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )} */}
 
-        {/* Empty State */}
-        {lifeEvents.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <div className="text-4xl mb-3">📅</div>
-            <p className="text-sm">No life events added yet</p>
-            <p className="text-xs text-gray-400 mt-1">Click the buttons above to plan your future</p>
-          </div>
-        )}
+      {/* ANNUAL NET WORTH CHANGE BREAKDOWN CHART (Moved from Net Worth Tab) */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Annual Net Worth Change Breakdown
+            <span className="ml-2 text-sm font-normal text-gray-500">
+              ({isPV ? "Today's Dollars" : "Future Dollars"})
+            </span>
+          </h2>
+        </div>
+        <div className="h-[500px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }} stackOffset="sign">
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+              <ReferenceLine y={0} stroke="#000" />
+              <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} dy={10} minTickGap={30} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12 }} tickFormatter={fmtCompact} width={60} />
+              <Tooltip cursor={{ fill: '#F3F4F6' }} content={<NetWorthChangeTooltip fmt={fmtCompact} />} />
+              <Legend content={<SimpleLegend />} verticalAlign="top" height={50} wrapperStyle={{ paddingBottom: '20px' }} />
+
+              <Bar name="Investment Growth" dataKey="Investment Growth" stackId="a" fill="#60A5FA" radius={[0, 0, 0, 0]} />
+              <Bar name="401k Growth" dataKey="401k Growth" stackId="a" fill="#A78BFA" radius={[0, 0, 0, 0]} />
+              <Bar name="Home Appreciation" dataKey="Home Appreciation" stackId="a" fill="#FBBF24" radius={[0, 0, 0, 0]} />
+
+              <Bar name="Investment Contribution" dataKey="Investment Contribution" stackId="a" fill="#3B82F6" radius={[0, 0, 0, 0]} />
+              <Bar name="401k Contribution" dataKey="401k Contribution" stackId="a" fill="#8B5CF6" radius={[0, 0, 0, 0]} />
+              <Bar name="Home Principal" dataKey="Home Principal" stackId="a" fill="#F59E0B" radius={[0, 0, 0, 0]} />
+              <Bar name="Cash Added" dataKey="Cash Added" stackId="a" fill="#10B981" radius={[0, 0, 0, 0]} />
+
+              <Bar name="Cash Drawn" dataKey="Cash Drawn" stackId="a" fill="#DC2626" radius={[0, 0, 0, 0]} />
+              <Bar name="Expenses" dataKey="Expenses" stackId="a" fill="#F87171" radius={[0, 0, 0, 0]} />
+              <Bar name="Taxes" dataKey="Taxes" stackId="a" fill="#EF4444" radius={[0, 0, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* YEAR-BY-YEAR BREAKDOWN TABLE (Moved from Net Worth Tab) */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Year-by-Year Breakdown
+            <span className="ml-2 text-sm font-normal text-gray-500">
+              ({isPV ? "Today's Dollars" : "Future Dollars"})
+            </span>
+          </h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead className="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
+              <tr>
+                <th className="py-3 px-4 whitespace-nowrap">Year</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Income</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">401k Contrib</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Taxes</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Tax %</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Expenses</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Exp %</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap bg-blue-50/50 text-blue-800">Gap</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Cash</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Investments</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">401k</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap text-amber-600">Home Eq</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap bg-green-50/50 text-green-800">Net Worth</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {projections.map((p) => {
+                const income = isPV ? p.grossIncomePV : p.grossIncome
+                const taxes = isPV ? p.annualTaxesPV : p.annualTaxes
+                const expenses = isPV ? p.annualExpensesPV : p.annualExpenses
+                const taxPercent = income > 0 ? (taxes / income * 100).toFixed(1) : '0.0'
+                const expensePercent = income > 0 ? (expenses / income * 100).toFixed(1) : '0.0'
+                const gap = isPV ? p.gapPV : p.gap
+
+                return (
+                  <tr key={p.year} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-3 px-4 font-medium text-gray-900">{p.year}</td>
+                    <td className="py-3 px-4 text-right text-gray-600">{fmtCompact(income)}</td>
+                    <td className="py-3 px-4 text-right text-orange-600">{fmtCompact((isPV ? p.totalIndividual401kPV : p.totalIndividual401k) * -1)}</td>
+                    <td className="py-3 px-4 text-right text-red-600">{fmtCompact(taxes * -1)}</td>
+                    <td className="py-3 px-4 text-right text-gray-500 text-xs">{taxPercent}%</td>
+                    <td className="py-3 px-4 text-right text-red-600">{fmtCompact(expenses * -1)}</td>
+                    <td className="py-3 px-4 text-right text-gray-500 text-xs">{expensePercent}%</td>
+                    <td className={`py-3 px-4 text-right font-medium bg-blue-50/30 ${gap >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      {gap >= 0 ? '+' : ''}{fmtCompact(gap)}
+                    </td>
+                    <td className="py-3 px-4 text-right text-blue-600">{fmtCompact(isPV ? p.cashPV : p.cash)}</td>
+                    <td className="py-3 px-4 text-right text-purple-600">{fmtCompact(isPV ? p.totalInvestmentValuePV : p.totalInvestmentValue)}</td>
+                    <td className="py-3 px-4 text-right text-emerald-600">{fmtCompact(isPV ? p.retirement401kValuePV : p.retirement401kValue)}</td>
+                    <td className="py-3 px-4 text-right text-amber-600">{fmtCompact(isPV ? p.homeEquityPV : p.homeEquity)}</td>
+                    <td className="py-3 px-4 text-right font-bold text-gray-900 bg-green-50/30">{fmtCompact(isPV ? p.netWorthPV : p.netWorth)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   )
 }
 
-export default ForecastTab
-
-// Helper to estimate wealth percentile (based on 2024 Federal Reserve SCF data approx)
-// Note: These thresholds are in ~2024 dollars, so we should compare against PV
-function getWealthPercentile(netWorthPV) {
-  if (netWorthPV >= 11600000) return 'Top 1'
-  if (netWorthPV >= 2700000) return 'Top 2'
-  if (netWorthPV >= 1170000) return 'Top 5'
-  if (netWorthPV >= 970900) return 'Top 10'
-  if (netWorthPV >= 585000) return 'Top 50'
-  return 'Bottom 50'
+// --- Helpers ---
+function SimpleLegend() {
+  const items = [
+    { label: 'Investments', color: '#60A5FA' },
+    { label: '401k', color: '#A78BFA' },
+    { label: 'Home', color: '#FBBF24' },
+    { label: 'Cash', color: '#10B981' },
+    { label: 'Outflows', color: '#F87171' },
+  ]
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-6 mb-2">
+      {items.map((item) => (
+        <div key={item.label} className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+          <span className="text-sm font-medium text-gray-600">{item.label}</span>
+        </div>
+      ))}
+    </div>
+  )
 }
+
+function NetWorthChangeTooltip({ active, payload, label, fmt }) {
+  if (active && payload && payload.length) {
+    const trueNetWorthChange = payload[0]?.payload?.trueNetWorthChange || 0
+    const displayPayload = payload.filter(p => !p.name.includes('trueNetWorthChange')).sort((a, b) => b.value - a.value)
+
+    return (
+      <div className="bg-white p-4 border border-gray-200 shadow-xl rounded-xl min-w-[240px]">
+        <div className="flex justify-between items-baseline mb-3 pb-2 border-b border-gray-100">
+          <span className="text-gray-500 font-medium">Year {label}</span>
+          <div className="text-right">
+            <div className={`text-lg font-bold ${trueNetWorthChange >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+              {trueNetWorthChange > 0 ? '+' : ''}{fmt(trueNetWorthChange)}
+            </div>
+            <div className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Net Worth Delta</div>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          {displayPayload.map((entry, index) => (
+            <div key={index} className="flex items-center justify-between gap-4 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                <span className="text-gray-600 font-medium">{entry.name}</span>
+              </div>
+              <span className="font-semibold text-gray-900 tabular-nums">{fmt(entry.value)}</span>
+            </div>
+          ))}
+          <div className="pt-2 mt-2 border-t border-gray-100">
+            <div className="text-[10px] text-center text-gray-400 italic">Headline follows strict Net Worth Delta</div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  return null
+}
+
+export default ForecastTab

@@ -110,21 +110,33 @@ export function minifyState(data) {
 
     // 3. Expenses
     // [simpleMode, totalMonthly, simpleGrowth, [categories...]]
-    const categories = (data.expenses?.expenseCategories || []).map(c => {
-        const id = EXPENSE_ID_MAP[c.id] !== undefined ? EXPENSE_ID_MAP[c.id] : c.id
-        const isPercent = c.amountType === 'percent'
+    // 3. Expenses
+    // [simpleMode, totalMonthly, simpleGrowth, [categories...]]
+    const categories = (data.expenses?.expenseCategories || [])
+        .filter(c => {
+            // Optimization: Only include category if it has non-default values
+            // Default: amount=0, percent=0, jumps=[], growth=default?
+            const hasAmount = (c.amountType === 'percent' && c.percentOfIncome > 0) || (c.amountType !== 'percent' && c.annualAmount > 0)
+            const hasJumps = c.jumps && c.jumps.length > 0
+            // Keep if custom (not in default map) OR has values
+            const isCustom = EXPENSE_ID_MAP[c.id] === undefined
+            return isCustom || hasAmount || hasJumps
+        })
+        .map(c => {
+            const id = EXPENSE_ID_MAP[c.id] !== undefined ? EXPENSE_ID_MAP[c.id] : c.id
+            const isPercent = c.amountType === 'percent'
 
-        const arr = [
-            id,
-            isPercent ? 1 : 0,
-            isPercent ? c.percentOfIncome : Math.round(c.annualAmount || 0),
-            c.growthRate,
-            (c.jumps || []).map(j => [j.year, j.type, j.value, j.description || ''])
-        ]
+            const arr = [
+                id,
+                isPercent ? 1 : 0,
+                isPercent ? c.percentOfIncome : Math.round(c.annualAmount || 0),
+                c.growthRate,
+                (c.jumps || []).map(j => [j.year, j.type, j.value, j.description || ''])
+            ]
 
-        // Defaults: [null, 1, 0, 2.7, []]
-        return trimArray(arr, [null, 1, 0, 2.7, []])
-    })
+            // Defaults: [null, 1, 0, 2.7, []]
+            return trimArray(arr, [null, 1, 0, 2.7, []])
+        })
 
     const e = [
         data.expenses?.simpleMode ? 1 : 0,
@@ -169,9 +181,40 @@ export function minifyState(data) {
         data.customTaxCredits
     ])
 
-    // Final Array: [p, i, e, eo, inv, t]
-    // Trim empty sections from the end (e.g. if no tax customizations)
-    return trimArray([p, i, e, eo, inv, t])
+    // 7. Property
+    // [mode, [homeVal, growth, mortRem, monPay, price, downPmt, downType, purchYr, mortRate, term, tax, ins, maint, addExp, ownExpAmt, ownExpType, pmiAmt, pmiType, rentOffAmt, rentOffType]]
+    const pd = data.property?.details || {}
+    const pDetails = trimArray([
+        Math.round(pd.homeValue || 0),              // 0
+        pd.growthRate,                              // 1: 3.0
+        Math.round(pd.mortgageRemaining || 0),      // 2
+        Math.round(pd.monthlyPayment || 0),         // 3
+        Math.round(pd.homePrice || 0),              // 4
+        Math.round(pd.downPayment || 0),            // 5
+        pd.downPaymentType === 'percent' ? 1 : 0,   // 6: 1 (percent)
+        pd.purchaseYear,                            // 7: 1
+        pd.mortgageRate,                            // 8: 6.5
+        pd.term,                                    // 9: 30
+        pd.propertyTaxRate,                         // 10: 1.2
+        pd.insuranceRate,                           // 11: 0.5
+        pd.maintenanceRate,                         // 12: 1.0
+        Math.round(pd.additionalExpense || 0),      // 13
+        Math.round(pd.ownershipExpenseAmount || 0), // 14
+        pd.ownershipExpenseType === 'percent' ? 1 : 0, // 15: 1 (percent)
+        Math.round(pd.pmiAmount || 0),              // 16
+        pd.pmiType === 'percent' ? 1 : 0,           // 17: 0 (dollar - Wait, default is dollar? Schema says 'dollar' for pmiType default: 64: pmiType: 'dollar')
+        Math.round(pd.rentalIncomeOffsetAmount || 0), // 18
+        pd.rentalIncomeOffsetType === 'percent' ? 1 : 0 // 19: 0 (dollar)
+    ], [0, 3.0, 0, 0, 0, 0, 1, 1, 6.5, 30, 1.2, 0.5, 1.0, 0, 0, 1, 0, 0, 0, 0])
+
+    const prop = trimArray([
+        toIdx(data.property?.mode || 'none', ['none', 'own', 'buy']),
+        pDetails
+    ], [0, []]) // Default mode 0 (none), empty details
+
+    // Final Array: [p, i, e, eo, inv, t, prop]
+    // Trim empty sections from the end (e.g. if no property)
+    return trimArray([p, i, e, eo, inv, t, prop])
 }
 
 /**
@@ -192,6 +235,7 @@ export function inflateState(minified) {
     const eo = minified[3] || []
     const inv = minified[4] || []
     const t = minified[5] || []
+    const prop = minified[6] || []
 
     // 1. Profile
     const profile = {
@@ -253,7 +297,8 @@ export function inflateState(minified) {
         categoriesList = rawExpenses
     }
 
-    const expenseCategories = categoriesList.map((c, idx) => {
+    // Helper to inflate a single category array
+    const inflateCategory = (c, idx) => {
         // Resolve ID
         let id = c[0]
         let name = c[0]
@@ -283,9 +328,33 @@ export function inflateState(minified) {
                 description: j[3]
             }))
         }
-
         return inflated
+    }
+
+    // Inflate only the Present categories from URL
+    const urlCategories = categoriesList.map((c, idx) => inflateCategory(c, idx))
+
+    // Merge with Defaults to ensure no categories are missing
+    const expenseCategories = DEFAULT_EXPENSE_CATEGORIES.map(def => {
+        const found = urlCategories.find(c => c.id === def.id)
+        if (found) return found
+
+        // Return blank default
+        return {
+            id: def.id,
+            category: def.name,
+            name: def.name,
+            amountType: 'percent',
+            percentOfIncome: '',
+            annualAmount: '',
+            growthRate: 2.7,
+            jumps: []
+        }
     })
+
+    // Add any Custom categories from URL that aren't in defaults
+    const customCategories = urlCategories.filter(c => !DEFAULT_EXPENSE_CATEGORIES.some(d => d.id === c.id))
+    expenseCategories.push(...customCategories)
 
     // 4. One Time Expenses
     const oneTimeExpenses = eo.map((o, idx) => ({
@@ -321,6 +390,34 @@ export function inflateState(minified) {
     const customStandardDeductions = t[2]
     const customTaxCredits = t[3]
 
+    // 7. Property
+    const pd = prop[1] || []
+    const property = {
+        mode: fromIdx(prop[0], ['none', 'own', 'buy']) || 'none',
+        details: {
+            homeValue: pd[0] || '',
+            growthRate: pd[1] !== undefined ? pd[1] : 3.0,
+            mortgageRemaining: pd[2] || '',
+            monthlyPayment: pd[3] || '',
+            homePrice: pd[4] || '',
+            downPayment: pd[5] || '',
+            downPaymentType: pd[6] === 0 ? 'dollar' : 'percent',
+            purchaseYear: pd[7] !== undefined ? pd[7] : 1,
+            mortgageRate: pd[8] !== undefined ? pd[8] : 6.5,
+            term: pd[9] !== undefined ? pd[9] : 30,
+            propertyTaxRate: pd[10] !== undefined ? pd[10] : 1.2,
+            insuranceRate: pd[11] !== undefined ? pd[11] : 0.5,
+            maintenanceRate: pd[12] !== undefined ? pd[12] : 1.0,
+            additionalExpense: pd[13] || '',
+            ownershipExpenseAmount: pd[14] || '',
+            ownershipExpenseType: pd[15] === 0 ? 'dollar' : 'percent',
+            pmiAmount: pd[16] || '',
+            pmiType: pd[17] === 1 ? 'percent' : 'dollar',
+            rentalIncomeOffsetAmount: pd[18] || '',
+            rentalIncomeOffsetType: pd[19] === 1 ? 'percent' : 'dollar'
+        }
+    }
+
     return {
         profile,
         income: { incomeStreams },
@@ -335,6 +432,7 @@ export function inflateState(minified) {
         filingStatusRemapping,
         customTaxLadder,
         customStandardDeductions,
-        customTaxCredits
+        customTaxCredits,
+        property
     }
 }

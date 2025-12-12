@@ -121,7 +121,7 @@ export function useTaxData() {
             filingStatus: profile.filingStatus || 'Single',
             state: userState,
             country: userCountry,
-            incomes: totalSalary > 0 ? [{
+            incomes: totalGrossIncome > 0 ? [{
                 id: 'salary-income',
                 description: 'Total Annual Income (excl. 401k)',
                 amount: totalSalary,

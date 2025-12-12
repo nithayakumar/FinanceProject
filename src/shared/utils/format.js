@@ -2,14 +2,15 @@ export const formatCompactNumber = (number) => {
     if (number === 0) return '$0'
 
     const absNumber = Math.abs(number)
+    const sign = number < 0 ? '-' : ''
 
     if (absNumber >= 1000000) {
-        return `$${(number / 1000000).toFixed(1)}M`
+        return `${sign}$${(absNumber / 1000000).toFixed(1)}M`
     }
     if (absNumber >= 1000) {
-        return `$${(number / 1000).toFixed(0)}k`
+        return `${sign}$${(absNumber / 1000).toFixed(0)}k`
     }
-    return `$${number.toLocaleString()}`
+    return `${sign}$${absNumber.toLocaleString()}`
 }
 
 export const formatCurrency = (number) => {

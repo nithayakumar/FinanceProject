@@ -52,7 +52,7 @@ export function useExpensesData() {
                 ...saved,
                 expenseCategories: finalCategories,
                 oneTimeExpenses: saved.oneTimeExpenses || [],
-                simpleGrowthRate: saved.simpleGrowthRate || 3
+                simpleGrowthRate: saved.simpleGrowthRate !== undefined ? saved.simpleGrowthRate : 3
             }
         }
 
@@ -269,7 +269,7 @@ export function useExpensesData() {
             ...prev,
             simpleMode: enabled,
             totalMonthlyExpense: totalAmount !== undefined ? totalAmount : prev.totalMonthlyExpense,
-            simpleGrowthRate: growthRate !== undefined ? growthRate : (prev.simpleGrowthRate || 3)
+            simpleGrowthRate: growthRate !== undefined ? growthRate : (prev.simpleGrowthRate !== undefined ? prev.simpleGrowthRate : 3)
         }))
     }
 

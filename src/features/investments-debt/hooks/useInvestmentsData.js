@@ -23,7 +23,7 @@ export function useInvestmentsData() {
         }, 0)
 
         if (saved) {
-            const profileTargetCash = profile.targetCash || saved.targetCash || 0
+            const profileTargetCash = profile.targetCash !== undefined ? profile.targetCash : (saved.targetCash !== undefined ? saved.targetCash : 0)
 
             // Ensure at least one investment always exists
             const investments = saved.investments || []
