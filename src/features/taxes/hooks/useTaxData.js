@@ -104,9 +104,11 @@ export function useTaxData() {
         const currentYear = new Date().getFullYear()
         const csvFilingStatus = mapFilingStatusToCSV(profile.filingStatus || 'Single')
 
-        // Calculate total gross income and 401k contributions
+        // Calculate total gross income (salary + equity) and 401k contributions
+        // Note: Equity (RSUs, stock comp) is taxable as ordinary income
+        // Company 401k match is NOT included - it's tax-deferred until withdrawal
         const totalGrossIncome = incomeData.incomeStreams.reduce((sum, stream) => {
-            return sum + (Number(stream.annualIncome) || 0)
+            return sum + (Number(stream.annualIncome) || 0) + (Number(stream.equity) || 0)
         }, 0)
 
         const total401k = incomeData.incomeStreams.reduce((sum, stream) => {

@@ -111,6 +111,7 @@ function Navigation() {
       const incomeData = storage.load('income')
       const expensesData = storage.load('expenses')
       const investmentsData = storage.load('investmentsDebt')
+      const propertyData = storage.load('property')
 
       // Validate required data
       if (!profile || !incomeData || !expensesData || !investmentsData) {
@@ -137,7 +138,7 @@ function Navigation() {
         ...expensesData,
         projections: expenseProjections.projections
       }
-      const gapProjections = calculateGapProjections(incomeWithProjections, expensesWithProjections, investmentsData, enrichedProfile)
+      const gapProjections = calculateGapProjections(incomeWithProjections, expensesWithProjections, investmentsData, propertyData, enrichedProfile)
 
       // Build data object
       const data = {
@@ -170,6 +171,7 @@ function Navigation() {
       const incomeData = storage.load('income')
       const expensesData = storage.load('expenses')
       const investmentsData = storage.load('investmentsDebt')
+      const propertyData = storage.load('property')
 
       // Validate required data
       if (!profile || !incomeData || !expensesData || !investmentsData) {
@@ -196,7 +198,7 @@ function Navigation() {
         ...expensesData,
         projections: expenseProjections.projections
       }
-      const gapProjections = calculateGapProjections(incomeWithProjections, expensesWithProjections, investmentsData, enrichedProfile)
+      const gapProjections = calculateGapProjections(incomeWithProjections, expensesWithProjections, investmentsData, propertyData, enrichedProfile)
 
       // Export table (always using PV/Today's Dollars)
       exportNetWorthTable(gapProjections, investmentsData, enrichedProfile, true)

@@ -1,5 +1,6 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card } from '../../../shared/ui/Card'
+import { formatCompactNumber } from '../../../shared/utils/format'
 
 export function PropertyChart({ data, viewMode }) {
     if (!data || data.length === 0) return null
@@ -115,15 +116,15 @@ function CustomTooltip({ active, payload, label, viewMode }) {
                 <div className="space-y-1 text-sm">
                     <div className="flex justify-between gap-4">
                         <span className="text-green-600">Equity:</span>
-                        <span className="font-medium">${equity.toLocaleString()}</span>
+                        <span className="font-medium">{formatCompactNumber(equity)}</span>
                     </div>
                     <div className="flex justify-between gap-4">
                         <span className="text-red-500">Debt:</span>
-                        <span className="font-medium">${debt.toLocaleString()}</span>
+                        <span className="font-medium">{formatCompactNumber(debt)}</span>
                     </div>
                     <div className="pt-1 mt-1 border-t border-gray-100 flex justify-between gap-4 font-bold">
                         <span className="text-gray-900">Total Value:</span>
-                        <span>${total.toLocaleString()}</span>
+                        <span>{formatCompactNumber(total)}</span>
                     </div>
                     <div className="text-xs text-gray-400 mt-1 italic">
                         {viewMode === 'PV' ? "In Today's Dollars" : "In Future Dollars"}

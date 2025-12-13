@@ -1,4 +1,5 @@
 import { Card } from '../../../shared/ui/Card'
+import { formatCompactNumber } from '../../../shared/utils/format'
 
 export function PropertySummary({ data, viewMode, mode }) {
     if (!data || data.length === 0) return null
@@ -104,7 +105,7 @@ export function PropertySummary({ data, viewMode, mode }) {
             <Card className="bg-blue-50 border-blue-100 p-6 flex flex-col justify-center">
                 <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Equity at Retirement</div>
                 <div className="text-3xl font-bold text-blue-700">
-                    ${Math.round(finalEquity).toLocaleString()}
+                    {formatCompactNumber(finalEquity)}
                 </div>
                 <div className="text-sm text-gray-500 mt-2">
                     Projected Year {data.length}
@@ -115,7 +116,7 @@ export function PropertySummary({ data, viewMode, mode }) {
             <Card className="bg-white border-gray-200 p-6 flex flex-col justify-center">
                 <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Equity at Payoff</div>
                 <div className="text-3xl font-bold text-gray-900">
-                    ${Math.round(mortgageEndEquity).toLocaleString()}
+                    {formatCompactNumber(mortgageEndEquity)}
                 </div>
                 <div className="text-sm text-gray-500 mt-2">
                     {isMortgageFree ? `Year ${mortgageEndPoint.year}` : 'Not paid off in period'}
@@ -129,7 +130,7 @@ export function PropertySummary({ data, viewMode, mode }) {
                     <Card className="bg-blue-50 border-blue-100 p-6 flex flex-col justify-center">
                         <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Total Interest Cost</div>
                         <div className="text-3xl font-bold text-blue-700">
-                            ${Math.round(totalInterest).toLocaleString()}
+                            {formatCompactNumber(totalInterest)}
                         </div>
                         <div className="text-sm text-gray-500 mt-2">
                             Over Entire Mortgage Period
@@ -147,7 +148,7 @@ export function PropertySummary({ data, viewMode, mode }) {
                             </span>
                         </div>
                         <div className={`text-3xl font-bold ${growthMinusInterest >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
-                            ${Math.round(growthMinusInterest).toLocaleString()}
+                            {formatCompactNumber(growthMinusInterest)}
                         </div>
                         <div className="text-sm text-gray-500 mt-2">
                             {breakEvenYear !== null ? (

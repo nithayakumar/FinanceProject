@@ -79,19 +79,17 @@ function RetirementTab({ data }) {
       </div>
 
       {/* Readiness Status Banner */}
-      <div className={`rounded-lg p-6 mb-8 ${
-        readinessStatus.color === 'green' ? 'bg-green-50 border border-green-300' :
+      <div className={`rounded-lg p-6 mb-8 ${readinessStatus.color === 'green' ? 'bg-green-50 border border-green-300' :
         readinessStatus.color === 'blue' ? 'bg-blue-50 border border-blue-300' :
-        readinessStatus.color === 'yellow' ? 'bg-yellow-50 border border-yellow-300' :
-        'bg-red-50 border border-red-300'
-      }`}>
+          readinessStatus.color === 'yellow' ? 'bg-yellow-50 border border-yellow-300' :
+            'bg-red-50 border border-red-300'
+        }`}>
         <h2 className="text-lg font-semibold mb-2">
-          Retirement Readiness: <span className={`${
-            readinessStatus.color === 'green' ? 'text-green-700' :
+          Retirement Readiness: <span className={`${readinessStatus.color === 'green' ? 'text-green-700' :
             readinessStatus.color === 'blue' ? 'text-blue-700' :
-            readinessStatus.color === 'yellow' ? 'text-yellow-700' :
-            'text-red-700'
-          }`}>{readinessStatus.text}</span>
+              readinessStatus.color === 'yellow' ? 'text-yellow-700' :
+                'text-red-700'
+            }`}>{readinessStatus.text}</span>
         </h2>
         <p className="text-sm text-gray-700">
           Based on the 4% safe withdrawal rule, you can withdraw {fmt(safeWithdrawal)} annually in retirement,
@@ -109,25 +107,27 @@ function RetirementTab({ data }) {
         {/* Asset Allocation Donut Chart */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold mb-4">Retirement Asset Allocation</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={allocationData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={2}
-                dataKey="value"
-                label={(entry) => `${entry.name}: ${fmt(entry.value)}`}
-              >
-                {allocationData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(val) => fmt(val)} />
-            </PieChart>
-          </ResponsiveContainer>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={allocationData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={2}
+                  dataKey="value"
+                  label={(entry) => `${entry.name}: ${fmt(entry.value)}`}
+                >
+                  {allocationData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(val) => fmt(val)} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
           <div className="mt-4 space-y-2 text-sm">
             {allocationData.map((item) => (
               <div key={item.name} className="flex justify-between">
@@ -144,83 +144,85 @@ function RetirementTab({ data }) {
         {/* Income Comparison Bar Chart */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold mb-4">Income Comparison</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={comparisonData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`} />
-              <YAxis type="category" dataKey="category" width={150} />
-              <Tooltip formatter={(val) => fmt(val)} />
-              <Bar dataKey="amount" fill="#3b82f6" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={comparisonData} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`} />
+                <YAxis type="category" dataKey="category" width={150} />
+                <Tooltip formatter={(val) => fmt(val)} />
+                <Bar dataKey="amount" fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
           <p className="text-xs text-gray-500 mt-4">
             The safe withdrawal amount is based on the 4% rule, which suggests withdrawing 4% of your retirement portfolio annually for a sustainable 30-year retirement.
           </p>
         </div>
-      </div>
 
-      {/* Detailed Metrics Table */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold mb-4">Detailed Retirement Metrics</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b-2 border-gray-300">
-                <th className="text-left py-3 px-2 font-semibold">Metric</th>
-                <th className="text-right py-3 px-2 font-semibold">Nominal Value</th>
-                <th className="text-right py-3 px-2 font-semibold">Present Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-b border-gray-200">
-                <td className="py-3 px-2 font-medium">Total Net Worth</td>
-                <td className="text-right py-3 px-2">{fmt(retirementNetWorth)}</td>
-                <td className="text-right py-3 px-2">{fmt(retirementNetWorthPV)}</td>
-              </tr>
-              <tr className="border-b border-gray-200">
-                <td className="py-3 px-2">Cash Balance</td>
-                <td className="text-right py-3 px-2">{fmt(retirementYear.cash)}</td>
-                <td className="text-right py-3 px-2">{fmt(retirementYear.cashPV)}</td>
-              </tr>
-              <tr className="border-b border-gray-200">
-                <td className="py-3 px-2">Investment Value</td>
-                <td className="text-right py-3 px-2">{fmt(retirementYear.totalInvestmentValue)}</td>
-                <td className="text-right py-3 px-2">{fmt(retirementYear.totalInvestmentValuePV)}</td>
-              </tr>
-              <tr className="border-b border-gray-200">
-                <td className="py-3 px-2">401k Balance</td>
-                <td className="text-right py-3 px-2">{fmt(retirementYear.retirement401kValue)}</td>
-                <td className="text-right py-3 px-2">{fmt(retirementYear.retirement401kValuePV)}</td>
-              </tr>
-              <tr className="border-b border-gray-200 bg-blue-50">
-                <td className="py-3 px-2 font-medium">Safe Annual Withdrawal (4%)</td>
-                <td className="text-right py-3 px-2 font-semibold">{fmt(safeWithdrawal)}</td>
-                <td className="text-right py-3 px-2 font-semibold">{fmt(safeWithdrawalPV)}</td>
-              </tr>
-              <tr className="border-b border-gray-200">
-                <td className="py-3 px-2">Safe Monthly Withdrawal</td>
-                <td className="text-right py-3 px-2">{fmt(safeWithdrawal / 12)}</td>
-                <td className="text-right py-3 px-2">{fmt(safeWithdrawalPV / 12)}</td>
-              </tr>
-              <tr className="border-b border-gray-200">
-                <td className="py-3 px-2 font-medium">Final Year Income</td>
-                <td className="text-right py-3 px-2">{fmt(finalYearIncome)}</td>
-                <td className="text-right py-3 px-2">-</td>
-              </tr>
-              <tr className="border-b border-gray-200 bg-green-50">
-                <td className="py-3 px-2 font-medium">Income Replacement Ratio</td>
-                <td className="text-right py-3 px-2 font-semibold" colSpan="2">{incomeReplacement.toFixed(1)}%</td>
-              </tr>
-            </tbody>
-          </table>
+        {/* Detailed Metrics Table */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold mb-4">Detailed Retirement Metrics</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-gray-300">
+                  <th className="text-left py-3 px-2 font-semibold">Metric</th>
+                  <th className="text-right py-3 px-2 font-semibold">Nominal Value</th>
+                  <th className="text-right py-3 px-2 font-semibold">Present Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-gray-200">
+                  <td className="py-3 px-2 font-medium">Total Net Worth</td>
+                  <td className="text-right py-3 px-2">{fmt(retirementNetWorth)}</td>
+                  <td className="text-right py-3 px-2">{fmt(retirementNetWorthPV)}</td>
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="py-3 px-2">Cash Balance</td>
+                  <td className="text-right py-3 px-2">{fmt(retirementYear.cash)}</td>
+                  <td className="text-right py-3 px-2">{fmt(retirementYear.cashPV)}</td>
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="py-3 px-2">Investment Value</td>
+                  <td className="text-right py-3 px-2">{fmt(retirementYear.totalInvestmentValue)}</td>
+                  <td className="text-right py-3 px-2">{fmt(retirementYear.totalInvestmentValuePV)}</td>
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="py-3 px-2">401k Balance</td>
+                  <td className="text-right py-3 px-2">{fmt(retirementYear.retirement401kValue)}</td>
+                  <td className="text-right py-3 px-2">{fmt(retirementYear.retirement401kValuePV)}</td>
+                </tr>
+                <tr className="border-b border-gray-200 bg-blue-50">
+                  <td className="py-3 px-2 font-medium">Safe Annual Withdrawal (4%)</td>
+                  <td className="text-right py-3 px-2 font-semibold">{fmt(safeWithdrawal)}</td>
+                  <td className="text-right py-3 px-2 font-semibold">{fmt(safeWithdrawalPV)}</td>
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="py-3 px-2">Safe Monthly Withdrawal</td>
+                  <td className="text-right py-3 px-2">{fmt(safeWithdrawal / 12)}</td>
+                  <td className="text-right py-3 px-2">{fmt(safeWithdrawalPV / 12)}</td>
+                </tr>
+                <tr className="border-b border-gray-200">
+                  <td className="py-3 px-2 font-medium">Final Year Income</td>
+                  <td className="text-right py-3 px-2">{fmt(finalYearIncome)}</td>
+                  <td className="text-right py-3 px-2">-</td>
+                </tr>
+                <tr className="border-b border-gray-200 bg-green-50">
+                  <td className="py-3 px-2 font-medium">Income Replacement Ratio</td>
+                  <td className="text-right py-3 px-2 font-semibold" colSpan="2">{incomeReplacement.toFixed(1)}%</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
 
-      {/* Notes */}
-      <div className="mt-6 text-xs text-gray-500 space-y-1">
-        <p><strong>4% Rule:</strong> A guideline that suggests withdrawing 4% of your retirement portfolio annually, adjusted for inflation, for a 30-year retirement.</p>
-        <p><strong>Income Replacement Ratio:</strong> The percentage of your final year income that can be replaced by safe withdrawal. Financial advisors typically recommend 70-90%.</p>
-        <p><strong>Present Value:</strong> Today's dollar value accounting for inflation over time.</p>
+        {/* Notes */}
+        <div className="mt-6 text-xs text-gray-500 space-y-1">
+          <p><strong>4% Rule:</strong> A guideline that suggests withdrawing 4% of your retirement portfolio annually, adjusted for inflation, for a 30-year retirement.</p>
+          <p><strong>Income Replacement Ratio:</strong> The percentage of your final year income that can be replaced by safe withdrawal. Financial advisors typically recommend 70-90%.</p>
+          <p><strong>Present Value:</strong> Today's dollar value accounting for inflation over time.</p>
+        </div>
       </div>
     </div>
   )
@@ -229,10 +231,10 @@ function RetirementTab({ data }) {
 // Summary Card Component
 function SummaryCard({ title, value, subtitle, highlight }) {
   const highlightClass = highlight === 'green' ? 'border-green-300 bg-green-50' :
-                        highlight === 'blue' ? 'border-blue-300 bg-blue-50' :
-                        highlight === 'yellow' ? 'border-yellow-300 bg-yellow-50' :
-                        highlight === 'red' ? 'border-red-300 bg-red-50' :
-                        'border-gray-200'
+    highlight === 'blue' ? 'border-blue-300 bg-blue-50' :
+      highlight === 'yellow' ? 'border-yellow-300 bg-yellow-50' :
+        highlight === 'red' ? 'border-red-300 bg-red-50' :
+          'border-gray-200'
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border p-4 ${highlightClass}`}>

@@ -108,7 +108,27 @@ function ForecastTab({ data }) {
     // Coast FIRE Age
     let coastFireAge = null
     const yearsToRetirement = retirementAge - currentAge
-    const growthRate = 0.07 // 7% assumption for Coast
+
+    // Calculate weighted average growth rate from user's investment settings
+    // Weighted by current value (cash at 0%, investments at their rates, 401k at its rate)
+    let totalAssetValue = Number(investmentsData?.currentCash) || 0
+    let weightedGrowthSum = 0 // cash contributes 0 growth
+
+    ;(investmentsData?.investments || []).forEach(inv => {
+      const value = Number(inv.currentValue) || 0
+      const rate = (Number(inv.growthRate) || 0) / 100
+      totalAssetValue += value
+      weightedGrowthSum += value * rate
+    })
+
+    const k401Value = Number(investmentsData?.retirement401k?.currentValue) || 0
+    const k401Rate = (Number(investmentsData?.retirement401k?.growthRate) || 0) / 100
+    totalAssetValue += k401Value
+    weightedGrowthSum += k401Value * k401Rate
+
+    // Use weighted average, fallback to 7% if no assets
+    const growthRate = totalAssetValue > 0 ? weightedGrowthSum / totalAssetValue : 0.07
+
     for (let i = 0; i < Math.min(projections.length, yearsToRetirement); i++) {
       const currentInvestable = projections[i].investableAssets || projections[i].netWorth
       const yearsRemaining = yearsToRetirement - i
@@ -124,9 +144,10 @@ function ForecastTab({ data }) {
     return {
       savingsRate, fireNumber, yearsToFire, fireAge: yearsToFire ? currentAge + yearsToFire : null,
       liquidatedYearsToFire, liquidatedFireAge: liquidatedYearsToFire ? currentAge + liquidatedYearsToFire : null,
-      coastFireAge, year1Composition: { homeEquity: currentYear.homeEquity }
+      coastFireAge, year1Composition: { homeEquity: currentYear.homeEquity },
+      coastGrowthRate: growthRate // expose for display
     }
-  }, [projections, monthlyRetirementSpend, profile, currentAge, retirementAge])
+  }, [projections, monthlyRetirementSpend, profile, currentAge, retirementAge, investmentsData])
 
   // 2. Year Metrics (Slider)
   const yearMetrics = useMemo(() => {
@@ -239,26 +260,19 @@ function ForecastTab({ data }) {
       const downPmt = isPV ? (p.downPaymentPaidPV || 0) : (p.downPaymentPaid || 0)
       const cashContrib = (rawCashContrib || 0) - downPmt
 
-      // Outflows
+      // Outflows (for chart visualization)
       const baseExpenses = isPV ? p.annualExpensesPV : p.annualExpenses
-      const interest = isPV ? (p.annualMortgageInterestPV || 0) : (p.annualMortgageInterest || 0)
-      const propCosts = isPV ? (p.annualPropertyCostsPV || 0) : (p.annualPropertyCosts || 0)
-      const principalPaid = isPV ? ((p.annualMortgagePrincipalPV || 0)) : (p.annualMortgagePrincipal || 0)
+      const taxes = isPV ? p.annualTaxesPV : p.annualTaxes
 
-      // Simple vs Detailed Mode logic
-      let finalExpenses = 0
-      if (p.useSimplePropertyExpenses) {
-        finalExpenses = baseExpenses + interest + propCosts
-      } else {
-        finalExpenses = baseExpenses - principalPaid
-      }
-      const expenses = finalExpenses * -1
-      const taxes = (isPV ? p.annualTaxesPV : p.annualTaxes) * -1
-
-      // True Delta
+      // True Delta = Net Worth change (headline number)
+      // For Year 1: compare to starting net worth (Year 0)
+      // For Year 2+: compare to previous year end
+      // Note: Contributions are already post-tax/expense (from Gap), so we don't subtract taxes/expenses again
       let trueDelta = 0
       if (i === 0) {
-        trueDelta = invGrowth + k401Growth + appreciation + invContrib + k401ContribSafe + principal + cashContrib - finalExpenses - (isPV ? p.annualTaxesPV : p.annualTaxes)
+        // Year 1: compare to starting net worth
+        // startingNetWorth is in today's dollars, so for PV mode it equals Year 0 value
+        trueDelta = (isPV ? p.netWorthPV : p.netWorth) - startingNetWorth
       } else {
         trueDelta = (isPV ? p.netWorthPV : p.netWorth) - (isPV ? prev.netWorthPV : prev.netWorth)
       }
@@ -273,12 +287,14 @@ function ForecastTab({ data }) {
         'Home Principal': principal,
         'Cash Added': Math.max(0, cashContrib),
         'Cash Drawn': Math.min(0, cashContrib),
-        Taxes: taxes, // Ensure Taxes are here if needed for tooltip order, though chart uses stackId
-        Expenses: expenses,
+        // Outflows shown for visualization (cash flow perspective)
+        // Note: These don't add up to trueNetWorthChange because contributions are post-tax/expense
+        Taxes: -taxes,
+        Expenses: -baseExpenses,
         trueNetWorthChange: trueDelta
       }
     })
-  }, [projections, isPV, investmentsData, profile])
+  }, [projections, isPV, investmentsData, profile, startingNetWorth])
 
   return (
     <div className="space-y-8">

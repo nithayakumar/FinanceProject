@@ -68,35 +68,37 @@ function ExpensesTab({ data }) {
         <h2 className="text-xl font-semibold mb-4">
           Expense Projections by Category
         </h2>
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="year"
-              label={{ value: 'Year', position: 'insideBottom', offset: -5 }}
-            />
-            <YAxis
-              tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
-              label={{ value: 'Annual Expenses', angle: -90, position: 'insideLeft' }}
-            />
-            <Tooltip
-              cursor={{ fill: '#F3F4F6' }}
-              content={<CustomTooltip />}
-            />
-            <Legend />
-            {categoryNames.map((name, index) => {
-              const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#ec4899']
-              return (
-                <Bar
-                  key={name}
-                  dataKey={name}
-                  stackId="a"
-                  fill={colors[index % colors.length]}
-                />
-              )
-            })}
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="h-[400px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="year"
+                label={{ value: 'Year', position: 'insideBottom', offset: -5 }}
+              />
+              <YAxis
+                tickFormatter={(val) => `$${(val / 1000).toFixed(0)}k`}
+                label={{ value: 'Annual Expenses', angle: -90, position: 'insideLeft' }}
+              />
+              <Tooltip
+                cursor={{ fill: '#F3F4F6' }}
+                content={<CustomTooltip />}
+              />
+              <Legend />
+              {categoryNames.map((name, index) => {
+                const colors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#ec4899']
+                return (
+                  <Bar
+                    key={name}
+                    dataKey={name}
+                    stackId="a"
+                    fill={colors[index % colors.length]}
+                  />
+                )
+              })}
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Category Breakdown Table */}

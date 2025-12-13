@@ -403,7 +403,10 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
 
     // Calculate taxes on income after 401k deduction
     // Tax brackets are now automatically inflated within calculateTaxes
-    const taxableIncome = annualIncome - totalIndividual401k
+    // Note: annualIncome includes salary + equity + company401k (from totalCompNominal)
+    // We exclude company401k because employer match is tax-deferred (not taxed until withdrawal)
+    // Equity (RSUs, stock comp) IS taxable as ordinary income and stays included
+    const taxableIncome = annualIncome - annualCompany401k - totalIndividual401k
 
     const taxYear = startYear + (year - 1)
     const taxCalc = calculateTaxesCSV(
@@ -563,9 +566,9 @@ export function calculateGapProjections(incomeData, expensesData, investmentsDat
     const totalCostBasis = investments.reduce((sum, inv) => sum + inv.costBasis, 0)
 
     // Net Worth = Cash + 401k + Investments + (Home Value - Mortgage Debt)
-    // Net Worth = Cash + 401k + Investments + (Home Value - Mortgage Debt)
-    const homeEquity = Math.max(0, homeValue - mortgageBalance)
-    const investableAssets = cash + retirement401k.value + totalInvestmentValue
+    const homeEquity = Math.max(0, (homeValue || 0) - (mortgageBalance || 0))
+    // Investable assets = liquid assets excluding home equity (used for FIRE calculations)
+    const investableAssets = (cash || 0) + (retirement401k.value || 0) + (totalInvestmentValue || 0)
     const netWorth = investableAssets + homeEquity
 
     // Calculate present values
@@ -760,6 +763,45 @@ function calculateSummary(projections, yearsToRetirement) {
   const lifetimeCompany401k = projections.reduce((sum, p) => sum + p.annualCompany401k, 0)
   const lifetimeCompany401kPV = projections.reduce((sum, p) => sum + p.annualCompany401kPV, 0)
 
+  // Lifetime growth (market appreciation above contributions)
+  // Calculate annual growth for investments, 401k, and home, then sum
+  let lifetimeGrowthNominal = 0
+  let lifetimeGrowthPV = 0
+
+  for (let i = 0; i < Math.min(yearsToRetirement, projections.length); i++) {
+    const p = projections[i]
+    const prev = i > 0 ? projections[i - 1] : null
+
+    // Investment growth = change in value - contributions
+    const invVal = p.totalInvestmentValue || 0
+    const prevInvVal = prev ? (prev.totalInvestmentValue || 0) : 0
+    const invContrib = p.investedThisYear || 0
+    const invGrowth = (invVal - prevInvVal) - invContrib
+
+    const invValPV = p.totalInvestmentValuePV || 0
+    const prevInvValPV = prev ? (prev.totalInvestmentValuePV || 0) : 0
+    const invContribPV = p.investedThisYearPV || 0
+    const invGrowthPV = (invValPV - prevInvValPV) - invContribPV
+
+    // 401k growth = change in value - contributions (individual + company)
+    const k401Val = p.retirement401kValue || 0
+    const prevK401Val = prev ? (prev.retirement401kValue || 0) : 0
+    const k401Contrib = (p.totalIndividual401k || 0) + (p.annualCompany401k || 0)
+    const k401Growth = (k401Val - prevK401Val) - k401Contrib
+
+    const k401ValPV = p.retirement401kValuePV || 0
+    const prevK401ValPV = prev ? (prev.retirement401kValuePV || 0) : 0
+    const k401ContribPV = (p.totalIndividual401kPV || 0) + (p.annualCompany401kPV || 0)
+    const k401GrowthPV = (k401ValPV - prevK401ValPV) - k401ContribPV
+
+    // Home appreciation (already calculated in projections)
+    const homeAppreciation = p.annualAppreciation || 0
+    const homeAppreciationPV = p.annualAppreciationPV || 0
+
+    lifetimeGrowthNominal += invGrowth + k401Growth + homeAppreciation
+    lifetimeGrowthPV += invGrowthPV + k401GrowthPV + homeAppreciationPV
+  }
+
   // Net worth growth
   const netWorthGrowth = retirementYear.netWorth - currentYear.netWorth
   const netWorthGrowthPercent = currentYear.netWorth > 0
@@ -796,6 +838,8 @@ function calculateSummary(projections, yearsToRetirement) {
     lifetimeIndividual401kPV,
     lifetimeCompany401k,
     lifetimeCompany401kPV,
+    lifetimeGrowthNominal,
+    lifetimeGrowthPV,
 
     // Growth
     netWorthGrowth,

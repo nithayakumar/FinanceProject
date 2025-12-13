@@ -324,7 +324,7 @@ function Dashboard() {
   const tabs = [
     { id: 'networth', label: 'Net Worth', icon: '💰' },
     { id: 'forecast', label: 'FIRE', icon: '🔥' },
-    { id: 'whatif', label: 'Simulate', icon: '🎮' }]
+    { id: 'whatif', label: 'Simulate (Beta)', icon: '🎮' }]
 
   return (
     <div className="max-w-7xl mx-auto p-8">

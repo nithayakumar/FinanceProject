@@ -1,18 +1,21 @@
-import { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine
+} from 'recharts'
+import { Card } from '../../shared/ui/Card'
+import { Input } from '../../shared/ui/Input'
+import { formatCompactNumber as fmtCompact } from '../../shared/utils/format'
 
 function WhatIfTab({ data }) {
   const { gapProjections, profile, investmentsData, propertyData } = data
   const projections = gapProjections?.projections || []
 
   // --- 1. State ---
-  const [incomeAdjustment, setIncomeAdjustment] = useState(0) // -50% to +50%
-  const [expenseAdjustment, setExpenseAdjustment] = useState(0) // -50% to +50%
-  const [sensitivityGrowthRate, setSensitivityGrowthRate] = useState(7) // 7% default
-  const [sensitivityInflation, setSensitivityInflation] = useState(profile?.inflationRate || 2.7)
-
-  // Life Planner State
+  // Life Events State
   const [lifeEvents, setLifeEvents] = useState([])
   const [monthlyRetirementSpend, setMonthlyRetirementSpend] = useState('')
+  const [viewMode, setViewMode] = useState('pv') // 'pv' or 'nominal'
+  const isPV = viewMode === 'pv'
 
   // --- 2. Constants & Helpers ---
   const currentAge = profile?.age || 30
@@ -20,23 +23,17 @@ function WhatIfTab({ data }) {
   const yearsToRetirement = retirementAge - currentAge
   const maxYear = projections.length || 30
 
-  const fmtCompact = (val) => {
-    const absVal = Math.abs(val)
-    const sign = val < 0 ? '-' : ''
-    if (absVal >= 1000000) return `${sign}$${(absVal / 1000000).toFixed(1)}M`
-    if (absVal >= 1000) return `${sign}$${Math.round(absVal / 1000)}k`
-    return `${sign}$${Math.round(absVal)}`
-  }
-
   const lifeEventTemplates = {
     child: { name: 'Have a Child', expenseImpact: 15000, incomeImpact: 0, duration: 18, icon: '👶' },
     partner: { name: 'Add Partner', expenseImpact: 10000, incomeImpact: 50000, duration: 0, icon: '💑' },
-    losePartner: { name: 'Lose Partner Income', expenseImpact: -5000, incomeImpact: -50000, duration: 0, icon: '💔' },
-    tuition: { name: 'College Tuition', expenseImpact: 40000, incomeImpact: 0, duration: 4, icon: '🎓' },
+    home: { name: 'Buy Home', expenseImpact: 25000, incomeImpact: 0, duration: 30, icon: '🏠' },
+    sabbatical: { name: 'Sabbatical', expenseImpact: 5000, incomeImpact: -100000, duration: 1, icon: '🌴' },
+    layoff: { name: 'Temp Layoff', expenseImpact: 0, incomeImpact: -80000, duration: 1, icon: '📉' },
     wedding: { name: 'Wedding', expenseImpact: 30000, incomeImpact: 0, duration: 1, icon: '💒' },
-    relocation: { name: 'Relocate (Higher COL)', expenseImpact: 12000, incomeImpact: 20000, duration: 0, icon: '🏠' },
+    relocation: { name: 'Relocate (Higher COL)', expenseImpact: 12000, incomeImpact: 20000, duration: 0, icon: '🏙️' },
     relocationLow: { name: 'Relocate (Lower COL)', expenseImpact: -15000, incomeImpact: -10000, duration: 0, icon: '🏡' },
     careerBreak: { name: 'Career Break', expenseImpact: 0, incomeImpact: -80000, duration: 1, icon: '🏖️' },
+    custom: { name: 'Custom Event', expenseImpact: 0, incomeImpact: 0, duration: 1, icon: '⚡' },
   }
 
   const addLifeEvent = (key) => {
@@ -69,7 +66,7 @@ function WhatIfTab({ data }) {
     if (retirementYearIndex >= 0 && projections[retirementYearIndex]) {
       const inflationRate = (profile?.inflationRate || 2.7) / 100
       const expensesPV = projections[retirementYearIndex].annualExpensesPV || (projections[retirementYearIndex].annualExpenses / Math.pow(1 + inflationRate, retirementYearIndex + 1))
-      return Math.round(expensesPV / 12)
+      return Math.round(Math.abs(expensesPV) / 12)
     }
     return 5000
   }, [projections, retirementAge, currentAge, profile])
@@ -85,23 +82,23 @@ function WhatIfTab({ data }) {
   const simulation = useMemo(() => {
     if (!projections.length) return null
 
-    // Multipliers
-    const incMult = 1 + (incomeAdjustment / 100)
-    const expMult = 1 + (expenseAdjustment / 100)
-    const growthRate = sensitivityGrowthRate / 100
-    const inflationRate = sensitivityInflation / 100
+    // Use profile's standard growth and inflation rates
+    const growthRate = 0.07 // 7% standard growth rate
+    const inflationRate = (profile?.inflationRate || 2.7) / 100
 
     // Baseline (No Adj) for comparison
     // We assume standard projections are the baseline.
     // But strictly speaking, standard projections use profile.inflation/growth.
     // If we want "Impact" of sliders, we compare Simulated vs Original Projections.
 
-    const baseFireNumber = (monthlyRetirementSpend ? parseFloat(monthlyRetirementSpend) * 12 : projections[0].annualExpenses) * 25
+    const baseFireNumber = (monthlyRetirementSpend ? Math.abs(parseFloat(monthlyRetirementSpend)) * 12 : projections[0].annualExpenses) * 25
 
     // Calculate Simulated Trajectory
     let simNetWorth = startingNetWorth
     let totalExtraExp = 0
     let totalExtraInc = 0
+    let totalExtraExpPV = 0
+    let totalExtraIncPV = 0
 
     // Metrics to capture
     let simYearsToFire = null
@@ -114,86 +111,79 @@ function WhatIfTab({ data }) {
     let y1NetWorth = 0
     let y1SavingsRate = 0
 
+    // --- Deflation Helper ---
+    const getDeflator = (yearIndex) => isPV ? Math.pow(1 + inflationRate, yearIndex) : 1
+
+    // Chart Data Container
+    const charData = []
+
     for (let i = 0; i < projections.length; i++) {
       const p = projections[i]
       const year = p.year // 1-based
+      const deflator = getDeflator(i)
 
-      // 1. Base Values
-      let grossInc = p.grossIncome * incMult
-      let expenses = p.annualExpenses * expMult
-      let taxes = p.annualTaxes * incMult // Approximate taxes scaling
-      // 401k scaling
-      let _401k = (p.totalIndividual401k + p.annualCompany401k) * incMult // Scale contributions?
-      // Note: p.totalIndividual401k is usually a fixed max, but for simulation let's scale it if income scales? 
-      // Actually, if income doubles, maybe 401k doesn't. But let's keep it simple: incomeAdjustment affects "Cash Flow" power.
-      // Let's apply adjustment to Discretionary Income.
+      // 1. Base Values (no adjustments, use original projections)
+      let grossInc = p.grossIncome
+      let expenses = p.annualExpenses
+      let taxes = p.annualTaxes
+      let _401k = (p.totalIndividual401k + p.annualCompany401k)
 
       // 2. Apply Life Events
-      let eventInc = 0
-      let eventExp = 0
+      let eventIncPV = 0
+      let eventExpPV = 0
       lifeEvents.forEach(e => {
         if (year >= e.startYear && (e.duration === 0 || year < e.startYear + e.duration)) {
-          eventInc += e.incomeImpact
-          eventExp += e.expenseImpact
+          eventIncPV += e.incomeImpact
+          eventExpPV += e.expenseImpact
         }
       })
 
       // Inflate Event impacts? Assuming they are in Today's Dollars (PV), we should inflate them to Nominal.
-      // Or if they are nominal inputs. Let's assume PV inputs for simpliciy, so inflate them.
-      const df = Math.pow(1 + inflationRate, year - 1)
-      eventInc = eventInc * df
-      eventExp = eventExp * df
+      // And then later deflate if viewMode is PV.
+      // ALWAYS inflate to nominal first for calculation logic.
+      const inflationFactor = Math.pow(1 + inflationRate, year - 1)
+      const eventIncNominal = eventIncPV * inflationFactor
+      const eventExpNominal = eventExpPV * inflationFactor
 
-      // 3. Totals
-      grossInc += eventInc
-      expenses += eventExp
+      // 3. Totals (Nominal for Sim)
+      grossInc += eventIncNominal
+      expenses += eventExpNominal
 
-      // Track Extras
-      totalExtraInc += eventInc
-      totalExtraExp += eventExp
+      // Track Extras (Nominal & PV)
+      totalExtraInc += eventIncNominal
+      totalExtraExp += eventExpNominal
+      totalExtraIncPV += eventIncPV
+      totalExtraExpPV += eventExpPV
 
       // 4. Gap
-      const gap = grossInc - expenses - taxes - (p.totalIndividual401k * incMult) // Gap is what's left for TAXABLE investing
-      // Recalculate Net Worth
-      // p.netWorth includes Home Equity.
-      // SimNW = Previous SimNW * Growth + Gap + (HomeEq Change?)
-      // This is complex. Simplification:
-      // Delta = Gap.
-      // Asset Growth is applied to SimNW.
+      const gap = grossInc - expenses - taxes - p.totalIndividual401k // Gap is what's left for TAXABLE investing
 
+      // Asset Growth
       if (i === 0) {
-        // Year 1
-        // Delta from Starting
-        // But we are in a loop.
-        // SimNW is Year End.
-        // SimNW = startingNetWorth * (1+growth) + gap?
-        // No, startingNetWorth is Year 0.
         simNetWorth = startingNetWorth * (1 + growthRate) + gap
       } else {
         simNetWorth = simNetWorth * (1 + growthRate) + gap
       }
 
-      // Capture Year 1 stats
+      // Capture Year 1 stats (Display adjusted)
       if (i === 0) {
-        y1Income = grossInc
-        y1Expenses = expenses
-        y1NetWorth = simNetWorth
+        y1Income = grossInc / deflator
+        y1Expenses = expenses / deflator
+        y1NetWorth = simNetWorth / deflator
         y1SavingsRate = grossInc > 0 ? (gap / grossInc) * 100 : 0
       }
 
-      // FIRE Check
+      // FIRE Check (Always do logic in Nominal, display specific)
       // Fire Number is escalated by Inflation
-      const fireTarget = baseFireNumber * Math.pow(1 + inflationRate, i)
+      const fireTargetNominal = baseFireNumber * Math.pow(1 + inflationRate, i)
 
-      // Assume Liquid Ratio from original projection is maintained?
-      // Liquid / NetWorth ratio.
-      const ratio = p.netWorth > 0 ? (p.investableAssets / p.netWorth) : 0.7
-      const simLiquid = simNetWorth * ratio // Approximation
+      const ratio = p.netWorth > 0 ? (p.investableAssets !== undefined ? p.investableAssets / p.netWorth : 0.7) : 0.7
+      const simLiquid = simNetWorth * ratio
 
-      if (!simYearsToFire && simLiquid >= fireTarget) {
+      if (!simYearsToFire && simLiquid >= fireTargetNominal) {
         simYearsToFire = year
       }
-      if (!simLiquidatedAge && simNetWorth >= fireTarget) {
+      if (!simLiquidatedAge && simNetWorth >= fireTargetNominal) {
         simLiquidatedAge = year + currentAge
       }
 
@@ -208,45 +198,25 @@ function WhatIfTab({ data }) {
           }
         }
       }
+      // 5. Chart Data Point (Adjusted based on ViewMode)
+      charData.push({
+        year: year + currentAge, // Display as Age
+        originalNW: p.netWorth / deflator,
+        simulatedNW: simNetWorth / deflator,
+        hasEvents: eventIncNominal !== 0 || eventExpNominal !== 0
+      })
     }
-
-    // Net Worth At Retirement
-    const yearsToRet = retirementAge - currentAge
-    // We need the SimNW at year = yearsToRet
-    // If loop didn't go that far (projections short), take last.
-    // But usually projections cover it.
-    // To be safe, re-simulate or just take the value from loop if we stored it.
-    // Let's assume standard projections length is enough.
-
-    // Need to find baseline comparisons.
-    // Baseline: defined by `projections` array (which used original inputs).
-    // BUT `projections` used standard growth assumptions. If "Sensitivity Growth" slider moved, 
-    // the "Baseline" (Left side of diff) should probably be the Original Projection (with original assumptions).
-    // The "Impact Summary" compares Simulation vs Original.
-
-    // Original Values for Impact Summary
-    const origRetIndex = Math.min(yearsToRet - 1, projections.length - 1)
-    const origNWRetire = projections[origRetIndex]?.netWorth || 0
-
-    // Simulated Value at Retire
-    // We didn't store array of simNW. Let's approximate based on growth if i < yearsToRet
-    // Or just capture it in loop.
-    // Let's assume we want accurate impact, so I should have stored it. 
-    // Doing this optimized:
 
     return {
       y1Income, y1Expenses, y1NetWorth, y1SavingsRate,
-      baseFireNumber,
+      baseFireNumber: baseFireNumber, // Base is PV already
       simYearsToFire, simLiquidatedAge, simCoastAge: simCoastAge,
-      simNetWorthRetire: simNetWorth, // This is at END of loop (max year), might not be retirement year.
-      // Actually, let's just grab the delta logic.
       totalExtraExp, totalExtraInc,
-
-      // Delta Calculation Helpers
-      origYearsToFire: null, // Need to calc from original projections
+      totalExtraExpPV, totalExtraIncPV,
+      chartData: charData,
     }
 
-  }, [projections, incomeAdjustment, expenseAdjustment, sensitivityGrowthRate, sensitivityInflation, lifeEvents, startingNetWorth, monthlyRetirementSpend, currentAge])
+  }, [projections, lifeEvents, startingNetWorth, monthlyRetirementSpend, currentAge, profile, retirementAge, isPV])
 
 
   // --- 5. Robust Impact Metrics (Second Pass for Comparisons) ---
@@ -255,263 +225,338 @@ function WhatIfTab({ data }) {
 
     try {
       // Baseline (Original) FIRE Age calculation
-      const origFireNum = (monthlyRetirementSpend ? parseFloat(monthlyRetirementSpend) * 12 : projections[0].annualExpenses) * 25
+      const origFireNum = (monthlyRetirementSpend ? Math.abs(parseFloat(monthlyRetirementSpend)) * 12 : projections[0].annualExpenses) * 25
       const inflation = (profile?.inflationRate || 2.7) / 100
       let origYearsToFire = null
 
       // Safe Access for Ret Index
-      // If retirement is beyond projection range, use last available
-      const retIndex = Math.min(Math.max(0, retirementAge - currentAge - 1), projections.length - 1)
-
+      // 1. Calculate Original FIRE Age consistently
+      // Iterate same logic as simulation
       for (let i = 0; i < projections.length; i++) {
         const p = projections[i]
         if (!p) continue
-        const target = origFireNum * Math.pow(1 + inflation, i)
-        const assets = p.investableAssets !== undefined ? p.investableAssets : p.netWorth
-        if (assets >= target) {
+        const fireTargetNominal = origFireNum * Math.pow(1 + inflation, i)
+        const assets = p.investableAssets !== undefined ? p.investableAssets : p.netWorth // Fallback if no investable
+        if (assets >= fireTargetNominal) {
           origYearsToFire = i + 1
           break
         }
       }
 
       // Simulated NW at Retirement vs Original
-      const lastP = projections[projections.length - 1]
-      const finalOrigNW = lastP ? lastP.netWorth : 0
-      const nwDelta = (simulation.simNetWorthRetire || 0) - finalOrigNW
+      const simYearsToFire = simulation.simYearsToFire
+      const fireAgeDelta = (simYearsToFire && origYearsToFire) ? simYearsToFire - origYearsToFire : null
 
-      const currentFireAge = simulation.simYearsToFire ? (currentAge + simulation.simYearsToFire) : null
-      const origFireAge = origYearsToFire ? (currentAge + origYearsToFire) : null
-      const fireAgeDelta = (currentFireAge && origFireAge) ? currentFireAge - origFireAge : null
+      // Net Worth Delta at Retirement (or late stage)
+      // Compare simulatedNW at retirement age vs original
+      // We stored this in simulation.simNetWorthRetire (but that was end of loop).
+      // Let's us the loop data.
+      // Net Worth Delta at Retirement (Adjusted for PV)
+      const retirementIndex = Math.min(yearsToRetirement - 1, simulation.chartData.length - 1)
+      const simNWAtRetire = simulation.chartData[retirementIndex]?.simulatedNW || 0
+      const origNWAtRetire = simulation.chartData[retirementIndex]?.originalNW || 0
+      const nwDelta = simNWAtRetire - origNWAtRetire
+
+      // Lifetime Event Costs
+      // If PV mode, use PV sums. If Nominal mode, use Nominal sums.
+      const lifetimeEventCost = isPV ? simulation.totalExtraExpPV : simulation.totalExtraExp
+      const lifetimeEventInc = isPV ? simulation.totalExtraIncPV : simulation.totalExtraInc
 
       return {
-        ...simulation,
-        simFireAge: currentFireAge,
-        origFireAge,
-        fireAgeDelta,
-        nwDelta
+        // Impact Metrics
+        lifetimeEventCost,
+        lifetimeEventInc,
+        nwDeltaAtRetire: nwDelta,
+        fireAgeDelta: fireAgeDelta,
+
+        // Context
+        baseFireNumber: simulation.baseFireNumber,
+        simFireAge: simYearsToFire ? simYearsToFire + currentAge : null,
+        origFireAge: origYearsToFire ? origYearsToFire + currentAge : null
       }
-    } catch (err) {
-      console.error("Error calculating metrics in WhatIfTab:", err)
+
+    } catch (e) {
+      console.error(e)
       return null
     }
-  }, [simulation, projections, monthlyRetirementSpend, currentAge, retirementAge, profile])
+  }, [simulation, projections, monthlyRetirementSpend, currentAge, retirementAge, profile, isPV])
 
+
+  // --- 6. Render ---
+  // Ensure we have a valid component output even if metrics are missing (loading state handled inside)
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg text-sm">
+          <p className="font-bold mb-2">Age {label}</p>
+          {payload.map((p, idx) => (
+            <div key={idx} className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.stroke || p.fill }}></div>
+              <span className="text-gray-600">{p.name}:</span>
+              <span className="font-medium">{fmtCompact(p.value)}</span>
+            </div>
+          ))}
+        </div>
+      )
+    }
+    return null
+  }
 
   return (
-    <div className="space-y-8">
-      {/* HEADER & CONTROLS */}
+    <div className="space-y-8 max-w-7xl mx-auto">
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Simulate Future</h1>
-          <p className="text-gray-500 text-sm mt-1">Play "What If" with your life and finances</p>
+          <p className="text-gray-500 text-sm mt-1">Visualize how life events impact your long-term wealth.</p>
+        </div>
+
+        {/* PV/FV Toggle */}
+        <div className="bg-gray-100 p-1 rounded-lg flex items-center">
+          <button
+            onClick={() => setViewMode('pv')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'pv' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Today's Dollars
+          </button>
+          <button
+            onClick={() => setViewMode('nominal')}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${viewMode === 'nominal' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            Future Dollars
+          </button>
         </div>
       </div>
 
-      {/* TOP: INPUT & IMPACT SUMMARY */}
-      {metrics && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* 1. Budget Input */}
-            <div className="lg:col-span-1 border-r border-gray-100 pr-0 lg:pr-6">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Retired Monthly Budget</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">$</span>
-                <input
+      {simulation && metrics && (
+        <div className="space-y-8">
+
+          {/* 1. CHART - HERO VISUALIZATION */}
+          <Card className="p-6">
+            <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-6">Net Worth Projection</h3>
+            <div className="h-[320px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={simulation.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorSim" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="colorOrig" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#9CA3AF" stopOpacity={0.1} />
+                      <stop offset="95%" stopColor="#9CA3AF" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                  <XAxis
+                    dataKey="year"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                    dy={10}
+                    label={{ value: 'Age', position: 'insideBottom', offset: -5, fill: '#9CA3AF', fontSize: 10 }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                    tickFormatter={(val) => fmtCompact(val)}
+                    width={50}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="originalNW"
+                    name="Original Path"
+                    stroke="#9CA3AF"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    fill="url(#colorOrig)"
+                    fillOpacity={1}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="simulatedNW"
+                    name="New Path"
+                    stroke="#2563EB"
+                    strokeWidth={3}
+                    fill="url(#colorSim)"
+                    fillOpacity={1}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          {/* 2. KEY IMPACT METRICS (Revised) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Net Worth Delta */}
+            <Card className={`p-4 bg-white border-${metrics.nwDeltaAtRetire >= 0 ? 'blue' : 'orange'}-100 ring-1 ring-${metrics.nwDeltaAtRetire >= 0 ? 'blue' : 'orange'}-50`}>
+              <p className={`text-xs text-${metrics.nwDeltaAtRetire >= 0 ? 'blue' : 'orange'}-600 font-medium mb-1`}>Net Worth Impact</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {metrics.nwDeltaAtRetire > 0 ? '+' : ''}{fmtCompact(metrics.nwDeltaAtRetire)}
+              </p>
+            </Card>
+
+            {/* FIRE Age Delta */}
+            <Card className="p-4 bg-white border-purple-100 ring-1 ring-purple-50">
+              <p className="text-xs text-purple-600 font-medium mb-1">FIRE Timing</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {metrics.fireAgeDelta === null ? '--' : metrics.fireAgeDelta === 0 ? 'No Change' : `${metrics.fireAgeDelta > 0 ? '+' : ''}${metrics.fireAgeDelta} Years`}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">New Goal: Age {metrics.simFireAge}</p>
+            </Card>
+
+            {/* Lifetime Cost */}
+            <Card className="p-4 bg-white border-red-100 ring-1 ring-red-50">
+              <p className="text-xs text-red-600 font-medium mb-1">Lifetime Event Cost</p>
+              <p className="text-2xl font-bold text-gray-900">{fmtCompact(metrics.lifetimeEventCost)}</p>
+            </Card>
+
+            {/* Lifetime Income */}
+            <Card className="p-4 bg-white border-green-100 ring-1 ring-green-50">
+              <p className="text-xs text-green-600 font-medium mb-1">Lifetime Event Income</p>
+              <p className="text-2xl font-bold text-gray-900">{fmtCompact(metrics.lifetimeEventInc)}</p>
+            </Card>
+          </div>
+
+          {/* 3. RETIREMENT BUDGET */}
+          <Card className="p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="flex-grow">
+                <label className="text-sm font-bold text-gray-900 block mb-1">Retirement Spending Goal</label>
+                <p className="text-sm text-gray-500">Your desired monthly budget in retirement (Today's Dollars).</p>
+              </div>
+              <div className="w-full sm:w-48">
+                <Input
                   type="number"
+                  min="0"
+                  prefix="$"
                   value={monthlyRetirementSpend}
-                  onChange={(e) => setMonthlyRetirementSpend(e.target.value)}
-                  className="w-full pl-8 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all text-lg font-medium text-gray-900"
+                  onChange={(val) => setMonthlyRetirementSpend(Math.max(0, Number(val)))}
                   placeholder="5000"
                 />
               </div>
-              <p className="text-xs text-gray-400 mt-2">Updating this drives FIRE Target</p>
             </div>
+          </Card>
 
-            {/* 2. Impact Summary (Grid of 4) */}
-            <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
-              {/* Years to FIRE */}
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Years to FIRE</p>
-                <p className="text-xl font-bold text-gray-900">{metrics.simYearsToFire || '—'}</p>
-                {metrics.fireAgeDelta !== null && metrics.fireAgeDelta !== 0 && (
-                  <p className={`text-xs font-medium ${metrics.fireAgeDelta < 0 ? 'text-green-600' : 'text-red-500'}`}>
-                    {metrics.fireAgeDelta > 0 ? '+' : ''}{metrics.fireAgeDelta} yrs
-                  </p>
-                )}
-              </div>
-              {/* Net Worth at Retirement */}
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Net Worth at Retirement</p>
-                <p className="text-xl font-bold text-gray-900">{fmtCompact(metrics.simNetWorthRetire)}</p>
-                <p className={`text-xs font-medium ${metrics.nwDelta >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                  {metrics.nwDelta > 0 ? '+' : ''}{fmtCompact(metrics.nwDelta)}
-                </p>
-              </div>
-              {/* Extra Expenses */}
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Extra Expenses</p>
-                <p className={`text-xl font-bold ${metrics.totalExtraExp > 0 ? 'text-red-600' : 'text-gray-900'}`}>{fmtCompact(metrics.totalExtraExp)}</p>
-                <p className="text-xs text-gray-400">total added</p>
-              </div>
-              {/* Extra Income */}
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Extra Income</p>
-                <p className={`text-xl font-bold ${metrics.totalExtraInc > 0 ? 'text-green-600' : 'text-gray-900'}`}>{fmtCompact(metrics.totalExtraInc)}</p>
-                <p className="text-xs text-gray-400">total added</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CORE METRICS GRID (8 Metrics) */}
-      {metrics && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-4">Simulated Core Metrics</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
-              <p className="text-xs text-blue-600 font-medium uppercase">Net Worth (Y1)</p>
-              <p className="text-2xl font-bold text-blue-900">{fmtCompact(metrics.y1NetWorth)}</p>
-            </div>
-            <div className="p-4 rounded-lg bg-green-50 border border-green-100">
-              <p className="text-xs text-green-600 font-medium uppercase">Savings Rate</p>
-              <p className="text-2xl font-bold text-green-900">{metrics.y1SavingsRate.toFixed(1)}%</p>
-            </div>
-            <div className="p-4 rounded-lg bg-gray-50 border border-gray-100">
-              <p className="text-xs text-gray-500 font-medium uppercase">Income (Y1)</p>
-              <p className="text-2xl font-bold text-gray-800">{fmtCompact(metrics.y1Income)}</p>
-            </div>
-            <div className="p-4 rounded-lg bg-gray-50 border border-gray-100">
-              <p className="text-xs text-gray-500 font-medium uppercase">Expenses (Y1)</p>
-              <p className="text-2xl font-bold text-gray-800">{fmtCompact(metrics.y1Expenses)}</p>
-            </div>
-
-            {/* Row 2 */}
-            <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-100">
-              <p className="text-xs text-indigo-600 font-medium uppercase">FIRE Target</p>
-              <p className="text-2xl font-bold text-indigo-900">{fmtCompact(metrics.baseFireNumber)}</p>
-            </div>
-            <div className="p-4 rounded-lg bg-purple-50 border border-purple-100">
-              <p className="text-xs text-purple-600 font-medium uppercase">FIRE Age</p>
-              <p className="text-2xl font-bold text-purple-900">{metrics.simFireAge || '--'}</p>
-            </div>
-            <div className="p-4 rounded-lg bg-teal-50 border border-teal-100">
-              <p className="text-xs text-teal-600 font-medium uppercase">Coast Age</p>
-              <p className="text-2xl font-bold text-teal-900">{metrics.simCoastAge || '--'}</p>
-            </div>
-            <div className="p-4 rounded-lg bg-orange-50 border border-orange-100">
-              <p className="text-xs text-orange-600 font-medium uppercase">Liquidated Age</p>
-              <p className="text-2xl font-bold text-orange-900">{metrics.simLiquidatedAge || '--'}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ADJUSTMENT CONTROLS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* 1. SLIDERS */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-6">General Adjustments</h3>
-
+          {/* 4. LIFE EVENTS EDITOR (Full Width) */}
           <div className="space-y-6">
-            {/* Income Slider */}
-            <div>
-              <div className="flex justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Income Adjustment</label>
-                <span className={`text-sm font-bold ${incomeAdjustment > 0 ? 'text-green-600' : 'text-gray-900'}`}>{incomeAdjustment > 0 ? '+' : ''}{incomeAdjustment}%</span>
-              </div>
-              <input type="range" min="-50" max="50" value={incomeAdjustment} onChange={(e) => setIncomeAdjustment(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
-            </div>
-
-            {/* Expense Slider */}
-            <div>
-              <div className="flex justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Expense Adjustment</label>
-                <span className={`text-sm font-bold ${expenseAdjustment < 0 ? 'text-green-600' : 'text-gray-900'}`}>{expenseAdjustment > 0 ? '+' : ''}{expenseAdjustment}%</span>
-              </div>
-              <input type="range" min="-50" max="50" value={expenseAdjustment} onChange={(e) => setExpenseAdjustment(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500" />
-            </div>
-
-            {/* Growth Rate Slider */}
-            <div>
-              <div className="flex justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Market Growth Rate</label>
-                <span className="text-sm font-bold text-blue-600">{sensitivityGrowthRate}%</span>
-              </div>
-              <input type="range" min="0" max="15" step="0.5" value={sensitivityGrowthRate} onChange={(e) => setSensitivityGrowthRate(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
-            </div>
-
-            {/* Inflation Slider */}
-            <div>
-              <div className="flex justify-between mb-2">
-                <label className="text-sm font-medium text-gray-700">Inflation Rate</label>
-                <span className="text-sm font-bold text-orange-600">{sensitivityInflation}%</span>
-              </div>
-              <input type="range" min="0" max="10" step="0.1" value={sensitivityInflation} onChange={(e) => setSensitivityInflation(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500" />
-            </div>
-          </div>
-        </div>
-
-        {/* 2. LIFE PLANNER */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-bold text-gray-900">Life Events</h3>
-            {lifeEvents.length > 0 && <button onClick={() => setLifeEvents([])} className="text-xs text-red-600 hover:text-red-800">Clear All</button>}
-          </div>
 
-          {/* Templates */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {Object.entries(lifeEventTemplates).map(([key, t]) => (
-              <button
-                key={key}
-                onClick={() => addLifeEvent(key)}
-                className={`px-3 py-2 text-xs rounded-lg border flex items-center gap-2 transition hover:shadow-sm ${t.incomeImpact > 0 ? 'bg-green-50 border-green-200 text-green-700' : 'bg-gray-50 border-gray-200 text-gray-700'}`}
-              >
-                <span>{t.icon}</span>
-                <span>{t.name}</span>
-              </button>
-            ))}
-          </div>
+            {/* Templates */}
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(lifeEventTemplates).map(([key, t]) => (
+                <button
+                  key={key}
+                  onClick={() => addLifeEvent(key)}
+                  className="px-4 py-3 text-sm rounded-xl border bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 flex items-center justify-center gap-2 transition duration-200 shadow-sm"
+                >
+                  <span className="text-xl">{t.icon}</span>
+                  <span className="font-medium">{t.name}</span>
+                </button>
+              ))}
+            </div>
 
-          {/* Active Events List */}
-          <div className="space-y-3">
-            {lifeEvents.map(e => (
-              <div key={e.id} className="bg-gray-50 rounded-lg p-3 relative group text-sm border border-gray-100">
-                <button onClick={() => removeLifeEvent(e.id)} className="absolute top-2 right-2 text-gray-300 hover:text-red-500">✕</button>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">{e.icon}</span>
-                  <span className="font-medium text-gray-800">{e.name}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div>
-                    <label className="block text-gray-400 mb-0.5">Start Year</label>
-                    <input type="number" min="1" max={maxYear} value={e.startYear} onChange={(ev) => updateLifeEvent(e.id, 'startYear', Number(ev.target.value))} className="w-full px-1 py-0.5 border rounded" />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 mb-0.5">Duration</label>
-                    <input type="number" min="0" value={e.duration} onChange={(ev) => updateLifeEvent(e.id, 'duration', Number(ev.target.value))} className="w-full px-1 py-0.5 border rounded" />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 mb-0.5">Impact ($)</label>
-                    <div className="text-gray-700 py-1">
-                      {e.incomeImpact !== 0 ? (
-                        <span className={e.incomeImpact > 0 ? 'text-green-600' : 'text-red-600'}>{e.incomeImpact > 0 ? '+' : ''}{fmtCompact(e.incomeImpact)} Inc</span>
-                      ) : (
-                        <span className={e.expenseImpact > 0 ? 'text-red-600' : 'text-green-600'}>{e.expenseImpact > 0 ? '-' : '+'}{fmtCompact(e.expenseImpact)} Exp</span>
-                      )}
+            {/* Events List */}
+            <div className="space-y-4">
+              {lifeEvents.map(e => (
+                <Card key={e.id} className="p-4 relative border-l-4 border-l-blue-500">
+                  <button onClick={() => removeLifeEvent(e.id)} className="absolute top-2 right-2 text-gray-300 hover:text-red-500 transition px-2 py-1">✕</button>
+
+                  <div className="flex flex-col sm:flex-row gap-6">
+                    {/* Header & Icon */}
+                    <div className="flex items-center gap-3 sm:w-48 flex-shrink-0">
+                      <span className="text-3xl bg-gray-50 p-2 rounded-lg">{e.icon}</span>
+                      <div>
+                        {e.name === 'Custom Event' ? (
+                          <input
+                            type="text"
+                            value={e.name}
+                            onChange={(ev) => updateLifeEvent(e.id, 'name', ev.target.value)}
+                            className="font-bold text-gray-900 bg-transparent border-b border-dashed border-gray-300 focus:border-blue-500 focus:outline-none w-full"
+                          />
+                        ) : (
+                          <span className="font-bold text-gray-900">{e.name}</span>
+                        )}
+                        <p className="text-xs text-gray-400 mt-1">Event</p>
+                      </div>
+                    </div>
+
+                    {/* Interactive Controls */}
+                    <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                      {/* Timeline Control */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-2">Timeline</label>
+                        <div className="flex gap-4">
+                          <div className="flex-1">
+                            <label className="text-[10px] text-gray-400 font-bold block mb-0.5">Start Year (Age {currentAge + e.startYear})</label>
+                            <Input
+                              type="number"
+                              min="1"
+                              max={maxYear}
+                              value={e.startYear}
+                              onChange={(val) => updateLifeEvent(e.id, 'startYear', Number(val))}
+                            />
+                          </div>
+                          <div className="w-24">
+                            <label className="text-[10px] text-gray-400 font-bold block mb-0.5">Duration</label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={e.duration}
+                              onChange={(val) => updateLifeEvent(e.id, 'duration', Number(val))}
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">{e.duration === 0 ? 'Permanent' : 'Years'}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Impact Control */}
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 mb-2">Annual Impact</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <Input
+                              label="Income"
+                              type="number"
+                              prefix="$"
+                              value={e.incomeImpact}
+                              onChange={(val) => updateLifeEvent(e.id, 'incomeImpact', Number(val))}
+                              className={e.incomeImpact > 0 ? "text-green-600 font-bold" : e.incomeImpact < 0 ? "text-red-500 font-bold" : ""}
+                            />
+                          </div>
+                          <div>
+                            <Input
+                              label="Expense"
+                              type="number"
+                              prefix="$"
+                              value={e.expenseImpact}
+                              onChange={(val) => updateLifeEvent(e.id, 'expenseImpact', Number(val))}
+                              className={e.expenseImpact > 0 ? "text-red-500 font-bold" : ""}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
+                </Card>
+              ))}
+
+              {lifeEvents.length === 0 && (
+                <div className="text-center py-12 px-4 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+                  <p className="text-gray-500 font-medium">No life events added yet.</p>
+                  <p className="text-gray-400 text-sm mt-1">Select a template above to visualize how major life changes impact your wealth.</p>
                 </div>
-              </div>
-            ))}
-            {lifeEvents.length === 0 && (
-              <div className="text-center py-8 text-gray-400 text-xs italic">
-                No events added. Click a template above to visualize life changes.
-              </div>
-            )}
+              )}
+            </div>
           </div>
+
         </div>
-      </div>
+      )}
     </div>
   )
 }

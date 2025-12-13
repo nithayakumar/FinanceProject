@@ -38,7 +38,7 @@ export function ExpenseTimelineCard({ categories, onAddJump, onUpdateJump, onRem
                             <th className="px-4 py-3 rounded-l-lg w-24">Year</th>
                             <th className="px-4 py-3 w-48">Category</th>
                             <th className="px-4 py-3 w-64">Change Type</th>
-                            <th className="px-4 py-3">Value</th>
+                            <th className="px-4 py-3">Yearly Expense</th>
                             <th className="px-4 py-3 rounded-r-lg text-right w-16"></th>
                         </tr>
                     </thead>
